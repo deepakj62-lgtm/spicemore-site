@@ -2,18 +2,21 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --green-primary: #70A858;
-  --green-dark: #174604;
-  --green-darkest: #044002;
-  --dark-text: #1E2B11;
-  --brown: #2D2317;
-  --tan: #866A46;
-  --light-tan: #D7C8B4;
-  --green-bright: #71D46E;
+  --green-primary: #6B9548;
+  --green-dark: #2D5016;
+  --green-darkest: #1A3009;
+  --green-accent: #8FBC6F;
+  --dark-text: #1A1A1A;
+  --brown: #3D2817;
+  --brown-light: #8B6F47;
+  --tan: #A68A6F;
+  --light-tan: #D4C4B0;
+  --cream: #F5F1ED;
   --white: #FFFFFF;
-  --light-gray: #E8E8E8;
-  --mid-gray: #C7C7C7;
-  --button-dark: #373B4D;
+  --light-gray: #E2DDD5;
+  --mid-gray: #B8B3AA;
+  --button-dark: #3D2817;
+  --accent-gold: #C4A56B;
   --font-heading: 'Syne', sans-serif;
   --font-body: 'Poppins', sans-serif;
 }
@@ -25,7 +28,7 @@ body {
   font-weight: 300;
   color: var(--dark-text);
   line-height: 1.6;
-  background: var(--white);
+  background: var(--cream);
 }
 
 a { text-decoration: none; color: inherit; }
@@ -163,6 +166,7 @@ img { max-width: 100%; height: auto; display: block; }
 /* ===== VISION ===== */
 .vision {
   background: var(--white);
+  border-top: 4px solid var(--green-primary);
 }
 
 .vision-content {
