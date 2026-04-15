@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home | Spice More</title>
+  <meta name="description" content="Spice More Trading Company - God's own project from the house of planters. Premium Indian spices directly from plantations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="images/logo.png" alt="Spice More Trading Company">
+      </a>
+      <button class="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links">
+        <a href="index.html" class="active">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <a href="credit-assessor.html">Credit Assessor</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>God's own project from the house of planters.</h1>
+      <p>With over 20 years of industry experience and a legacy rooted in agriculture and farming, we are dedicated to the welfare of farmers and the satisfaction of our customers, we handpick the best produce and deliver the best of service.</p>
+    </div>
+  </section>
+
+  <!-- VISION + SLIDESHOW -->
+  <section class="section vision">
+    <div class="section-container">
+      <div class="vision-content">
+        <div class="vision-text">
+          <h2 class="section-title">OUR VISION</h2>
+          <p>We believe in delivering spices in their truest form, directly from plantations to your homes. We maintain the original essence of our products during procurement, processing, storage, packaging, and delivery to ensure our clients feel the wholesomeness of nature in their hands. We strive to keep our planters and farmers at the centre of everything we do to help them realise their best output.</p>
+        </div>
+        <div class="slideshow-wrapper">
+          <div class="slideshow">
+            <div class="slide active">
+              <img src="images/cardamom.jpeg" alt="Cardamom">
+              <div class="slide-caption">Cardamom (Elettaria Cardamomum)</div>
+            </div>
+            <div class="slide">
+              <img src="images/blackpepper.jpg" alt="Black Pepper">
+              <div class="slide-caption">Black Pepper (Piper Nigrum)</div>
+            </div>
+            <div class="slide">
+              <img src="images/clove.jpg" alt="Clove">
+              <div class="slide-caption">Clove (Syzygium Aromaticum)</div>
+            </div>
+            <button class="slide-nav slide-prev" aria-label="Previous">&lsaquo;</button>
+            <button class="slide-nav slide-next" aria-label="Next">&rsaquo;</button>
+            <span class="slide-counter">1/3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT FORM -->
+  <section class="contact-section">
+    <div class="section-container">
+      <h2 class="section-title">Send us a Message.</h2>
+      <form class="contact-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" name="firstName" required>
+          </div>
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" name="lastName" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label for="message">Write a message</label>
+          <textarea id="message" name="message"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label for="phone">Phone</label>
+          <input type="tel" id="phone" name="phone">
+        </div>
+        <button type="submit" class="btn-submit">Submit</button>
+        <div class="form-success">Thanks for submitting!</div>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Billing Address</h4>
+        <p>SPICE MORE TRADING COMPANY</p>
+        <p>KPXIV 11, 12, 13, 14</p>
+        <p>VATTATHARA BUILDINGS</p>
+        <p>KUMILY MUNNAR ROAD</p>
+        <p>KUMILY, Idukki, Kerala, 685509</p>
+        <p>GSTIN 32ABYFS2267G1ZS</p>
+      </div>
+      <div class="footer-col">
+        <h4>Bank Information</h4>
+        <p>Axis Bank, Bodinayakanur Branch</p>
+        <p>Account Number: 918020093385758</p>
+        <p>IFSC: UTIB0002671</p>
+      </div>
+      <div class="footer-col">
+        <h4>Licenses</h4>
+        <p>Auctioneer: MKT Auc/CS/S2069/0013/2018</p>
+        <p>Exporter: ML/REG/S2069/2017</p>
+        <p>Dealer: C.S./S2069/136/2017</p>
+        <p style="margin-top:12px"><a href="https://drive.google.com/file/d/1f55b2SeUfF0G3m8NOM3nBvcl_BXpgJSD/view" target="_blank" style="color:var(--green-primary)">View ISO Certificate</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 Spice More Trading Company. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
