@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMTC · Credit Limit Assessor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ─── RESET & BASE ──────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g9:#37250D;--g8:#4A3218;--g7:#5D3F21;--g6:#8B6755;--g1:#F5EDE4;--g0:#FAF6F1;
+  --r:#EF4444;--a:#F59E0B;--b:#253C57;
+  --t9:#111827;--t7:#374151;--t5:#6B7280;--t3:#D1D5DB;--t2:#E5E7EB;--t1:#F3F4F6;--w:#fff;
+  --rad:10px;--rad-s:6px;--sh:0 1px 3px rgba(0,0,0,.08);
+  --mono:'SF Mono','Menlo','Consolas',monospace;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;
+  background:#F7F5F2;color:var(--t9);line-height:1.5;font-size:14px}
+
+/* ─── HEADER ────────────────────────────────────────────── */
+header{background:linear-gradient(135deg,#2E1F0B,#37250D 40%,#4A3218);color:var(--w);padding:14px 28px;display:flex;
+  align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+header .logo-wrap{display:flex;align-items:center;gap:14px}
+header .logo-img{height:40px;border-radius:8px;background:rgba(255,255,255,.12);padding:4px}
+header h1{font-size:18px;font-weight:700;letter-spacing:-.2px}
+header .sub{font-size:12px;opacity:.65;margin-top:2px}
+header .right{font-size:12px;opacity:.5;text-align:right}
+
+/* ─── LAYOUT ────────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 54px)}
+@media(max-width:900px){.shell{grid-template-columns:1fr}}
+
+/* ─── SIDEBAR ───────────────────────────────────────────── */
+.side{background:var(--w);border-right:1px solid var(--t2);padding:22px 20px;
+  overflow-y:auto;max-height:calc(100vh - 54px);position:sticky;top:54px}
+@media(max-width:900px){.side{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--t2)}}
+
+.side h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--t5);margin:20px 0 10px;display:flex;align-items:center;gap:6px}
+.side h2:first-child{margin-top:0}
+
+/* Editable row */
+.e-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--t1)}
+.e-row:last-child{border-bottom:none}
+.e-label{flex:1;font-size:13px;color:var(--t7)}
+.e-input{width:76px;padding:6px 8px;border:1px solid transparent;border-radius:var(--rad-s);
+  font-size:13px;text-align:right;background:var(--t1);font-family:var(--mono);
+  transition:all .15s}
+.e-input:hover{border-color:var(--t3)}
+.e-input:focus{outline:none;border-color:var(--g7);background:var(--w);box-shadow:0 0 0 2px rgba(56,142,60,.15)}
+.e-input.changed{background:#FFF8E1;border-color:#FFD54F}
+.e-reset{width:20px;height:20px;border:none;background:none;cursor:pointer;
+  opacity:0;transition:opacity .15s;font-size:13px;color:var(--t5);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.e-row:hover .e-reset.visible{opacity:.5}
+.e-reset.visible:hover{opacity:1;background:var(--t1)}
+.e-unit{font-size:11px;color:var(--t5);min-width:28px;text-align:left}
+.e-select{padding:6px 8px;border:1px solid transparent;border-radius:var(--rad-s);
+  font-size:13px;background:var(--t1);font-family:var(--mono);cursor:pointer;
+  transition:all .15s;appearance:auto;min-width:100px}
+.e-select:hover{border-color:var(--t3)}
+.e-select:focus{outline:none;border-color:var(--g7);background:var(--w);box-shadow:0 0 0 2px rgba(93,63,33,.15)}
+.e-select.changed{background:#FFF8E1;border-color:#FFD54F}
+
+/* Risk factor table in sidebar */
+.rf-table{width:100%;border-collapse:collapse;margin:4px 0 8px}
+.rf-table td{padding:6px 8px;font-size:13px;border-bottom:1px solid var(--t1)}
+.rf-table td:first-child{color:var(--t5)}
+.rf-table td:last-child{width:56px}
+.rf-table .e-input{width:52px;font-size:11px;padding:3px 5px}
+
+/* Upload area in sidebar */
+.upload-box{border:1.5px dashed var(--t3);border-radius:var(--rad);padding:16px 12px;
+  text-align:center;cursor:pointer;transition:all .2s;margin:8px 0}
+.upload-box:hover,.upload-box.over{border-color:var(--g6);background:var(--g0)}
+.upload-box p{font-size:11px;color:var(--t5);margin-top:4px}
+.upload-box input{display:none}
+.file-chips{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+.chip{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--t1);
+  border-radius:var(--rad-s);font-size:11px}
+.chip .co{font-size:9px;font-weight:700;color:var(--w);padding:1px 5px;border-radius:10px}
+.chip .co-smtc{background:var(--g7)}.chip .co-sepl{background:var(--b)}
+.chip .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip .x{cursor:pointer;color:var(--t5);font-size:14px;opacity:.5}
+.chip .x:hover{opacity:1;color:var(--r)}
+
+.btn{padding:8px 16px;border:none;border-radius:var(--rad-s);font-size:12px;
+  font-weight:600;cursor:pointer;transition:all .15s;width:100%}
+.btn-go{background:var(--g7);color:var(--w);margin-top:8px}
+.btn-go:hover{background:var(--g8);transform:translateY(-1px);box-shadow:var(--sh)}
+.btn-go:disabled{background:var(--t2);color:var(--t5);cursor:default;transform:none;box-shadow:none}
+.btn-clear{background:none;color:var(--t5);border:1px solid var(--t2);margin-top:4px;font-weight:500}
+.btn-clear:hover{background:var(--t1)}
+
+/* ─── MAIN CONTENT ──────────────────────────────────────── */
+.main{padding:24px;overflow-y:auto}
+
+/* Empty state */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:50vh;color:var(--t5);text-align:center}
+.empty .icon{font-size:48px;margin-bottom:12px;opacity:.3}
+.empty h3{font-size:15px;color:var(--t7);margin-bottom:4px}
+
+/* Summary strip */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;overflow:hidden}
+@media(max-width:1100px){.summary{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.summary{grid-template-columns:1fr}}
+.s-card{background:var(--w);border-radius:var(--rad);padding:14px 16px;
+  box-shadow:var(--sh);border-left:3px solid var(--g7);overflow:hidden;min-width:0}
+.s-card .s-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--t5)}
+.s-card .s-val{font-size:22px;font-weight:800;margin:4px 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-card .s-sub{font-size:11px;color:var(--t5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Export bar */
+.export-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.btn-exp{padding:8px 16px;border:1px solid var(--t2);border-radius:var(--rad-s);
+  background:var(--w);font-size:13px;font-weight:600;cursor:pointer;color:var(--t7);
+  transition:all .15s;display:flex;align-items:center;gap:5px}
+.btn-exp:hover{border-color:var(--g7);color:var(--g7);background:var(--g0)}
+
+/* ─── DEALER CARD ───────────────────────────────────────── */
+.d-card{background:var(--w);border-radius:var(--rad);box-shadow:var(--sh);
+  margin-bottom:16px;overflow:hidden}
+
+.d-head{display:flex;align-items:center;padding:14px 20px;gap:12px;
+  border-bottom:1px solid var(--t2);flex-wrap:wrap}
+.d-name{font-size:17px;font-weight:700;flex:1}
+.co-pills{display:flex;gap:6px}
+.co-pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;color:var(--w)}
+.risk-pill{font-size:11px;font-weight:700;padding:4px 12px;border-radius:12px}
+.risk-LOW{background:#DCFCE7;color:#166534}
+.risk-MEDIUM{background:#FEF9C3;color:#854D0E}
+.risk-HIGH{background:#FFEDD5;color:#9A3412}
+.risk-CRITICAL{background:#FEE2E2;color:#991B1B}
+
+.limit-pill{background:var(--g9);color:var(--w);padding:6px 16px;border-radius:20px;
+  font-size:14px;font-weight:800;font-family:var(--mono);letter-spacing:-.3px;
+  display:flex;align-items:center;gap:6px}
+.limit-pill .e-input{width:72px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:var(--w);font-weight:800;font-size:14px;text-align:center;font-family:var(--mono)}
+.limit-pill .e-input:focus{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.6);
+  box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+.limit-pill .e-input.changed{background:rgba(255,200,0,.3);border-color:rgba(255,200,0,.5)}
+.limit-pill .e-reset{color:rgba(255,255,255,.5)}
+.limit-pill .e-reset.visible:hover{color:var(--w);background:rgba(255,255,255,.15)}
+
+/* Three-column body */
+.d-body{display:grid;grid-template-columns:1fr 1fr 1fr}
+@media(max-width:1000px){.d-body{grid-template-columns:1fr}}
+.d-sec{padding:16px 20px;border-right:1px solid var(--t1)}
+.d-sec:last-child{border-right:none}
+@media(max-width:1000px){.d-sec{border-right:none;border-bottom:1px solid var(--t1)}}
+.d-sec h4{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t5);margin-bottom:12px}
+
+/* Metric rows inside cards */
+.m-row{display:flex;align-items:center;gap:4px;padding:4px 0;font-size:13px;
+  border-bottom:1px solid var(--t1)}
+.m-row:last-child{border-bottom:none}
+.m-lbl{flex:1;color:var(--t5)}
+.m-val{font-weight:600;font-family:var(--mono);font-size:12px}
+.m-row .e-input{width:60px;font-size:11px;padding:2px 5px}
+.m-row .e-reset{width:18px;height:18px;font-size:11px}
+
+/* Formula trace */
+.f-trace{background:var(--g0);border-radius:var(--rad-s);padding:10px 12px;margin-top:8px}
+.f-line{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;
+  border-bottom:1px dashed rgba(0,0,0,.06)}
+.f-line:last-child{border-bottom:none;font-weight:700;color:var(--g9);margin-top:4px;padding-top:4px}
+
+/* Chart */
+.chart-box{position:relative;height:160px}
+
+/* Detail toggle + table */
+.d-toggle{width:100%;padding:8px 20px;background:var(--t1);border:none;
+  border-top:1px solid var(--t2);cursor:pointer;font-size:11px;color:var(--t5);
+  text-align:left;display:flex;align-items:center;gap:4px;transition:background .15s}
+.d-toggle:hover{background:var(--t2)}
+.d-detail{display:none;overflow-x:auto}
+.d-detail.open{display:block}
+
+.inv-table{width:100%;border-collapse:collapse;font-size:12px}
+.inv-table th{background:var(--t1);padding:8px 14px;text-align:left;font-weight:600;
+  color:var(--t5);border-bottom:1px solid var(--t2);white-space:nowrap;font-size:11px;
+  text-transform:uppercase;letter-spacing:.3px}
+.inv-table td{padding:7px 14px;border-bottom:1px solid var(--t1);white-space:nowrap}
+.inv-table tr:hover td{background:var(--g0)}
+.inv-table tr.outstanding td{color:var(--a)}
+.df{color:#16A34A;font-weight:600}.do{color:var(--t7);font-weight:600}
+.ds{color:var(--a);font-weight:600}.db{color:var(--r);font-weight:600}
+
+/* Tabs */
+.tab-bar{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--t2)}
+.tab-btn{padding:10px 20px;border:none;background:none;font-size:13px;font-weight:600;
+  color:var(--t5);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;
+  transition:all .15s}
+.tab-btn:hover{color:var(--t7)}
+.tab-btn.active{color:var(--g7);border-bottom-color:var(--g7)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ═══ Excel-like Summary Grid ═══ */
+.sg-wrap{background:var(--w);border-radius:var(--rad);box-shadow:var(--sh);overflow:hidden;
+  border:1px solid var(--t2)}
+.sg-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--g0);
+  border-bottom:1px solid var(--t2);flex-wrap:wrap}
+.sg-toolbar .sg-search{flex:1;min-width:180px;max-width:320px;padding:6px 10px 6px 30px;
+  border:1px solid var(--t2);border-radius:var(--rad-s);font-size:12px;background:var(--w);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:8px center}
+.sg-toolbar .sg-search:focus{outline:none;border-color:var(--g7)}
+.sg-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;
+  background:var(--g1);border:1px solid var(--g3);font-size:10px;color:var(--g8)}
+.sg-chip .sg-chip-x{cursor:pointer;font-weight:700;color:var(--t5);margin-left:2px}
+.sg-chip .sg-chip-x:hover{color:var(--r)}
+.sg-count{font-size:11px;color:var(--t5);margin-left:auto;white-space:nowrap}
+
+.sg-scroll{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 300px)}
+.sg-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+
+/* Header */
+.sg-table thead{position:sticky;top:0;z-index:12}
+.sg-table th{background:var(--g9);color:var(--w);padding:0;text-align:left;
+  font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;
+  white-space:nowrap;position:relative;user-select:none;border-right:1px solid rgba(255,255,255,.12)}
+.sg-table th:last-child{border-right:none}
+.sg-th-inner{display:flex;align-items:center;gap:4px;padding:8px 12px;cursor:pointer}
+.sg-th-inner:hover{background:rgba(255,255,255,.08)}
+.sg-sort-icon{font-size:10px;opacity:.5;min-width:12px;text-align:center}
+.sg-sort-icon.active{opacity:1}
+
+/* Column resize handle */
+.sg-resize{position:absolute;right:-2px;top:0;bottom:0;width:5px;cursor:col-resize;z-index:2}
+.sg-resize:hover,.sg-resize.active{background:rgba(255,255,255,.3)}
+
+/* Filter row */
+.sg-table .sg-filter-row th{background:var(--g8);padding:4px 6px}
+.sg-filter-sel{width:100%;padding:3px 6px;border:1px solid rgba(255,255,255,.2);
+  border-radius:3px;font-size:10px;background:rgba(255,255,255,.1);color:var(--w);
+  cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 4px center;padding-right:18px}
+.sg-filter-sel:focus{outline:none;border-color:var(--g4)}
+.sg-filter-sel option{background:var(--g8);color:var(--w)}
+.sg-filter-sel.has-filter{border-color:var(--g4);background-color:rgba(46,125,50,.3)}
+
+/* Body */
+.sg-table td{padding:10px 12px;border-bottom:1px solid var(--t1);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;border-right:1px solid var(--t1)}
+.sg-table td:last-child{border-right:none}
+.sg-table td:not(:first-child){text-align:right;font-family:var(--mono);font-size:11px}
+.sg-table tbody tr{cursor:pointer;transition:background .1s}
+.sg-table tbody tr:hover td{background:#EEF7EE}
+.sg-table tbody tr:active td{background:#D5ECD5}
+.sg-table tbody tr.sg-selected td{background:#E8F5E9;box-shadow:inset 3px 0 0 var(--g7)}
+
+/* Footer */
+.sg-table tfoot td{background:var(--t1);font-weight:700;border-top:2px solid var(--t2);
+  padding:10px 12px;cursor:default}
+.sg-table tfoot tr:hover td{background:var(--t1)}
+
+/* Dealer name link */
+.sg-dlr{font-weight:700;font-size:13px;color:var(--g8);display:flex;align-items:center;gap:6px}
+.sg-dlr:hover{color:var(--g7)}
+.sg-dlr .sg-arrow{font-size:10px;opacity:0;transition:opacity .15s;color:var(--g7)}
+.sg-table tbody tr:hover .sg-arrow{opacity:1}
+
+/* Risk badges */
+.sg-risk{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;display:inline-block}
+.sg-risk-LOW{background:#DCFCE7;color:#15803D}.sg-risk-MEDIUM{background:#FEF3C7;color:#A16207}
+.sg-risk-HIGH{background:#FFEDD5;color:#C2410C}.sg-risk-CRITICAL{background:#FEE2E2;color:#DC2626}
+
+/* Column widths */
+.sg-col-dealer{width:28%}.sg-col-turnover{width:20%}.sg-col-days{width:18%}
+.sg-col-limit{width:20%}.sg-col-risk{width:14%}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--g8);color:var(--w);
+  padding:10px 18px;border-radius:var(--rad-s);font-size:12px;font-weight:500;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);transform:translateY(80px);opacity:0;
+  transition:all .3s;z-index:999;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* Loader */
+.loader{display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:200;
+  align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loader.on{display:flex}
+.spin{width:36px;height:36px;border:3px solid var(--t2);border-top-color:var(--g6);
+  border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loader p{font-size:13px;color:var(--t5)}
+
+/* Script modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;
+  align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--w);border-radius:var(--rad);max-width:680px;width:92vw;
+  max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,.2)}
+.modal-h{padding:14px 20px;border-bottom:1px solid var(--t2);display:flex;
+  align-items:center;justify-content:space-between}
+.modal-h h3{font-size:14px;font-weight:700}
+.modal-h button{background:none;border:none;font-size:18px;cursor:pointer;color:var(--t5)}
+.modal-b{padding:16px 20px;overflow-y:auto;flex:1}
+.modal-b pre{background:var(--t9);color:#A3E635;padding:14px;border-radius:var(--rad-s);
+  font-size:10px;overflow-x:auto;line-height:1.6;white-space:pre-wrap}
+.modal-f{padding:12px 20px;border-top:1px solid var(--t2);display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<!-- ═══ PASSWORD GATE ═══ -->
+<div id="authGate" style="display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#2E1F0B,#37250D 40%,#4A3218);
+  align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif">
+  <div style="background:#fff;border-radius:12px;padding:40px 36px;max-width:360px;width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <img src="https://static.wixstatic.com/media/71d97b_23c088d0bc674ca4a1e591210b43af92~mv2.png/v1/fill/w_120,h_86,al_c,q_85,enc_avif,quality_auto/Spice-More-smaller-1030x741.png"
+      alt="SpiceMore" style="height:50px;margin-bottom:16px" onerror="this.style.display='none'">
+    <h2 style="font-size:18px;color:#37250D;margin:0 0 4px">SMTC Credit Assessor</h2>
+    <p style="font-size:12px;color:#6B7280;margin:0 0 24px">Enter password to continue</p>
+    <input id="authPwd" type="password" placeholder="Password" autocomplete="off"
+      style="width:100%;padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;
+      text-align:center;outline:none;transition:border .2s"
+      onfocus="this.style.borderColor='#5D3F21'" onblur="this.style.borderColor='#D1D5DB'"
+      onkeydown="if(event.key==='Enter')authCheck()">
+    <button onclick="authCheck()" style="width:100%;margin-top:12px;padding:12px;border:none;border-radius:8px;
+      background:#5D3F21;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s"
+      onmouseover="this.style.background='#4A3218'" onmouseout="this.style.background='#5D3F21'">Unlock</button>
+    <p id="authErr" style="color:#EF4444;font-size:12px;margin-top:10px;display:none">Incorrect password</p>
+  </div>
+</div>
+<script>
+(function(){
+  const KEY='smtc_auth', HASH='a3c2f8b1';
+  function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return(h>>>0).toString(16).slice(0,8);}
+  if(sessionStorage.getItem(KEY)===HASH){document.getElementById('authGate').style.display='none';}
+  window.authCheck=function(){
+    const v=document.getElementById('authPwd').value;
+    if(simpleHash(v)==='87afac64'){
+      sessionStorage.setItem(KEY,HASH);
+      document.getElementById('authGate').style.display='none';
+    } else {
+      document.getElementById('authErr').style.display='block';
+      document.getElementById('authPwd').style.borderColor='#EF4444';
+      setTimeout(()=>{document.getElementById('authErr').style.display='none';
+        document.getElementById('authPwd').style.borderColor='#D1D5DB';},2000);
+    }
+  };
+})();
+</script>
+
+<header>
+  <div class="logo-wrap">
+    <img class="logo-img" src="https://static.wixstatic.com/media/71d97b_23c088d0bc674ca4a1e591210b43af92~mv2.png/v1/fill/w_120,h_86,al_c,q_85,enc_avif,quality_auto/Spice-More-smaller-1030x741.png" alt="SpiceMore" onerror="this.style.display='none'">
+    <div>
+      <h1>SMTC · Credit Limit Assessor</h1>
+      <div class="sub">Spice More Trading Company — Dealer Risk Management</div>
+    </div>
+  </div>
+  <div class="right" id="hDate"></div>
+</header>
+
+<div class="shell">
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="side">
+
+  <h2>📂 Ledger Files</h2>
+  <div class="upload-box" id="dropZone" onclick="document.getElementById('fInput').click()">
+    <div style="font-size:20px">📄</div>
+    <p>Drop .xlsx files here<br>or click to browse</p>
+    <input type="file" id="fInput" multiple accept=".xlsx">
+  </div>
+  <div class="file-chips" id="fileChips"></div>
+  <button class="btn btn-go" id="goBtn" disabled onclick="runAnalysis()">⚡ Analyse</button>
+  <button class="btn btn-clear" onclick="clearAll()">Clear files</button>
+
+  <h2>⚙️ Credit Policy</h2>
+  <div class="e-row">
+    <span class="e-label">Credit Days</span>
+    <input class="e-input" id="cfg_cd" type="number" value="21" data-default="21" oninput="markChanged(this);recalc()">
+    <span class="e-unit">days</span>
+    <button class="e-reset" onclick="resetField(this)" title="Reset">↺</button>
+  </div>
+  <div class="e-row">
+    <span class="e-label">Round Limit To</span>
+    <select class="e-select" id="cfg_round" data-default="1000000" onchange="markChanged(this);recalc()">
+      <option value="100000">₹1 Lakh</option>
+      <option value="500000">₹5 Lakh</option>
+      <option value="1000000" selected>₹10 Lakh</option>
+      <option value="2500000">₹25 Lakh</option>
+      <option value="5000000">₹50 Lakh</option>
+      <option value="10000000">₹1 Crore</option>
+    </select>
+    <button class="e-reset" onclick="resetSelect(this,'1000000')" title="Reset">↺</button>
+  </div>
+  <div class="e-row">
+    <span class="e-label">Working Capital Cap</span>
+    <input class="e-input" id="cfg_wkcap" type="number" value="7" step="0.5" min="1" max="25" data-default="7" oninput="markChanged(this);recalc()">
+    <span class="e-unit">%</span>
+    <button class="e-reset" onclick="resetField(this)" title="Reset">↺</button>
+  </div>
+  <div class="e-row">
+    <span class="e-label">Total Working Capital</span>
+    <input class="e-input" id="cfg_wktotal_cr" type="number" value="56" step="1" min="1" data-default="56" oninput="markChanged(this);recalc()">
+    <span class="e-unit">Cr</span>
+    <button class="e-reset" onclick="resetField(this)" title="Reset">↺</button>
+  </div>
+
+  <h2>📊 Risk Factor Table</h2>
+  <table class="rf-table">
+    <tr><td>&lt; credit days</td><td>
+      <input class="e-input" id="rf1" type="number" step="0.05" value="1.25" data-default="1.25" oninput="markChanged(this);recalc()">
+      <button class="e-reset" onclick="resetField(this)">↺</button>
+    </td></tr>
+    <tr><td>21 – 30 days</td><td>
+      <input class="e-input" id="rf2" type="number" step="0.05" value="1.00" data-default="1.00" oninput="markChanged(this);recalc()">
+      <button class="e-reset" onclick="resetField(this)">↺</button>
+    </td></tr>
+    <tr><td>31 – 40 days</td><td>
+      <input class="e-input" id="rf3" type="number" step="0.05" value="0.85" data-default="0.85" oninput="markChanged(this);recalc()">
+      <button class="e-reset" onclick="resetField(this)">↺</button>
+    </td></tr>
+    <tr><td>41 – 50 days</td><td>
+      <input class="e-input" id="rf4" type="number" step="0.05" value="0.70" data-default="0.70" oninput="markChanged(this);recalc()">
+      <button class="e-reset" onclick="resetField(this)">↺</button>
+    </td></tr>
+    <tr><td>51 – 60 days</td><td>
+      <input class="e-input" id="rf5" type="number" step="0.05" value="0.50" data-default="0.50" oninput="markChanged(this);recalc()">
+      <button class="e-reset" onclick="resetField(this)">↺</button>
+    </td></tr>
+    <tr><td>&gt; 60 days</td><td>
+      <input class="e-input" id="rf6" type="number" step="0.05" value="0.00" data-default="0.00" oninput="markChanged(this);recalc()">
+      <button class="e-reset" onclick="resetField(this)">↺</button>
+    </td></tr>
+  </table>
+
+  <button class="btn btn-clear" onclick="resetAllSettings()" style="margin-top:4px;font-size:11px">↺ Reset all settings to defaults</button>
+
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+  <div class="empty" id="emptyState">
+    <div class="icon">📂</div>
+    <h3>Upload ledger files to begin</h3>
+    <p style="font-size:12px">Drop SMTC &amp; SEPL .xlsx files in the sidebar, then click Analyse</p>
+  </div>
+
+  <div id="results" style="display:none">
+    <div class="summary" id="summaryStrip"></div>
+    <div class="export-bar">
+      <button class="btn-exp" onclick="copyForSheets()">📋 Copy for Google Sheets</button>
+      <button class="btn-exp" onclick="downloadXlsx()">📥 Download Excel</button>
+      <button class="btn-exp" onclick="showScript()">📜 Apps Script</button>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('summary')">📋 Summary</button>
+      <button class="tab-btn" onclick="switchTab('detail')">📊 Detail Cards</button>
+    </div>
+    <div class="tab-pane active" id="tabSummary"></div>
+    <div class="tab-pane" id="tabDetail">
+      <div id="dealerGrid"></div>
+    </div>
+  </div>
+</main>
+</div>
+
+<div class="loader" id="loader"><div class="spin"></div><p id="loaderTxt">Processing…</p></div>
+<div class="toast" id="toast"></div>
+
+<!-- Script Modal -->
+<div class="modal-bg" id="scriptModal">
+  <div class="modal">
+    <div class="modal-h"><h3>📜 Google Apps Script</h3><button onclick="closeScript()">×</button></div>
+    <div class="modal-b"><p style="font-size:11px;color:var(--t5);margin-bottom:10px">Extensions → Apps Script → paste → Save → Run <code>runCreditLimitAnalysis</code></p><pre id="scriptPre"></pre></div>
+    <div class="modal-f"><button class="btn-exp" onclick="closeScript()">Close</button><button class="btn-exp" onclick="copyScriptText()" style="background:var(--g7);color:var(--w);border-color:var(--g7)">📋 Copy</button></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let files = [];          // {file, name, company, dealer}
+let rawData = {};        // {dealerName: {SMTC: [...txns], SEPL: [...txns]}}
+let results = [];        // analysis results per dealer
+let overrides = {};      // {dealerName: {limit: number|null, ...}}
+let charts = {};
+
+document.getElementById('hDate').innerHTML =
+  new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + '<br>FY 2025–26';
+
+// ══════════════════════════════════════════════════════════
+// EDITABLE FIELD HELPERS
+// ══════════════════════════════════════════════════════════
+function markChanged(el) {
+  const def = el.dataset.default;
+  if (def !== undefined && el.value !== def) {
+    el.classList.add('changed');
+    const rst = el.closest('.e-row, td')?.querySelector('.e-reset');
+    if (rst) rst.classList.add('visible');
+  } else {
+    el.classList.remove('changed');
+    const rst = el.closest('.e-row, td')?.querySelector('.e-reset');
+    if (rst) rst.classList.remove('visible');
+  }
+}
+
+
+function resetField(btn) {
+  const row = btn.closest('.e-row, td');
+  const inp = row?.querySelector('.e-input');
+  if (inp && inp.dataset.default !== undefined) {
+    inp.value = inp.dataset.default;
+    inp.classList.remove('changed');
+    btn.classList.remove('visible');
+    recalc();
+  }
+}
+
+function resetAllSettings() {
+  document.querySelectorAll('.side .e-input, .side .e-select').forEach(el => {
+    if (el.dataset.default !== undefined) {
+      el.value = el.dataset.default;
+      el.classList.remove('changed');
+    }
+  });
+  document.querySelectorAll('.side .e-reset').forEach(b => b.classList.remove('visible'));
+  recalc();
+  toast('↺ All settings reset to defaults');
+}
+
+// ══════════════════════════════════════════════════════════
+// CONFIG READER
+// ══════════════════════════════════════════════════════════
+function resetSelect(btn, defaultVal) {
+  const row = btn.closest('.e-row');
+  const sel = row?.querySelector('.e-select');
+  if (sel) { sel.value = defaultVal; sel.classList.remove('changed'); btn.classList.remove('visible'); recalc(); }
+}
+
+function cfg() {
+  return {
+    cd: +document.getElementById('cfg_cd').value || 21,
+    round: +document.getElementById('cfg_round').value || 1000000,
+    wkCapPct: +document.getElementById('cfg_wkcap').value || 7,
+    wkTotal: (+document.getElementById('cfg_wktotal_cr').value || 56) * 10000000,
+    rf: [
+      +document.getElementById('rf1').value,
+      +document.getElementById('rf2').value,
+      +document.getElementById('rf3').value,
+      +document.getElementById('rf4').value,
+      +document.getElementById('rf5').value,
+      +document.getElementById('rf6').value,
+    ]
+  };
+}
+
+function getRF(days, c) {
+  if (days < c.cd) return c.rf[0];
+  if (days <= 30) return c.rf[1];
+  if (days <= 40) return c.rf[2];
+  if (days <= 50) return c.rf[3];
+  if (days <= 60) return c.rf[4];
+  return c.rf[5];
+}
+
+function riskLabel(days, c) {
+  if (days < c.cd) return 'LOW';
+  if (days <= 30) return 'MEDIUM';
+  if (days <= 40) return 'HIGH';
+  return 'CRITICAL';
+}
+
+// ══════════════════════════════════════════════════════════
+// FILE HANDLING
+// ══════════════════════════════════════════════════════════
+const dz = document.getElementById('dropZone');
+const fi = document.getElementById('fInput');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); addFiles(Array.from(e.dataTransfer.files)); });
+fi.addEventListener('change', e => addFiles(Array.from(e.target.files)));
+
+async function addFiles(list) {
+  for (const f of list.filter(f => f.name.endsWith('.xlsx'))) {
+    if (files.find(x => x.name === f.name)) continue;
+    const meta = await sniff(f);
+    files.push({ file: f, ...meta });
+  }
+  renderChips();
+}
+
+function sniff(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => {
+      const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: false });
+      const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: null, raw: true });
+      let co = '', dl = '';
+      if (file.name.startsWith('SMTC')) co = 'SMTC';
+      if (file.name.startsWith('SEPL')) co = 'SEPL';
+      for (const row of data.slice(0, 12)) {
+        if (!row?.[0]) continue;
+        const s = String(row[0]);
+        if (!co && (s.includes('SPICE MORE') || s.includes('SMTC'))) co = 'SMTC';
+        if (!co && (s.includes('SPICE EMPORIUM') || s.includes('SEPL'))) co = 'SEPL';
+        if (s.includes('Account :')) dl = s.replace('Account :', '').trim();
+      }
+      res({ name: file.name, company: co || '?', dealer: dl || file.name });
+    };
+    r.readAsBinaryString(file);
+  });
+}
+
+function renderChips() {
+  const el = document.getElementById('fileChips');
+  el.innerHTML = '';
+  files.forEach((f, i) => {
+    el.innerHTML += `<div class="chip">
+      <span class="co co-${f.company.toLowerCase()}">${f.company}</span>
+      <span class="name" title="${f.dealer}">${f.dealer}</span>
+      <span class="x" onclick="removeFile(${i})">×</span>
+    </div>`;
+  });
+  document.getElementById('goBtn').disabled = !files.length;
+}
+
+function removeFile(i) { files.splice(i, 1); renderChips(); }
+function clearAll() {
+  files = []; rawData = {}; results = []; overrides = {};
+  sgState.sortCol = null; sgState.sortDir = 'asc'; sgState.filters = {}; sgState.search = ''; sgState.colWidths = {};
+  renderChips();
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('emptyState').style.display = '';
+  fi.value = '';
+}
+
+// ══════════════════════════════════════════════════════════
+// LEDGER PARSER
+// ══════════════════════════════════════════════════════════
+function parseLedger(fileObj) {
+  const actualFile = fileObj.file || fileObj;
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onerror = () => rej(r.error);
+    r.onload = e => {
+      try {
+        // cellDates:false — read raw serial numbers; parse with XLSX.SSF.parse_date_code
+        // which gives {y,m,d} with NO timezone involvement, eliminating the 1-day-behind bug.
+        const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: false });
+        const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: null, raw: true });
+        let hi = -1;
+        for (let i = data.length - 1; i >= 0; i--) {
+          if (data[i]?.[0] === 'Date' && data[i]?.[1] === 'Type') { hi = i; break; }
+        }
+        if (hi < 0) { res([]); return; }
+        const txns = [];
+        for (let i = hi + 1; i < data.length; i++) {
+          const row = data[i];
+          if (!row?.[0]) continue;
+          let d;
+          const raw = row[0];
+          if (typeof raw === 'number' && raw > 1000) {
+            // Excel date serial — parse directly, zero timezone risk
+            const p = XLSX.SSF.parse_date_code(raw);
+            d = new Date(p.y, p.m - 1, p.d);
+          } else if (raw instanceof Date) {
+            d = new Date(raw.getUTCFullYear(), raw.getUTCMonth(), raw.getUTCDate());
+          } else if (typeof raw === 'string' && raw.trim()) {
+            const pd = new Date(raw);
+            if (isNaN(pd.getTime())) continue;
+            d = new Date(pd.getUTCFullYear(), pd.getUTCMonth(), pd.getUTCDate());
+          } else { continue; }
+          if (!d || isNaN(d.getTime())) continue;
+          const type = String(row[1] || '').trim();
+          if (!type || type === 'Type') continue;
+          txns.push({ date: d, type, vch: row[2] || '', account: row[3] || '',
+            debit: Number(row[4]) || 0, credit: Number(row[5]) || 0 });
+        }
+        res(txns);
+      } catch(err) { rej(err); }
+    };
+    r.readAsBinaryString(actualFile);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// FIFO SETTLEMENT ENGINE
+// ══════════════════════════════════════════════════════════
+function fifo(txns) {
+  const sales = txns.filter(t => t.type === 'Sale' && t.account === 'Sales' && t.debit > 0)
+    .sort((a, b) => a.date - b.date).map(s => ({ ...s, rem: s.debit, pays: [], lastPayDate: null }));
+  const rcpts = txns.filter(t => (t.type === 'Rcpt' || t.type === 'Purc') && t.credit > 0)
+    .sort((a, b) => a.date - b.date);
+  for (const r of rcpts) {
+    let rr = r.credit;
+    for (const s of sales) {
+      if (s.date > r.date) break;
+      if (s.rem <= 0 || rr <= 0) continue;
+      const u = Math.min(s.rem, rr);
+      const d = (r.date - s.date) / 864e5;
+      s.pays.push({ days: Math.round(d * 10) / 10, amount: u, type: r.type, vch: r.vch, payDate: r.date });
+      s.rem -= u; rr -= u;
+      if (!s.lastPayDate || r.date > s.lastPayDate) s.lastPayDate = r.date;
+    }
+  }
+  return sales.map(s => {
+    const settled = s.pays.reduce((a, p) => a + p.amount, 0);
+    const wd = s.pays.reduce((a, p) => a + p.days * p.amount, 0);
+    const settlementDate = s.rem <= 0.01 ? s.lastPayDate : null;
+    return { vch: s.vch, date: s.date, amount: s.debit, settled, outstanding: s.rem,
+      days: settled > 0 ? wd / settled : null, pays: s.pays, settlementDate };
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// ANALYSIS
+// ══════════════════════════════════════════════════════════
+function analyse(name, cosData, c) {
+  const breakdown = {};
+  const allSett = [];
+  const allTxns = [];
+  for (const [co, txns] of Object.entries(cosData)) {
+    const s = fifo(txns);
+    const sales = txns.filter(t => t.type === 'Sale' && t.account === 'Sales').reduce((a, t) => a + t.debit, 0);
+    breakdown[co] = { sales, settlements: s, txns };
+    allSett.push(...s);
+    allTxns.push(...txns);
+  }
+
+  // ── Settlement day calculation (adjusted for commodity buyback) ──
+  // When a Purc (commodity buyback) settles a Sale, the dealer hasn't paid cash.
+  // The buyback creates a REVERSE credit obligation (company owes dealer),
+  // with its own credit-term cycle. So effective days = raw days + credit terms.
+  let effWeighted = 0, effTotal = 0;
+  let cashWeighted = 0, cashTotal = 0;
+  let purcWeighted = 0, purcTotal = 0;
+  for (const s of allSett) {
+    for (const p of s.pays) {
+      if (p.type === 'Purc') {
+        // Commodity buyback: add credit term days because the buyback
+        // creates a new payment obligation from company to dealer
+        const effDays = p.days + c.cd;
+        effWeighted += effDays * p.amount;
+        purcWeighted += p.days * p.amount;
+        purcTotal += p.amount;
+      } else {
+        // Cash/bank receipt: use actual days as-is
+        effWeighted += p.days * p.amount;
+        cashWeighted += p.days * p.amount;
+        cashTotal += p.amount;
+      }
+      effTotal += p.amount;
+    }
+  }
+  const avgDays = effTotal > 0 ? effWeighted / effTotal : 0;
+  const cashAvgDays = cashTotal > 0 ? cashWeighted / cashTotal : null;
+  const purcRawDays = purcTotal > 0 ? purcWeighted / purcTotal : null;
+  const purcPct = effTotal > 0 ? (purcTotal / effTotal) * 100 : 0;
+
+  // Monthly
+  const monthly = {};
+  for (const [co, d] of Object.entries(breakdown)) {
+    for (const t of d.txns) {
+      if (t.type !== 'Sale' || t.account !== 'Sales') continue;
+      const k = t.date.getFullYear() + '-' + String(t.date.getMonth() + 1).padStart(2, '0');
+      if (!monthly[k]) monthly[k] = { total: 0, byCo: {} };
+      monthly[k].total += t.debit;
+      monthly[k].byCo[co] = (monthly[k].byCo[co] || 0) + t.debit;
+    }
+  }
+  const months = Object.keys(monthly).sort();
+  const active = months.filter(k => monthly[k].total > 0);
+  const combined = Object.values(breakdown).reduce((a, d) => a + d.sales, 0);
+  const mAvg = combined / 12;  // Edwin: "12 months total" — always divide by 12
+
+  // Peak
+  let bal = 0, peak = 0;
+  [...allTxns].sort((a, b) => a.date - b.date).forEach(t => { bal += t.debit - t.credit; if (bal > peak) peak = bal; });
+
+  // Limit
+  const rf = getRF(avgDays, c);
+  const rl = riskLabel(avgDays, c);
+  const base = mAvg * (c.cd / 30);
+  const preFinal = base * rf;
+  const formulaLimit = Math.round(preFinal / c.round) * c.round;
+  const wkCap = c.wkTotal * (c.wkCapPct / 100);
+  const recommended = Math.min(formulaLimit, wkCap);
+
+  // Recent trend (also adjusted)
+  let recentEffW = 0, recentEffT = 0;
+  const sixMonthsAgo = Date.now() - 180 * 864e5;
+  for (const s of allSett) {
+    if (s.date < sixMonthsAgo) continue;
+    for (const p of s.pays) {
+      const ed = p.type === 'Purc' ? p.days + c.cd : p.days;
+      recentEffW += ed * p.amount;
+      recentEffT += p.amount;
+    }
+  }
+  const recentAvg = recentEffT > 0 ? recentEffW / recentEffT : avgDays;
+
+  // ── Labour Charge (interest on Purc cycles) ──
+  // "Labour Charge" in account name = interest billed to dealer for buyback credit cycles.
+  // Can appear as Sale, Jrnl, or other type — catch by account name regardless of type.
+  // Debit = charged to dealer (income for us); also check credit side for reversals.
+  const labourTxns = allTxns.filter(t => String(t.account || '').toLowerCase().includes('labour'));
+  const labourTotal = labourTxns.reduce((a, t) => a + (t.debit || 0), 0);
+  const labourTxnCount = labourTxns.length;
+
+  // ── Payment consistency: std deviation of per-invoice settlement days ──
+  // Uses days-to-final-settlement for each fully settled invoice
+  const settledInvDays = allSett
+    .filter(s => s.settlementDate)
+    .map(s => {
+      const raw = (s.settlementDate - s.date) / 864e5;
+      // check if any pay was Purc to apply cd adjustment
+      const hasPurc = s.pays.some(p => p.type === 'Purc');
+      return hasPurc ? raw + c.cd : raw;
+    });
+  let stdDevDays = 0;
+  if (settledInvDays.length > 1) {
+    const mean = settledInvDays.reduce((a, v) => a + v, 0) / settledInvDays.length;
+    const variance = settledInvDays.reduce((a, v) => a + (v - mean) ** 2, 0) / settledInvDays.length;
+    stdDevDays = Math.sqrt(variance);
+  }
+
+  // ── Consecutive recent overdue invoices (last 90 days) ──
+  const ninetyAgo = Date.now() - 90 * 864e5;
+  const recentInvs = allSett
+    .filter(s => s.date >= ninetyAgo)
+    .sort((a, b) => b.date - a.date);
+  let consecutiveOverdue = 0;
+  for (const s of recentInvs) {
+    const d = s.settlementDate
+      ? (s.settlementDate - s.date) / 864e5
+      : (s.outstanding > 0 ? (Date.now() - s.date) / 864e5 : 0);
+    if (d > c.cd) consecutiveOverdue++;
+    else break;
+  }
+
+  // ── Purc haircut on limit ──
+  // Cash-only days used as limit input when dealer is Purc-heavy; haircut applied on top
+  const limitInputDays = purcPct > 30 ? (cashAvgDays ?? avgDays) : avgDays;
+  const purcHaircut = purcPct > 60 ? 0.70 : purcPct > 30 ? 0.85 : 1.0;
+  const rfAdj = getRF(limitInputDays, c);
+  const rlAdj = riskLabel(limitInputDays, c);
+  const baseAdj = mAvg * (c.cd / 30);
+  const preFinalAdj = baseAdj * rfAdj * purcHaircut;
+  const formulaLimitAdj = Math.round(preFinalAdj / c.round) * c.round;
+  const recommendedAdj = Math.min(formulaLimitAdj, wkCap);
+
+  return {
+    name, breakdown, allSett, monthly, months, active, combined, mAvg,
+    avgDays, recentAvg, cashAvgDays, purcRawDays, purcPct,
+    labourTotal, labourTxnCount, stdDevDays, consecutiveOverdue,
+    purcHaircut, limitInputDays,
+    peak, rf: rfAdj, rl: rlAdj, base: baseAdj, preFinal: preFinalAdj,
+    formulaLimit: formulaLimitAdj, wkCap, recommended: recommendedAdj, c
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+// EXCEL-LIKE SUMMARY GRID
+// ══════════════════════════════════════════════════════════
+const sgState = { sortCol: null, sortDir: 'asc', filters: {}, search: '', colWidths: {} };
+const sgCols = [
+  { key: 'dealer',   label: 'Dealer',               cls: 'sg-col-dealer',   align: 'left',  type: 'text' },
+  { key: 'turnover', label: 'Combined Turnover (FY)',cls: 'sg-col-turnover', align: 'right', type: 'num' },
+  { key: 'days',     label: 'Avg Payment Days',      cls: 'sg-col-days',     align: 'right', type: 'num' },
+  { key: 'limit',    label: 'Recommended Limit',     cls: 'sg-col-limit',    align: 'right', type: 'num' },
+  { key: 'risk',     label: 'Risk',                  cls: 'sg-col-risk',     align: 'right', type: 'cat' }
+];
+
+function sgRowData() {
+  const c = cfg();
+  return results.map((r, idx) => ({
+    idx, name: r.name,
+    dealer: r.name,
+    turnover: r.combined,
+    days: r.avgDays,
+    limit: overrides[r.name]?.limit ?? r.recommended,
+    risk: r.rl,
+    _turnoverFmt: '₹' + (r.combined / 1e7).toFixed(2) + ' Cr',
+    _daysFmt: r.avgDays.toFixed(1) + ' days',
+    _daysClr: r.avgDays < 21 ? '#16A34A' : r.avgDays < 35 ? '#D97706' : '#DC2626',
+    _limitFmt: fmt(overrides[r.name]?.limit ?? r.recommended),
+  }));
+}
+
+function sgFilterAndSort(rows) {
+  let f = [...rows];
+  // Search
+  if (sgState.search) {
+    const q = sgState.search.toLowerCase();
+    f = f.filter(r => r.dealer.toLowerCase().includes(q) || r._turnoverFmt.toLowerCase().includes(q)
+      || r._daysFmt.includes(q) || r._limitFmt.toLowerCase().includes(q) || r.risk.toLowerCase().includes(q));
+  }
+  // Column filters
+  for (const [col, val] of Object.entries(sgState.filters)) {
+    if (!val) continue;
+    f = f.filter(r => {
+      if (col === 'risk') return r.risk === val;
+      return String(r[col]) === val;
+    });
+  }
+  // Sort
+  if (sgState.sortCol) {
+    const dir = sgState.sortDir === 'asc' ? 1 : -1;
+    const col = sgState.sortCol;
+    f.sort((a, b) => {
+      let av = a[col], bv = b[col];
+      if (typeof av === 'string') return dir * av.localeCompare(bv);
+      return dir * (av - bv);
+    });
+  }
+  return f;
+}
+
+function renderSummaryGrid() {
+  const allRows = sgRowData();
+  const filtered = sgFilterAndSort(allRows);
+  const c = cfg();
+
+  // Unique values for filters
+  const uniques = {};
+  for (const col of sgCols) {
+    if (col.type === 'cat') {
+      uniques[col.key] = [...new Set(allRows.map(r => r[col.key]))].sort();
+    } else if (col.key === 'dealer') {
+      uniques[col.key] = [...new Set(allRows.map(r => r.dealer))].sort();
+    }
+  }
+
+  // Active filters as chips
+  const chipHtml = Object.entries(sgState.filters).filter(([,v]) => v).map(([col, val]) => {
+    const label = sgCols.find(c => c.key === col)?.label || col;
+    return `<span class="sg-chip">${label}: ${val}<span class="sg-chip-x" onclick="sgClearFilter('${col}')">×</span></span>`;
+  }).join('');
+
+  // Header row
+  const thRow = sgCols.map((col, ci) => {
+    const isSorted = sgState.sortCol === col.key;
+    const arrow = isSorted ? (sgState.sortDir === 'asc' ? '▲' : '▼') : '⇅';
+    const w = sgState.colWidths[col.key];
+    const wStyle = w ? `width:${w}px;min-width:${w}px;max-width:${w}px` : '';
+    return `<th class="${col.cls}" style="${wStyle}">
+      <div class="sg-th-inner" onclick="sgSort('${col.key}')">
+        <span>${col.label}</span>
+        <span class="sg-sort-icon ${isSorted?'active':''}">${arrow}</span>
+      </div>
+      <div class="sg-resize" data-colkey="${col.key}" data-colidx="${ci}" onmousedown="sgStartResize(event,${ci},'${col.key}')"></div>
+    </th>`;
+  }).join('');
+
+  // Filter row
+  const filterRow = sgCols.map(col => {
+    const w = sgState.colWidths[col.key];
+    const wStyle = w ? `width:${w}px;min-width:${w}px;max-width:${w}px` : '';
+    if (col.type === 'cat' || col.key === 'dealer') {
+      const opts = (uniques[col.key] || []).map(v =>
+        `<option value="${v}" ${sgState.filters[col.key]===v?'selected':''}>${v}</option>`).join('');
+      return `<th style="${wStyle}"><select class="sg-filter-sel ${sgState.filters[col.key]?'has-filter':''}"
+        onchange="sgSetFilter('${col.key}',this.value)">
+        <option value="">All</option>${opts}</select></th>`;
+    }
+    return `<th style="${wStyle}"></th>`;
+  }).join('');
+
+  // Body rows
+  const bodyRows = filtered.map(r => {
+    return `<tr onclick="sgGoToDealer('${r.name.replace(/'/g,"\\'")}')" data-dealer="${r.name}">
+      <td style="text-align:left"><span class="sg-dlr">${r.dealer}<span class="sg-arrow">→</span></span></td>
+      <td>${r._turnoverFmt}</td>
+      <td style="color:${r._daysClr};font-weight:600">${r._daysFmt}</td>
+      <td style="font-weight:700">${r._limitFmt}</td>
+      <td><span class="sg-risk sg-risk-${r.risk}">${r.risk}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Footer
+  const totalTurnover = filtered.reduce((a, r) => a + r.turnover, 0);
+  const totalLimit = filtered.reduce((a, r) => a + r.limit, 0);
+  const avgDaysAll = filtered.length > 0 ? filtered.reduce((a, r) => a + r.days, 0) / filtered.length : 0;
+
+  document.getElementById('tabSummary').innerHTML = `
+    <div class="sg-wrap">
+      <div class="sg-toolbar">
+        <input class="sg-search" type="text" placeholder="Search dealers…"
+          value="${sgState.search}" oninput="sgSearch(this.value)">
+        ${chipHtml}
+        <span class="sg-count">${filtered.length} of ${allRows.length} dealers</span>
+      </div>
+      <div class="sg-scroll">
+        <table class="sg-table">
+          <colgroup>${sgCols.map(col => {
+            const w = sgState.colWidths[col.key];
+            return `<col class="${col.cls}" ${w ? `style="width:${w}px"` : ''}>`;
+          }).join('')}</colgroup>
+          <thead>
+            <tr>${thRow}</tr>
+            <tr class="sg-filter-row">${filterRow}</tr>
+          </thead>
+          <tbody>${bodyRows || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--t5)">No dealers match your filters</td></tr>'}</tbody>
+          <tfoot><tr>
+            <td style="text-align:left">${filtered.length === allRows.length ? 'TOTAL' : 'FILTERED'} (${filtered.length} dealer${filtered.length!==1?'s':''})</td>
+            <td>₹${(totalTurnover / 1e7).toFixed(2)} Cr</td>
+            <td>${avgDaysAll.toFixed(1)} days</td>
+            <td style="font-weight:700">${fmt(totalLimit)}</td>
+            <td>—</td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+}
+
+// Grid actions
+function sgSort(col) {
+  if (sgState.sortCol === col) {
+    if (sgState.sortDir === 'asc') sgState.sortDir = 'desc';
+    else if (sgState.sortDir === 'desc') { sgState.sortCol = null; sgState.sortDir = 'asc'; }
+  } else {
+    sgState.sortCol = col;
+    sgState.sortDir = 'asc';
+  }
+  renderSummaryGrid();
+}
+
+function sgSetFilter(col, val) {
+  sgState.filters[col] = val || '';
+  renderSummaryGrid();
+}
+
+function sgClearFilter(col) {
+  delete sgState.filters[col];
+  renderSummaryGrid();
+}
+
+function sgSearch(q) {
+  sgState.search = q;
+  renderSummaryGrid();
+}
+
+// Click dealer → jump to detail card
+function sgGoToDealer(name) {
+  switchTab('detail');
+  setTimeout(() => {
+    const cards = document.querySelectorAll('#dealerGrid .d-card');
+    for (const card of cards) {
+      const nm = card.querySelector('.d-name');
+      if (nm && nm.textContent.trim() === name) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.style.boxShadow = '0 0 0 3px var(--g7), var(--sh)';
+        setTimeout(() => card.style.boxShadow = '', 2000);
+        return;
+      }
+    }
+  }, 60);
+}
+
+// Column resize via drag
+let sgResizeCol = null, sgResizeStart = 0, sgResizeW = 0;
+function sgStartResize(e, colIdx, colKey) {
+  e.preventDefault(); e.stopPropagation();
+  sgResizeCol = colKey;
+  sgResizeStart = e.clientX;
+  const th = e.target.parentElement;
+  sgResizeW = th.offsetWidth;
+  e.target.classList.add('active');
+  const onMove = ev => {
+    const diff = ev.clientX - sgResizeStart;
+    const newW = Math.max(60, sgResizeW + diff);
+    sgState.colWidths[sgResizeCol] = newW;
+    // Live resize via colgroup
+    const cols = document.querySelectorAll('.sg-table col');
+    const idx = sgCols.findIndex(c => c.key === sgResizeCol);
+    if (cols[idx]) cols[idx].style.width = newW + 'px';
+    // Also resize th
+    const ths = document.querySelectorAll('.sg-table thead tr:first-child th');
+    if (ths[idx]) { ths[idx].style.width = newW+'px'; ths[idx].style.minWidth = newW+'px'; ths[idx].style.maxWidth = newW+'px'; }
+    const fths = document.querySelectorAll('.sg-table .sg-filter-row th');
+    if (fths[idx]) { fths[idx].style.width = newW+'px'; fths[idx].style.minWidth = newW+'px'; fths[idx].style.maxWidth = newW+'px'; }
+  };
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.querySelectorAll('.sg-resize.active').forEach(el => el.classList.remove('active'));
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+// Touch support for column resize (iPad)
+document.addEventListener('touchstart', e => {
+  const handle = e.target.closest('.sg-resize');
+  if (!handle) return;
+  e.preventDefault();
+  const colKey = handle.dataset.colkey;
+  if (!colKey) return;
+  const th = handle.parentElement;
+  const startX = e.touches[0].clientX;
+  const startW = th.offsetWidth;
+  handle.classList.add('active');
+  const onMove = ev => {
+    ev.preventDefault();
+    const diff = ev.touches[0].clientX - startX;
+    const newW = Math.max(60, startW + diff);
+    sgState.colWidths[colKey] = newW;
+    const cols = document.querySelectorAll('.sg-table col');
+    const idx = sgCols.findIndex(c => c.key === colKey);
+    if (cols[idx]) cols[idx].style.width = newW + 'px';
+  };
+  const onEnd = () => {
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    handle.classList.remove('active');
+    renderSummaryGrid();
+  };
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
+}, { passive: false });
+
+async function runAnalysis() {
+  if (!files.length) return;
+  loader(true, 'Reading ledgers…');
+  // Group by dealer
+  const grouped = {};
+  for (const f of files) {
+    if (!grouped[f.dealer]) grouped[f.dealer] = {};
+    grouped[f.dealer][f.company] = f;
+  }
+  rawData = {};
+  let i = 0;
+  for (const [dealer, cos] of Object.entries(grouped)) {
+    i++;
+    loader(true, `Analysing ${dealer} (${i}/${Object.keys(grouped).length})…`);
+    rawData[dealer] = {};
+    for (const [co, f] of Object.entries(cos)) {
+      rawData[dealer][co] = await parseLedger(f);
+    }
+  }
+  recalc();
+  loader(false);
+  toast('✅ Analysis complete');
+}
+
+function recalc() {
+  if (!Object.keys(rawData).length) return;
+  const c = cfg();
+  results = [];
+  for (const [dealer, cosData] of Object.entries(rawData)) {
+    results.push(analyse(dealer, cosData, c));
+  }
+  results.sort((a, b) => b.recommended - a.recommended);
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  if (tab === 'summary') {
+    document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+    document.getElementById('tabSummary').classList.add('active');
+  } else {
+    document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+    document.getElementById('tabDetail').classList.add('active');
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════
+function render() {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = '';
+  const c = cfg();
+
+  // Summary
+  const totalLimit = results.reduce((a, r) => a + (overrides[r.name]?.limit ?? r.recommended), 0);
+  const totalPeak = results.reduce((a, r) => a + r.peak, 0);
+  const avgD = results.reduce((a, r) => a + r.avgDays, 0) / results.length;
+  document.getElementById('summaryStrip').innerHTML = `
+    <div class="s-card"><div class="s-label">Dealers</div><div class="s-val">${results.length}</div>
+      <div class="s-sub">${[...new Set(results.flatMap(r => Object.keys(r.breakdown)))].join(' + ')}</div></div>
+    <div class="s-card" style="border-color:var(--b)"><div class="s-label">Total Credit Limit</div>
+      <div class="s-val">${fmt(totalLimit)}</div><div class="s-sub">combined recommended</div></div>
+    <div class="s-card" style="border-color:var(--a)"><div class="s-label">Peak Exposure</div>
+      <div class="s-val">${fmt(totalPeak)}</div><div class="s-sub">highest combined outstanding</div></div>
+    <div class="s-card" style="border-color:${avgD<21?'#16A34A':avgD<35?'var(--a)':'var(--r)'}">
+      <div class="s-label">Avg Payment Days</div><div class="s-val">${avgD.toFixed(1)}</div>
+      <div class="s-sub">${avgD<21?'✓ Below terms':avgD<35?'⚠ Slightly over':'⚠ Over terms'}</div></div>`;
+
+  // Summary grid (Excel-like)
+  renderSummaryGrid();
+
+  // Dealer cards
+  const grid = document.getElementById('dealerGrid');
+  grid.innerHTML = '';
+  Object.values(charts).forEach(ch => ch?.destroy());
+  charts = {};
+
+  results.forEach((r, idx) => {
+    const ov = overrides[r.name] || {};
+    const finalLimit = ov.limit ?? r.recommended;
+    const isOverridden = ov.limit != null;
+    const trend = r.recentAvg < r.avgDays ? '↓ improving' : r.recentAvg > r.avgDays ? '↑ worsening' : '→ stable';
+    const tClr = r.recentAvg < r.avgDays ? '#16A34A' : r.recentAvg > r.avgDays ? '#DC2626' : '#6B7280';
+    const coPills = Object.entries(r.breakdown).map(([co, d]) =>
+      `<span class="co-pill" style="background:${co==='SMTC'?'var(--g7)':'var(--b)'}">${co} ${fmt(d.sales)}</span>`).join('');
+
+    // Invoice rows — Days = days from sale to FINAL settlement (not weighted avg of partials)
+    const invRows = r.allSett.map(s => {
+      let hasPurc = false;
+      for (const p of s.pays) { if (p.type === 'Purc') hasPurc = true; }
+      // Use days from sale date to the settlement date (last payment that closed the invoice)
+      // For partially settled invoices, use days to the last payment received so far
+      let effDays = null;
+      if (s.settlementDate) {
+        // Fully settled: days from sale to final payment date
+        effDays = (s.settlementDate - s.date) / 864e5;
+        if (hasPurc) effDays += c.cd; // commodity buyback adjustment
+      } else if (s.pays.length > 0) {
+        // Partially settled: show days to last payment received
+        const lastPay = s.pays.reduce((a, p) => p.payDate > a ? p.payDate : a, s.pays[0].payDate);
+        effDays = (lastPay - s.date) / 864e5;
+      }
+      const dc = effDays === null ? '' : effDays < c.cd ? 'df' : effDays <= 30 ? 'do' : effDays <= 45 ? 'ds' : 'db';
+      const dt = effDays === null ? '—' : effDays.toFixed(1) + 'd' + (hasPurc ? ' 🔄' : '');
+      const co = Object.entries(r.breakdown).find(([, d]) => d.settlements.find(x => x.vch === s.vch))?.[0] || '?';
+      // Settlement type: Cash / Buyback / Mixed / Partial
+      const hasCash = s.pays.some(p => p.type === 'Rcpt');
+      let settleType, settleTypeClr;
+      if (s.outstanding > 0 && s.pays.length === 0) { settleType = '—'; settleTypeClr = 'var(--t5)'; }
+      else if (s.outstanding > 0) { settleType = '⏳ Partial'; settleTypeClr = 'var(--a)'; }
+      else if (hasPurc && hasCash) { settleType = '⚡ Mixed'; settleTypeClr = '#7C3AED'; }
+      else if (hasPurc) { settleType = '🔄 Buyback'; settleTypeClr = '#D97706'; }
+      else { settleType = '💵 Cash'; settleTypeClr = '#16A34A'; }
+      return `<tr class="${s.outstanding > 0 ? 'outstanding' : ''}">
+        <td>${s.vch}</td><td>${co}</td><td>${fmtD(s.date)}</td>
+        <td style="text-align:right">${fmtN(s.amount)}</td>
+        <td style="text-align:right">${fmtN(s.settled)}</td>
+        <td><span class="${dc}">${dt}</span></td>
+        <td style="font-weight:600;color:${settleTypeClr}">${settleType}</td>
+        <td style="color:${s.settlementDate ? '#16A34A' : 'var(--a)'}; font-weight:600">${s.settlementDate ? fmtD(s.settlementDate) : (s.outstanding > 0 ? '⏳ Pending' : '—')}</td>
+        <td style="text-align:right">${s.outstanding > 0 ? '⚠ ' + fmtN(s.outstanding) : '✓'}</td></tr>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'd-card';
+    card.innerHTML = `
+      <div class="d-head">
+        <span class="d-name">${r.name}</span>
+        <div class="co-pills">${coPills}</div>
+        <span class="risk-pill risk-${r.rl}">${r.rl}</span>
+        <div class="limit-pill">₹
+          <input class="e-input ${isOverridden ? 'changed' : ''}" type="number"
+            value="${Math.round(finalLimit / 100000)}"
+            data-default="${Math.round(r.recommended / 100000)}"
+            data-dealer="${r.name}"
+            oninput="onLimitEdit(this)" style="width:60px">
+          <span style="font-size:12px;font-weight:600">L</span>
+          <button class="e-reset ${isOverridden ? 'visible' : ''}" onclick="resetLimit(this,'${r.name}')" title="Reset to formula">↺</button>
+        </div>
+      </div>
+
+      <div class="d-body">
+        <div class="d-sec">
+          <h4>Payment Behaviour</h4>
+          ${r.purcPct > 30 ? `
+          <div style="background:#FFF8E1;border:1px solid #FFD54F;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#854D0E">
+            🔄 Commodity Buyback dealer — limit uses <strong>cash-only days</strong> + ${r.purcHaircut < 1 ? (r.purcHaircut*100).toFixed(0)+'% haircut' : 'no haircut'}
+          </div>` : ''}
+          <div class="m-row"><span class="m-lbl">${r.purcPct > 30 ? '🔄 Blended Avg Days' : 'Effective Avg Days'}</span>
+            <span class="m-val" style="color:${r.avgDays<c.cd?'#16A34A':r.avgDays<35?'var(--a)':'var(--r)'}">${r.avgDays.toFixed(1)}d</span></div>
+          ${r.purcPct > 0 ? `
+          <div class="m-row"><span class="m-lbl">💵 Cash-Only Days <small style="color:var(--t5)">(used for limit)</small></span>
+            <span class="m-val" style="color:${(r.cashAvgDays??99)<c.cd?'#16A34A':(r.cashAvgDays??99)<35?'var(--a)':'var(--r);font-weight:800'}">${r.cashAvgDays !== null ? r.cashAvgDays.toFixed(1) + 'd' : '—'}</span></div>
+          <div class="m-row"><span class="m-lbl">🔄 Buyback Days <small style="color:var(--t5)">(raw + ${c.cd}d cycle)</small></span>
+            <span class="m-val">${r.purcRawDays !== null ? r.purcRawDays.toFixed(1) + 'd → eff. ' + (r.purcRawDays + c.cd).toFixed(1) + 'd' : '—'}</span></div>
+          <div class="m-row"><span class="m-lbl">Buyback % of Value</span>
+            <span class="m-val" style="color:${r.purcPct>60?'var(--r)':r.purcPct>30?'var(--a)':'var(--t7)'}">${r.purcPct.toFixed(0)}% ${r.purcPct>60?'⚠ HIGH':r.purcPct>30?'⚠ MODERATE':''}</span></div>
+          <div class="m-row"><span class="m-lbl">Limit Haircut</span>
+            <span class="m-val" style="color:${r.purcHaircut<1?'var(--a)':'#16A34A'}">${r.purcHaircut < 1 ? '×' + r.purcHaircut + ' (' + (r.purcPct>60?'>60%':'>30%') + ' buyback)' : 'None'}</span></div>
+          ${r.labourTotal > 0 ? `
+          <div class="m-row"><span class="m-lbl">💰 Interest Recovered (Labour)</span>
+            <span class="m-val" style="color:#16A34A">${fmtN(r.labourTotal)} <small style="color:var(--t5)">(${r.labourTxnCount} entries)</small></span></div>
+          <div class="m-row"><span class="m-lbl">Net Risk Exposure</span>
+            <span class="m-val" style="color:var(--a)">${fmtN(Math.max(0, r.allSett.reduce((a,s)=>a+s.outstanding,0) - r.labourTotal))}</span></div>` : ''}
+          ` : ''}
+          <div class="m-row"><span class="m-lbl">vs Credit Terms</span>
+            <span class="m-val" style="color:${r.avgDays<c.cd?'#16A34A':'var(--a)'}">${r.avgDays < c.cd ? (r.avgDays-c.cd).toFixed(1)+'d early' : '+' + (r.avgDays-c.cd).toFixed(1)+'d late'}</span></div>
+          <div class="m-row"><span class="m-lbl">Consistency (σ)</span>
+            <span class="m-val" style="color:${r.stdDevDays<7?'#16A34A':r.stdDevDays<15?'var(--a)':'var(--r)'}" title="Std deviation of days-to-settlement per invoice. Lower = more predictable payer.">${r.stdDevDays.toFixed(1)}d σ — ${r.stdDevDays<7?'✓ consistent':r.stdDevDays<15?'⚠ variable':'⚠ erratic'}</span></div>
+          ${r.consecutiveOverdue > 0 ? `
+          <div class="m-row"><span class="m-lbl">🚨 Recent Overdue Streak</span>
+            <span class="m-val" style="color:${r.consecutiveOverdue>=3?'var(--r)':'var(--a)'}">⚠ ${r.consecutiveOverdue} invoice${r.consecutiveOverdue>1?'s':''} in a row late</span></div>` : ''}
+          <div class="m-row"><span class="m-lbl">Recent Trend (6mo)</span>
+            <span class="m-val" style="color:${tClr}">${r.recentAvg.toFixed(1)}d ${trend}</span></div>
+          <div class="m-row"><span class="m-lbl">Total Invoices</span><span class="m-val">${r.allSett.length}</span></div>
+          <div class="m-row"><span class="m-lbl">Outstanding Invoices</span>
+            <span class="m-val" style="color:${r.allSett.filter(s=>s.outstanding>0).length?'var(--a)':'#16A34A'}">${r.allSett.filter(s=>s.outstanding>0).length}</span></div>
+          <div class="m-row"><span class="m-lbl">Peak Exposure</span><span class="m-val">${fmt(r.peak)}</span></div>
+        </div>
+
+        <div class="d-sec">
+          <h4>Limit Calculation</h4>
+          <div class="f-trace">
+            <div class="f-line"><span>Combined Annual Sales</span><span>${fmtN(r.combined)}</span></div>
+            <div class="f-line"><span>÷ 12 months</span><span>÷ 12</span></div>
+            <div class="f-line"><span>Monthly Avg</span><span>${fmtN(r.mAvg)}</span></div>
+            <div class="f-line"><span>× (${c.cd}d ÷ 30)</span><span>× ${(c.cd/30).toFixed(3)}</span></div>
+            <div class="f-line"><span>= Base Limit</span><span>${fmtN(r.base)}</span></div>
+            <div class="f-line"><span>Risk Factor (${r.purcPct>30?'cash days ':''}${r.limitInputDays.toFixed(1)}d → ${r.rf}×)</span><span>× ${r.rf}</span></div>
+            ${r.purcHaircut < 1 ? `<div class="f-line" style="color:var(--a)"><span>🔄 Buyback Haircut (${r.purcPct.toFixed(0)}% via Purc${r.purcPct>60?' >60%':' >30%'})</span><span>× ${r.purcHaircut}</span></div>` : ''}
+            <div class="f-line"><span>Pre-Final</span><span>${fmtN(r.preFinal)}</span></div>
+            <div class="f-line"><span>Rounded</span><span>${fmt(r.formulaLimit)}</span></div>
+            <div class="f-line"><span>WK Cap (${c.wkCapPct}%)</span><span>${fmt(r.wkCap)}</span></div>
+            <div class="f-line"><span>✦ ${isOverridden ? 'MANUAL' : 'RECOMMENDED'}</span><span>₹ ${Math.round(finalLimit/100000)}L</span></div>
+          </div>
+          ${finalLimit >= r.peak ? '<div style="margin-top:6px;font-size:10px;color:#16A34A">✓ Covers peak exposure</div>'
+            : '<div style="margin-top:6px;font-size:10px;color:var(--a)">⚠ Peak exceeds limit — enforce pre-delivery collection</div>'}
+        </div>
+
+        <div class="d-sec">
+          <h4>Monthly Sales</h4>
+          <div class="chart-box"><canvas id="ch_${idx}"></canvas></div>
+        </div>
+      </div>
+
+      <button class="d-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
+        📊 Invoice Detail (${r.allSett.length}) ▾
+      </button>
+      <div class="d-detail">
+        <table class="inv-table"><thead><tr>
+          <th>Invoice</th><th>Co</th><th>Date</th><th style="text-align:right">Amount</th>
+          <th style="text-align:right">Settled</th><th title="Days from sale to final settlement">Days to Settlement</th><th>Settlement Type</th><th>Settled On</th><th style="text-align:right">Outstanding</th>
+        </tr></thead><tbody>${invRows}</tbody></table>
+      </div>`;
+    grid.appendChild(card);
+
+    // Chart
+    setTimeout(() => {
+      const ctx = document.getElementById(`ch_${idx}`);
+      if (!ctx) return;
+      const labels = r.months.map(fmtMK);
+      const smtc = r.months.map(k => (r.monthly[k]?.byCo?.SMTC || 0) / 1e5);
+      const sepl = r.months.map(k => (r.monthly[k]?.byCo?.SEPL || 0) / 1e5);
+      const hasSepl = sepl.some(v => v > 0);
+      const ds = [{ label: 'SMTC', data: smtc, backgroundColor: 'rgba(46,125,50,.8)', borderRadius: 3 }];
+      if (hasSepl) ds.push({ label: 'SEPL', data: sepl, backgroundColor: 'rgba(59,130,246,.7)', borderRadius: 3 });
+      charts[idx] = new Chart(ctx, { type: 'bar', data: { labels, datasets: ds }, options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: hasSepl, labels: { font: { size: 9 }, padding: 6 } },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ₹${c.raw.toFixed(1)}L` } } },
+        scales: { x: { stacked: true, ticks: { font: { size: 8 }, maxRotation: 45 }, grid: { display: false } },
+          y: { stacked: true, ticks: { font: { size: 8 }, callback: v => `₹${v}L` }, grid: { color: 'rgba(0,0,0,.04)' } } }
+      }});
+    }, 80);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// PER-DEALER LIMIT OVERRIDE
+// ══════════════════════════════════════════════════════════
+function onLimitEdit(el) {
+  const dealer = el.dataset.dealer;
+  const def = +el.dataset.default;
+  const val = +el.value;
+  if (val === def || !el.value) {
+    delete overrides[dealer]?.limit;
+    el.classList.remove('changed');
+    el.closest('.limit-pill')?.querySelector('.e-reset')?.classList.remove('visible');
+  } else {
+    if (!overrides[dealer]) overrides[dealer] = {};
+    overrides[dealer].limit = val * 100000;
+    el.classList.add('changed');
+    el.closest('.limit-pill')?.querySelector('.e-reset')?.classList.add('visible');
+  }
+  // Update summary strip + grid
+  const totalLimit = results.reduce((a, r) => a + (overrides[r.name]?.limit ?? r.recommended), 0);
+  document.querySelectorAll('.s-card')[1].querySelector('.s-val').textContent = fmt(totalLimit);
+  if (document.getElementById('tabSummary').querySelector('.sg-wrap')) renderSummaryGrid();
+}
+
+function resetLimit(btn, dealer) {
+  if (overrides[dealer]) delete overrides[dealer].limit;
+  const inp = btn.closest('.limit-pill')?.querySelector('.e-input');
+  if (inp) { inp.value = inp.dataset.default; inp.classList.remove('changed'); }
+  btn.classList.remove('visible');
+  const totalLimit = results.reduce((a, r) => a + (overrides[r.name]?.limit ?? r.recommended), 0);
+  document.querySelectorAll('.s-card')[1].querySelector('.s-val').textContent = fmt(totalLimit);
+  if (document.getElementById('tabSummary').querySelector('.sg-wrap')) renderSummaryGrid();
+}
+
+// ══════════════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════════════
+function copyForSheets() {
+  if (!results.length) return;
+  const c = cfg();
+  const hdr = ['Dealer','SMTC Sales','SEPL Sales','Combined','Active Mo','Monthly Avg',
+    'Avg Days','vs Terms','Risk Factor','Base Limit','Pre-Final','Formula Limit',
+    'WK Cap','Final Limit','Manual?','Peak','Risk'].join('\t');
+  const rows = results.map(r => {
+    const fl = overrides[r.name]?.limit ?? r.recommended;
+    return [r.name, Math.round(r.breakdown['SMTC']?.sales||0), Math.round(r.breakdown['SEPL']?.sales||0),
+      Math.round(r.combined), r.active.length, Math.round(r.mAvg), +r.avgDays.toFixed(1),
+      +(r.avgDays-c.cd).toFixed(1), r.rf, Math.round(r.base), Math.round(r.preFinal),
+      r.formulaLimit, Math.round(r.wkCap), fl, overrides[r.name]?.limit!=null?'Yes':'', Math.round(r.peak), r.rl
+    ].join('\t');
+  });
+  navigator.clipboard.writeText(hdr + '\n' + rows.join('\n')).then(() => toast('📋 Copied — paste into Google Sheets'));
+}
+
+function downloadXlsx() {
+  if (!results.length) return;
+  const c = cfg();
+  const wb = XLSX.utils.book_new();
+  const sData = [['Dealer','SMTC Sales','SEPL Sales','Combined','Active Months','Monthly Avg',
+    'Avg Days','vs Terms','Risk Factor','Base Limit','Pre-Final','Formula Limit','WK Cap',
+    'Final Limit','Manual Override','Peak Exposure','Risk']];
+  const iData = [['Dealer','Company','Invoice','Date','Amount','Settled','Days','Settled On','Outstanding']];
+  results.forEach(r => {
+    const fl = overrides[r.name]?.limit ?? r.recommended;
+    sData.push([r.name, Math.round(r.breakdown['SMTC']?.sales||0), Math.round(r.breakdown['SEPL']?.sales||0),
+      Math.round(r.combined), r.active.length, Math.round(r.mAvg), +r.avgDays.toFixed(1),
+      +(r.avgDays-c.cd).toFixed(1), r.rf, Math.round(r.base), Math.round(r.preFinal),
+      r.formulaLimit, Math.round(r.wkCap), fl, overrides[r.name]?.limit!=null?'Yes':'',
+      Math.round(r.peak), r.rl]);
+    r.allSett.forEach(s => {
+      const co = Object.entries(r.breakdown).find(([,d])=>d.settlements.find(x=>x.vch===s.vch))?.[0]||'?';
+      iData.push([r.name, co, s.vch, s.date, Math.round(s.amount), Math.round(s.settled),
+        s.days?+s.days.toFixed(1):'', s.settlementDate ? fmtD(s.settlementDate) : (s.outstanding > 0 ? 'Pending' : ''), Math.round(s.outstanding)]);
+    });
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sData), 'Credit Limits');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(iData), 'Invoice Detail');
+  XLSX.writeFile(wb, `SMTC_CreditLimit_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('📥 Excel downloaded');
+}
+
+// ══════════════════════════════════════════════════════════
+// GOOGLE APPS SCRIPT
+// ══════════════════════════════════════════════════════════
+const GAS = `// SMTC Credit Limit Analyser — Google Apps Script
+// ────────────────────────────────────────────────
+// 1. Extensions → Apps Script → paste this → Save
+// 2. Enable Drive API: Services → Drive API → Add
+// 3. Set FOLDER_ID below to your Drive folder with .xlsx files
+// 4. Run: runCreditLimitAnalysis
+
+const CONFIG = {
+  FOLDER_ID: 'PASTE_YOUR_DRIVE_FOLDER_ID_HERE',
+  CREDIT_DAYS: 21,
+  ROUND_TO: 1000000,
+  RF: [1.25, 1.00, 0.85, 0.70, 0.50, 0.00],
+  WK_CAP_PCT: 7,
+  WK_TOTAL: 560000000
+};
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('📊 Credit Limits')
+    .addItem('▶ Run Analysis', 'runCreditLimitAnalysis')
+    .addItem('ℹ️ Help', 'showHelp').addToUi();
+}
+
+function runCreditLimitAnalysis() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+  const it = folder.getFiles();
+  const ledgers = [];
+  while (it.hasNext()) {
+    const f = it.next();
+    if (!f.getName().endsWith('.xlsx')) continue;
+    try {
+      const tmp = Drive.Files.copy({title:'TMP_'+Date.now()}, f.getId(), {convert:true});
+      const ws = SpreadsheetApp.openById(tmp.id).getSheets()[0];
+      const data = ws.getDataRange().getValues();
+      Drive.Files.remove(tmp.id);
+      const parsed = parseLedger(data, f.getName());
+      if (parsed) ledgers.push(parsed);
+    } catch(e) { Logger.log(e); }
+  }
+  const dealers = {};
+  ledgers.forEach(l => { if(!dealers[l.dealer]) dealers[l.dealer]={}; dealers[l.dealer][l.co]=l.txns; });
+  const results = Object.entries(dealers).map(([d,cos]) => analyse(d,cos));
+  results.sort((a,b) => b.limit - a.limit);
+  writeResults(ss, results);
+  SpreadsheetApp.getUi().alert('✅ Done! '+results.length+' dealers.');
+}
+
+function parseLedger(data, name) {
+  let co = name.startsWith('SMTC')?'SMTC':name.startsWith('SEPL')?'SEPL':'';
+  let dealer = '', hdr = -1;
+  for (let i=0;i<data.length;i++) {
+    const s = String(data[i][0]||'');
+    if (!co && s.includes('SPICE MORE')) co='SMTC';
+    if (!co && s.includes('SPICE EMPORIUM')) co='SEPL';
+    if (s.includes('Account :')) dealer=s.replace('Account :','').trim();
+    if (data[i][0]==='Date'&&data[i][1]==='Type') hdr=i;
+  }
+  if (hdr<0||!dealer) return null;
+  const txns = [];
+  for (let i=hdr+1;i<data.length;i++) {
+    let d=data[i][0];
+    if (!d||!(d instanceof Date)) continue;
+    txns.push({date:d,type:String(data[i][1]||''),vch:String(data[i][2]||''),
+      account:String(data[i][3]||''),debit:Number(data[i][4])||0,credit:Number(data[i][5])||0});
+  }
+  return {co,dealer,txns};
+}
+
+function analyse(name, cosData) {
+  const allSett=[], allTxns=[];
+  let combined=0;
+  for (const [co,txns] of Object.entries(cosData)) {
+    const sales=txns.filter(t=>t.type==='Sale'&&t.account==='Sales').sort((a,b)=>a.date-b.date).map(s=>({...s,rem:s.debit}));
+    const rcpts=txns.filter(t=>(t.type==='Rcpt'||t.type==='Purc')&&t.credit>0).sort((a,b)=>a.date-b.date);
+    for(const r of rcpts){let rr=r.credit;for(const s of sales){if(s.date>r.date)break;if(s.rem<=0||rr<=0)continue;const u=Math.min(s.rem,rr);s.rem-=u;rr-=u;}}
+    combined += txns.filter(t=>t.type==='Sale'&&t.account==='Sales').reduce((a,t)=>a+t.debit,0);
+    allTxns.push(...txns);
+  }
+  // Simplified avg days
+  const monthly={};
+  allTxns.filter(t=>t.type==='Sale'&&t.account==='Sales').forEach(t=>{
+    const k=Utilities.formatDate(t.date,'Asia/Kolkata','yyyy-MM');
+    monthly[k]=(monthly[k]||0)+t.debit;
+  });
+  const active=Object.values(monthly).filter(v=>v>0).length;
+  const mAvg=active>0?combined/active:0;
+  const base=mAvg*(CONFIG.CREDIT_DAYS/30);
+  const limit=Math.min(Math.round(base*CONFIG.RF[1]/CONFIG.ROUND_TO)*CONFIG.ROUND_TO,
+    CONFIG.WK_TOTAL*(CONFIG.WK_CAP_PCT/100));
+  return {name,combined,mAvg,limit,active};
+}
+
+function writeResults(ss, results) {
+  let ws=ss.getSheetByName('Credit Limits');
+  if(!ws) ws=ss.insertSheet('Credit Limits');
+  ws.clearContents();
+  const hdr=[['#','Dealer','Combined Sales','Monthly Avg','Active Mo','Recommended Limit']];
+  ws.getRange(1,1,1,6).setValues(hdr).setBackground('#1B5E20').setFontColor('white').setFontWeight('bold');
+  const rows=results.map((r,i)=>[i+1,r.name,Math.round(r.combined),Math.round(r.mAvg),r.active,r.limit]);
+  if(rows.length) ws.getRange(2,1,rows.length,6).setValues(rows);
+  [3,4,6].forEach(c=>ws.getRange(2,c,rows.length,1).setNumberFormat('₹#,##0'));
+  ws.autoResizeColumns(1,6);
+}
+
+function showHelp() {
+  SpreadsheetApp.getUi().alert('Put .xlsx files in Drive folder → set FOLDER_ID → Run Analysis');
+}`;
+
+function showScript() { document.getElementById('scriptPre').textContent = GAS; document.getElementById('scriptModal').classList.add('open'); }
+function closeScript() { document.getElementById('scriptModal').classList.remove('open'); }
+function copyScriptText() { navigator.clipboard.writeText(GAS).then(() => { toast('📋 Script copied'); closeScript(); }); }
+
+// ══════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════
+function fmt(n) { return n >= 1e7 ? '₹' + (n/1e7).toFixed(2) + 'Cr' : '₹' + (n/1e5).toFixed(1) + 'L'; }
+function fmtN(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+function fmtD(d) { return d ? d.getDate() + '-' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + '-' + d.getFullYear() : ''; }
+function fmtMK(k) { const [y,m] = k.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + "'" + y.slice(2); }
+function loader(on, txt) { document.getElementById('loader').classList.toggle('on', on); if (txt) document.getElementById('loaderTxt').textContent = txt; }
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+</script>
+</body>
+</html>

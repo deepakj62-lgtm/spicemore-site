@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SMTC Bank Reconciliation Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--border:#dde1e6;--primary:#2563eb;--primary-dark:#1d4ed8;--green:#16a34a;--green-bg:#dcfce7;--yellow:#ca8a04;--yellow-bg:#fef9c3;--red:#dc2626;--red-bg:#fee2e2;--blue-bg:#dbeafe;--text:#1e293b;--text-light:#64748b;--shadow:0 1px 3px rgba(0,0,0,.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.container{max-width:1600px;margin:0 auto;padding:20px 24px}
+header{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:20px 24px;display:flex;align-items:center;gap:16px}
+header h1{font-size:22px;font-weight:700}
+header .subtitle{font-size:13px;opacity:.8;margin-top:2px}
+.logo{width:44px;height:44px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a5f}
+.upload-section{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:24px 0}
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;background:var(--card);transition:all .2s;cursor:pointer;position:relative}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--primary);background:var(--blue-bg)}
+.drop-zone.loaded{border-color:var(--green);background:var(--green-bg)}
+.drop-zone h3{font-size:15px;margin-bottom:6px}
+.drop-zone p{font-size:12px;color:var(--text-light)}
+.drop-zone .icon{font-size:36px;margin-bottom:8px}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.file-info{margin-top:8px;font-size:12px;color:var(--green);font-weight:600}
+.action-bar{display:flex;gap:12px;align-items:center;margin:16px 0;flex-wrap:wrap}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+.btn-primary:disabled{background:#94a3b8;cursor:not-allowed}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#15803d}
+.btn-outline{background:var(--card);color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--bg)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:20px 0}
+.stat-card{background:var(--card);border-radius:10px;padding:16px;box-shadow:var(--shadow);text-align:center}
+.stat-card .value{font-size:28px;font-weight:800}
+.stat-card .label{font-size:12px;color:var(--text-light);margin-top:2px}
+.stat-card.green .value{color:var(--green)}
+.stat-card.yellow .value{color:var(--yellow)}
+.stat-card.red .value{color:var(--red)}
+.stat-card.blue .value{color:var(--primary)}
+.balance-check{background:var(--card);border-radius:10px;padding:16px 20px;margin:16px 0;box-shadow:var(--shadow)}
+.balance-check h3{font-size:15px;margin-bottom:10px}
+.balance-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.balance-row:last-child{border:none}
+.balance-row .match{color:var(--green);font-weight:600}
+.balance-row .mismatch{color:var(--red);font-weight:600}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--border);margin:24px 0 0}
+.tab{padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--text-light);border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab .badge{background:#e2e8f0;color:var(--text-light);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:6px}
+.tab.active .badge{background:var(--blue-bg);color:var(--primary)}
+.table-wrap{background:var(--card);border-radius:0 0 10px 10px;box-shadow:var(--shadow);overflow-x:auto;margin-bottom:24px;max-height:70vh;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f8fafc;padding:10px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;color:var(--text-light);letter-spacing:.3px;position:sticky;top:0;border-bottom:2px solid var(--border);z-index:2}
+td{padding:8px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:hover{background:#f8fafc}
+tr.match-exact{background:var(--green-bg)}
+tr.match-fuzzy{background:var(--yellow-bg)}
+tr.unmatched{background:var(--red-bg)}
+.amount{font-family:'SF Mono',Menlo,monospace;text-align:right;white-space:nowrap}
+.credit{color:var(--green)}
+.debit{color:var(--red)}
+.direction-tag{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.3px}
+.direction-tag.cr{background:var(--green-bg);color:var(--green)}
+.direction-tag.dr{background:var(--red-bg);color:var(--red)}
+.filter-bar{display:flex;gap:8px;align-items:center;padding:12px 16px;background:#f8fafc;border-bottom:1px solid var(--border)}
+.filter-bar input{padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:260px}
+.filter-bar select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px}
+.filter-bar label{font-size:12px;color:var(--text-light);font-weight:600}
+.progress-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:999}
+.progress-box{background:#fff;padding:32px 40px;border-radius:14px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.spinner{width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tooltip-cell{position:relative}
+.tooltip-cell:hover::after{content:attr(data-full);position:absolute;left:0;top:100%;background:#1e293b;color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;white-space:pre-wrap;max-width:400px;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.hidden{display:none}
+#results-section{display:none}
+.section-title{font-size:16px;font-weight:700;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">SM</div>
+<div>
+<h1>SMTC Bank Reconciliation Tool</h1>
+<div class="subtitle">Spice More Trading Company — Axis Bank Cash Credit Account Reconciliation</div>
+</div>
+</header>
+<div class="container">
+<div class="upload-section">
+<div class="drop-zone" id="bankDropZone">
+<input type="file" accept=".xlsx,.xls,.csv" id="bankFileInput">
+<div class="icon">&#x1F3E6;</div>
+<h3>Bank Statement</h3>
+<p>Axis Bank Excel export (.xlsx)<br>Columns: S.NO, Transaction Date, Particulars, Debit, Credit, Balance</p>
+<div class="file-info hidden" id="bankFileInfo"></div>
+</div>
+<div class="drop-zone" id="ledgerDropZone">
+<input type="file" accept=".xlsx,.xls,.csv" id="ledgerFileInput">
+<div class="icon">&#x1F4D2;</div>
+<h3>Account Ledger</h3>
+<p>Tally Ledger export (.xlsx)<br>Columns: Date, Type, Vch No, Account, Debit, Credit, Balance</p>
+<div class="file-info hidden" id="ledgerFileInfo"></div>
+</div>
+</div>
+<div class="action-bar">
+<button class="btn btn-primary" id="btnReconcile" disabled onclick="runReconciliation()">&#9654; Run Reconciliation</button>
+<button class="btn btn-success hidden" id="btnDownload" onclick="downloadResults()">&#11015; Download Reconciliation Report (.xlsx)</button>
+<button class="btn btn-success hidden" id="btnDownloadCorrected" onclick="downloadCorrected()">&#11015; Download Annotated Files (.xlsx)</button>
+<button class="btn btn-outline hidden" id="btnReset" onclick="resetAll()">&#8634; Reset</button>
+</div>
+<div class="progress-overlay" id="progressOverlay">
+<div class="progress-box">
+<div class="spinner"></div>
+<div id="progressText">Processing files...</div>
+</div>
+</div>
+<div id="results-section">
+<h2 class="section-title">Reconciliation Summary</h2>
+<div class="balance-check" id="balanceCheck"></div>
+<div class="stats-grid" id="statsGrid"></div>
+<div class="tabs" id="tabsBar">
+<button class="tab active" data-tab="matched" onclick="switchTab('matched')">Matched<span class="badge" id="matchedCount">0</span></button>
+<button class="tab" data-tab="unmatchedBank" onclick="switchTab('unmatchedBank')">Unmatched Bank<span class="badge" id="unmatchedBankCount">0</span></button>
+<button class="tab" data-tab="unmatchedLedger" onclick="switchTab('unmatchedLedger')">Unmatched Ledger<span class="badge" id="unmatchedLedgerCount">0</span></button>
+<button class="tab" data-tab="allBank" onclick="switchTab('allBank')">Bank Statement<span class="badge" id="allBankCount">0</span></button>
+<button class="tab" data-tab="allLedger" onclick="switchTab('allLedger')">Ledger<span class="badge" id="allLedgerCount">0</span></button>
+</div>
+<div class="filter-bar">
+<label>Search:</label>
+<input type="text" id="searchInput" placeholder="Filter by narration, account, amount..." oninput="filterTable()">
+<label>Direction:</label>
+<select id="dirFilter" onchange="filterTable()">
+<option value="">All</option>
+<option value="CREDIT">Credit</option>
+<option value="DEBIT">Debit</option>
+</select>
+</div>
+<div class="table-wrap">
+<div id="tab-matched"></div>
+<div id="tab-unmatchedBank" class="hidden"></div>
+<div id="tab-unmatchedLedger" class="hidden"></div>
+<div id="tab-allBank" class="hidden"></div>
+<div id="tab-allLedger" class="hidden"></div>
+</div>
+</div>
+</div>
+<script>
+let bankData=null,ledgerData=null;
+let bankMeta={openBal:0,closeBal:0,acctNo:'',period:''};
+let ledgerMeta={openBal:0,closeBal:0};
+let results={matched:[],unmatchedBank:[],unmatchedLedger:[]};
+let currentTab='matched';
+
+function setupDropZone(zoneId,inputId,infoId,type){
+  const zone=document.getElementById(zoneId),input=document.getElementById(inputId),info=document.getElementById(infoId);
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover')});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0],type,zone,info)});
+  input.addEventListener('change',e=>{if(e.target.files.length)handleFile(e.target.files[0],type,zone,info)});
+}
+
+function handleFile(file,type,zone,info){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true,cellText:false,cellNF:false});
+      if(type==='bank'){bankData=parseBankStatement(wb);info.textContent='Loaded: '+file.name+' — '+bankData.transactions.length+' transactions'}
+      else{ledgerData=parseLedger(wb);info.textContent='Loaded: '+file.name+' — '+ledgerData.entries.length+' entries'}
+      zone.classList.add('loaded');info.classList.remove('hidden');
+      document.getElementById('btnReconcile').disabled=!(bankData&&ledgerData);
+    }catch(err){alert('Error reading file: '+err.message);console.error(err)}
+  };
+  reader.readAsArrayBuffer(file);
+}
+setupDropZone('bankDropZone','bankFileInput','bankFileInfo','bank');
+setupDropZone('ledgerDropZone','ledgerFileInput','ledgerFileInfo','ledger');
+
+function parseIndianNumber(val){
+  if(val==null||val==='')return 0;
+  if(typeof val==='number')return val;
+  let s=String(val).replace(/[₹Rs.\s]/g,'').replace(/,/g,'').trim();
+  if(s===''||s==='-')return 0;
+  return parseFloat(s)||0;
+}
+
+function parseDateVal(val){
+  if(!val)return null;
+  if(val instanceof Date)return val;
+  let s=String(val).trim(),d=new Date(s);
+  if(!isNaN(d))return d;
+  let parts=s.split(/[-\/]/);
+  if(parts.length===3){d=new Date(parts[2],parts[1]-1,parts[0]);if(!isNaN(d))return d}
+  return null;
+}
+
+function formatDate(d){
+  if(!d)return'';
+  if(typeof d==='string')d=new Date(d);
+  if(isNaN(d))return'';
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function formatAmount(n){
+  if(n==null||isNaN(n))return'0';
+  return n.toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+
+function parseBankStatement(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const json=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,dateNF:'yyyy-mm-dd'});
+  let openBal=0,headerRow=-1,acctNo='',period='';
+  for(let i=0;i<Math.min(20,json.length);i++){
+    let row=json[i];if(!row||!row[0])continue;
+    let cell=String(row[0]);
+    if(cell.toLowerCase().includes('opening balance')){openBal=parseIndianNumber(cell.replace(/.*:/,''))}
+    if(cell.toLowerCase().includes('account no')||cell.toLowerCase().includes('statement of')){
+      let m=cell.match(/(\d{10,})/);if(m)acctNo=m[1];
+      let pm=cell.match(/from\s*:\s*(\d{2}\/\d{2}\/\d{4})\s*to\s*:\s*(\d{2}\/\d{2}\/\d{4})/i);
+      if(pm)period=pm[1]+' to '+pm[2];
+    }
+    if(cell==='S.NO'||cell==='S.No'||cell==='SNo'||(typeof cell==='string'&&cell.toLowerCase().replace(/[.\s]/g,'')==='sno')){headerRow=i}
+  }
+  if(headerRow===-1){for(let i=0;i<Math.min(20,json.length);i++){let row=json[i];if(row&&row.some(c=>String(c||'').toLowerCase().includes('transaction date'))){headerRow=i;break}}}
+  let transactions=[],closeBal=0;
+  for(let i=headerRow+1;i<json.length;i++){
+    let row=json[i];if(!row)continue;
+    let sno=row[0];
+    if(sno==null||(typeof sno!=='number'&&!/^\d+$/.test(String(sno).trim())))continue;
+    let txnDate=parseDateVal(row[1]),narration=String(row[3]||'').trim();
+    let rawDebit=row[5],rawCredit=row[6],rawBalance=row[7];
+    let debitAmt=parseIndianNumber(rawDebit),creditAmt=parseIndianNumber(rawCredit);
+    let amount=debitAmt||creditAmt,direction=creditAmt>0?'CREDIT':'DEBIT';
+    if(amount===0)continue;
+    let balVal=parseIndianNumber(rawBalance);if(balVal>0)closeBal=balVal;
+    transactions.push({id:transactions.length,sno:parseInt(sno),date:txnDate,narration:narration,debit:debitAmt,credit:creditAmt,amount:amount,direction:direction,balance:balVal,matched:false,matchedWith:null});
+  }
+  bankMeta={openBal,closeBal,acctNo,period};
+  return{transactions,openBal,closeBal,acctNo,period};
+}
+
+function parseLedger(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const json=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,dateNF:'yyyy-mm-dd'});
+  let openBal=0,headerRow=-1,closeBal=0;
+  for(let i=0;i<Math.min(20,json.length);i++){
+    let row=json[i];if(!row)continue;
+    for(let c=0;c<row.length;c++){let cell=String(row[c]||'');if(cell.includes('Opening Bal')){openBal=parseIndianNumber(cell.replace(/.*?Rs\.?\s*/i,'').replace(/\s*(Dr|Cr).*/i,''))}}
+    if(row[0]==='Date'&&(String(row[1]||'')==='Type'||String(row[2]||'').includes('Vch'))){headerRow=i}
+  }
+  let entries=[];
+  for(let i=headerRow+1;i<json.length;i++){
+    let row=json[i];if(!row)continue;
+    let dateVal=parseDateVal(row[0]);
+    if(!dateVal){let r4=String(row[4]||'');if(r4.includes('Closing Bal')){closeBal=parseIndianNumber(r4.replace(/.*?Rs\.?\s*/i,'').replace(/\s*(Dr|Cr).*/i,''))}continue}
+    let type=String(row[1]||'').trim(),vchNo=String(row[2]||'').trim(),account=String(row[3]||'').trim();
+    let debitAmt=parseIndianNumber(row[4]),creditAmt=parseIndianNumber(row[5]);
+    if(debitAmt===0&&creditAmt===0)continue;
+    let amount=debitAmt||creditAmt;
+    let direction=debitAmt>0?'CREDIT':'DEBIT';
+    entries.push({id:entries.length,date:dateVal,type:type,vchNo:vchNo,account:account,debit:debitAmt,credit:creditAmt,amount:amount,direction:direction,matched:false,matchedWith:null});
+  }
+  ledgerMeta={openBal,closeBal};
+  return{entries,openBal,closeBal};
+}
+
+function runReconciliation(){
+  if(!bankData||!ledgerData)return;
+  document.getElementById('progressOverlay').style.display='flex';
+  document.getElementById('progressText').textContent='Running reconciliation...';
+  setTimeout(()=>{
+    try{reconcile();displayResults();document.getElementById('results-section').style.display='block';
+    document.getElementById('btnDownload').classList.remove('hidden');document.getElementById('btnDownloadCorrected').classList.remove('hidden');document.getElementById('btnReset').classList.remove('hidden')}
+    catch(err){alert('Reconciliation error: '+err.message);console.error(err)}
+    document.getElementById('progressOverlay').style.display='none';
+  },100);
+}
+
+function reconcile(){
+  bankData.transactions.forEach(t=>{t.matched=false;t.matchedWith=null});
+  ledgerData.entries.forEach(e=>{e.matched=false;e.matchedWith=null});
+  results={matched:[],unmatchedBank:[],unmatchedLedger:[]};
+
+  // Phase 1: Exact match amount+date+direction
+  let bankByKey={};
+  bankData.transactions.forEach(t=>{
+    let key=t.amount+'_'+t.direction+'_'+(t.date?t.date.toISOString().slice(0,10):'');
+    if(!bankByKey[key])bankByKey[key]=[];bankByKey[key].push(t);
+  });
+  ledgerData.entries.forEach(e=>{
+    let key=e.amount+'_'+e.direction+'_'+(e.date?e.date.toISOString().slice(0,10):'');
+    if(bankByKey[key]){let avail=bankByKey[key].find(b=>!b.matched);
+      if(avail){avail.matched=true;avail.matchedWith=e;e.matched=true;e.matchedWith=avail;
+        results.matched.push({type:'1:1 Exact',bankTxn:avail,ledgerEntry:e,dateDiff:0,confidence:'HIGH'})}}
+  });
+
+  // Phase 2: Amount+direction, date tolerance +-3 days
+  bankData.transactions.filter(t=>!t.matched).forEach(t=>{
+    let candidates=ledgerData.entries.filter(e=>!e.matched&&e.amount===t.amount&&e.direction===t.direction);
+    if(candidates.length>0){
+      let best=candidates.reduce((a,b)=>{let da=t.date&&a.date?Math.abs(t.date-a.date):Infinity;let db=t.date&&b.date?Math.abs(t.date-b.date):Infinity;return da<=db?a:b});
+      let dayDiff=(t.date&&best.date)?Math.round(Math.abs(t.date-best.date)/86400000):999;
+      if(dayDiff<=3){t.matched=true;t.matchedWith=best;best.matched=true;best.matchedWith=t;
+        results.matched.push({type:'Date Tolerance',bankTxn:t,ledgerEntry:best,dateDiff:dayDiff,confidence:'MEDIUM'})}}
+  });
+
+  // Phase 3: Fuzzy name matching
+  bankData.transactions.filter(t=>!t.matched).forEach(t=>{
+    let candidates=ledgerData.entries.filter(e=>!e.matched&&e.amount===t.amount&&e.direction===t.direction);
+    if(candidates.length>0){let bestMatch=null,bestScore=0;
+      candidates.forEach(c=>{let score=fuzzyNameMatch(t.narration,c.account);if(score>bestScore){bestScore=score;bestMatch=c}});
+      if(bestMatch&&bestScore>0.3){let dayDiff=(t.date&&bestMatch.date)?Math.round(Math.abs(t.date-bestMatch.date)/86400000):999;
+        t.matched=true;t.matchedWith=bestMatch;bestMatch.matched=true;bestMatch.matchedWith=t;
+        results.matched.push({type:'Fuzzy Match',bankTxn:t,ledgerEntry:bestMatch,dateDiff:dayDiff,confidence:'LOW',nameScore:bestScore})}}
+  });
+
+  results.unmatchedBank=bankData.transactions.filter(t=>!t.matched).map(t=>{
+    let suggestion=findSuggestedMatch(t,ledgerData.entries.filter(e=>!e.matched));return{...t,suggestion}});
+  results.unmatchedLedger=ledgerData.entries.filter(e=>!e.matched).map(e=>{
+    let suggestion=findSuggestedBankMatch(e,bankData.transactions.filter(t=>!t.matched));return{...e,suggestion}});
+}
+
+function fuzzyNameMatch(bankNarration,ledgerAccount){
+  if(!bankNarration||!ledgerAccount)return 0;
+  let bn=bankNarration.toUpperCase().replace(/[^A-Z0-9\s]/g,'').replace(/\s+/g,' ');
+  let la=ledgerAccount.toUpperCase().replace(/[^A-Z0-9\s]/g,'').replace(/\s+/g,' ');
+  let parts=bn.split('/');let nameFromBank=parts.length>3?parts.slice(3).join(' ').trim():bn;
+  nameFromBank=nameFromBank.replace(/[A-Z]{4}\d{7}.*$/,'').trim();
+  let cleanLedger=la.replace(/\s*-\s*(UL|ADVANCE|CD).*$/i,'').trim();
+  if(bn.includes(cleanLedger)||nameFromBank.includes(cleanLedger))return 1.0;
+  if(cleanLedger.includes(nameFromBank)&&nameFromBank.length>3)return 0.9;
+  let bnNoSpace=nameFromBank.replace(/\s/g,''),laNoSpace=cleanLedger.replace(/\s/g,'');
+  if(bnNoSpace.includes(laNoSpace)||laNoSpace.includes(bnNoSpace))return 0.85;
+  let bankTokens=new Set(nameFromBank.split(/\s+/).filter(t=>t.length>2));
+  let ledgerTokens=new Set(cleanLedger.split(/\s+/).filter(t=>t.length>2));
+  if(bankTokens.size===0||ledgerTokens.size===0)return 0;
+  let overlap=0;bankTokens.forEach(t=>{if(ledgerTokens.has(t))overlap++});
+  return overlap/Math.max(bankTokens.size,ledgerTokens.size);
+}
+
+function findSuggestedMatch(bankTxn,unmatchedLedger){
+  let sameDirAmt=unmatchedLedger.filter(e=>e.direction===bankTxn.direction);
+  let exact=sameDirAmt.filter(e=>e.amount===bankTxn.amount);
+  if(exact.length>0){let best=exact[0];return{entry:best,reason:best.vchNo+' | '+formatDate(best.date)+' | '+best.account+' | '+formatAmount(best.amount)}}
+  let close=sameDirAmt.filter(e=>Math.abs(e.amount-bankTxn.amount)/Math.max(bankTxn.amount,1)<0.01);
+  if(close.length>0)return{entry:close[0],reason:'Close amount: '+close[0].account+' | '+formatAmount(close[0].amount)};
+  return null;
+}
+
+function findSuggestedBankMatch(ledgerEntry,unmatchedBank){
+  let sameDirAmt=unmatchedBank.filter(t=>t.direction===ledgerEntry.direction);
+  let exact=sameDirAmt.filter(t=>t.amount===ledgerEntry.amount);
+  if(exact.length>0)return{txn:exact[0],reason:'Bank #'+exact[0].sno+' | '+formatDate(exact[0].date)+' | '+exact[0].narration.substring(0,50)};
+  return null;
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function displayResults(){
+  let openMatch=Math.abs(bankData.openBal-ledgerData.openBal)<1;
+  let closeMatch=Math.abs(bankData.closeBal-ledgerData.closeBal)<1;
+  document.getElementById('balanceCheck').innerHTML=
+    '<h3>Balance Verification</h3>'+
+    '<div class="balance-row"><span>Opening Balance (Bank Statement)</span><span class="amount">'+formatAmount(bankData.openBal)+'</span></div>'+
+    '<div class="balance-row"><span>Opening Balance (Ledger)</span><span class="amount">'+formatAmount(ledgerData.openBal)+'</span><span class="'+(openMatch?'match':'mismatch')+'">'+(openMatch?'MATCH':'MISMATCH')+'</span></div>'+
+    '<div class="balance-row"><span>Closing Balance (Bank Statement)</span><span class="amount">'+formatAmount(bankData.closeBal)+'</span></div>'+
+    '<div class="balance-row"><span>Closing Balance (Ledger)</span><span class="amount">'+formatAmount(ledgerData.closeBal)+'</span><span class="'+(closeMatch?'match':'mismatch')+'">'+(closeMatch?'MATCH':'MISMATCH')+'</span></div>';
+
+  let totalBank=bankData.transactions.length,totalLedger=ledgerData.entries.length,matched=results.matched.length;
+  let umBank=results.unmatchedBank.length,umLedger=results.unmatchedLedger.length;
+  let matchPct=totalBank>0?(matched/totalBank*100).toFixed(1):0;
+  document.getElementById('statsGrid').innerHTML=
+    '<div class="stat-card blue"><div class="value">'+totalBank+'</div><div class="label">Bank Transactions</div></div>'+
+    '<div class="stat-card blue"><div class="value">'+totalLedger+'</div><div class="label">Ledger Entries</div></div>'+
+    '<div class="stat-card green"><div class="value">'+matched+'</div><div class="label">Matched ('+matchPct+'%)</div></div>'+
+    '<div class="stat-card '+(umBank>0?'red':'green')+'"><div class="value">'+umBank+'</div><div class="label">Unmatched Bank</div></div>'+
+    '<div class="stat-card '+(umLedger>0?'red':'green')+'"><div class="value">'+umLedger+'</div><div class="label">Unmatched Ledger</div></div>'+
+    '<div class="stat-card '+((openMatch&&closeMatch)?'green':'yellow')+'"><div class="value">'+((openMatch&&closeMatch)?'OK':'!')+'</div><div class="label">Balance Check</div></div>';
+
+  document.getElementById('matchedCount').textContent=matched;
+  document.getElementById('unmatchedBankCount').textContent=umBank;
+  document.getElementById('unmatchedLedgerCount').textContent=umLedger;
+  document.getElementById('allBankCount').textContent=totalBank;
+  document.getElementById('allLedgerCount').textContent=totalLedger;
+  renderMatchedTable();renderUnmatchedBankTable();renderUnmatchedLedgerTable();renderAllBankTable();renderAllLedgerTable();
+}
+
+function renderMatchedTable(){
+  let h='<table id="tbl-matched"><thead><tr><th>#</th><th>Match Type</th><th>Direction</th><th>Amount</th><th>Bank Date</th><th>Ledger Date</th><th>Date Diff</th><th>Bank Narration</th><th>Ledger Account</th><th>Voucher No</th><th>Type</th></tr></thead><tbody>';
+  results.matched.forEach((m,i)=>{
+    let cls=m.confidence==='HIGH'?'match-exact':'match-fuzzy';
+    h+='<tr class="'+cls+'" data-search="'+esc((m.bankTxn.narration+' '+m.ledgerEntry.account+' '+m.bankTxn.amount).toLowerCase())+'" data-dir="'+m.bankTxn.direction+'"><td>'+(i+1)+'</td><td>'+m.type+(m.confidence==='LOW'?' !':'')+'</td><td><span class="direction-tag '+(m.bankTxn.direction==='CREDIT'?'cr':'dr')+'">'+m.bankTxn.direction+'</span></td><td class="amount">'+formatAmount(m.bankTxn.amount)+'</td><td>'+formatDate(m.bankTxn.date)+'</td><td>'+formatDate(m.ledgerEntry.date)+'</td><td>'+m.dateDiff+'d</td><td class="tooltip-cell" data-full="'+esc(m.bankTxn.narration)+'">'+esc(m.bankTxn.narration.substring(0,50))+(m.bankTxn.narration.length>50?'...':'')+'</td><td>'+esc(m.ledgerEntry.account)+'</td><td>'+esc(m.ledgerEntry.vchNo)+'</td><td>'+esc(m.ledgerEntry.type)+'</td></tr>';
+  });
+  h+='</tbody></table>';document.getElementById('tab-matched').innerHTML=h;
+}
+
+function renderUnmatchedBankTable(){
+  let h='<table id="tbl-unmatchedBank"><thead><tr><th>#</th><th>S.No</th><th>Date</th><th>Direction</th><th>Amount</th><th>Narration</th><th>Suggested Match</th><th>Action</th></tr></thead><tbody>';
+  results.unmatchedBank.forEach((t,i)=>{
+    h+='<tr class="unmatched" data-search="'+esc((t.narration+' '+t.amount).toLowerCase())+'" data-dir="'+t.direction+'"><td>'+(i+1)+'</td><td>'+t.sno+'</td><td>'+formatDate(t.date)+'</td><td><span class="direction-tag '+(t.direction==='CREDIT'?'cr':'dr')+'">'+t.direction+'</span></td><td class="amount">'+formatAmount(t.amount)+'</td><td class="tooltip-cell" data-full="'+esc(t.narration)+'">'+esc(t.narration.substring(0,55))+(t.narration.length>55?'...':'')+'</td><td>'+(t.suggestion?esc(t.suggestion.reason):'<em>No suggestion</em>')+'</td><td>'+(t.suggestion?'<button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="acceptSuggestion(\'bank\','+i+')">Accept</button>':'')+'</td></tr>';
+  });
+  if(results.unmatchedBank.length===0)h+='<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b">No unmatched bank entries</td></tr>';
+  h+='</tbody></table>';document.getElementById('tab-unmatchedBank').innerHTML=h;
+}
+
+function renderUnmatchedLedgerTable(){
+  let h='<table id="tbl-unmatchedLedger"><thead><tr><th>#</th><th>Date</th><th>Type</th><th>Voucher No</th><th>Account</th><th>Direction</th><th>Amount</th><th>Suggested Match</th><th>Action</th></tr></thead><tbody>';
+  results.unmatchedLedger.forEach((e,i)=>{
+    h+='<tr class="unmatched" data-search="'+esc((e.account+' '+e.vchNo+' '+e.amount).toLowerCase())+'" data-dir="'+e.direction+'"><td>'+(i+1)+'</td><td>'+formatDate(e.date)+'</td><td>'+esc(e.type)+'</td><td>'+esc(e.vchNo)+'</td><td>'+esc(e.account)+'</td><td><span class="direction-tag '+(e.direction==='CREDIT'?'cr':'dr')+'">'+e.direction+'</span></td><td class="amount">'+formatAmount(e.amount)+'</td><td>'+(e.suggestion?esc(e.suggestion.reason):'<em>No suggestion</em>')+'</td><td>'+(e.suggestion?'<button class="btn btn-outline" style="padding:4px 10px;font-size:11px" onclick="acceptSuggestion(\'ledger\','+i+')">Accept</button>':'')+'</td></tr>';
+  });
+  if(results.unmatchedLedger.length===0)h+='<tr><td colspan="9" style="text-align:center;padding:24px;color:#64748b">No unmatched ledger entries</td></tr>';
+  h+='</tbody></table>';document.getElementById('tab-unmatchedLedger').innerHTML=h;
+}
+
+function renderAllBankTable(){
+  let h='<table id="tbl-allBank"><thead><tr><th>S.No</th><th>Date</th><th>Direction</th><th>Debit</th><th>Credit</th><th>Balance</th><th>Narration</th><th>Status</th></tr></thead><tbody>';
+  bankData.transactions.forEach(t=>{
+    let status=t.matched?'<span style="color:var(--green)">Matched</span>':'<span style="color:var(--red)">Unmatched</span>';
+    h+='<tr class="'+(t.matched?'':'unmatched')+'" data-search="'+esc((t.narration+' '+t.amount).toLowerCase())+'" data-dir="'+t.direction+'"><td>'+t.sno+'</td><td>'+formatDate(t.date)+'</td><td><span class="direction-tag '+(t.direction==='CREDIT'?'cr':'dr')+'">'+t.direction+'</span></td><td class="amount debit">'+(t.debit>0?formatAmount(t.debit):'')+'</td><td class="amount credit">'+(t.credit>0?formatAmount(t.credit):'')+'</td><td class="amount">'+formatAmount(t.balance)+'</td><td class="tooltip-cell" data-full="'+esc(t.narration)+'">'+esc(t.narration.substring(0,55))+(t.narration.length>55?'...':'')+'</td><td>'+status+'</td></tr>';
+  });
+  h+='</tbody></table>';document.getElementById('tab-allBank').innerHTML=h;
+}
+
+function renderAllLedgerTable(){
+  let h='<table id="tbl-allLedger"><thead><tr><th>#</th><th>Date</th><th>Type</th><th>Voucher No</th><th>Account</th><th>Debit</th><th>Credit</th><th>Direction</th><th>Status</th></tr></thead><tbody>';
+  ledgerData.entries.forEach((e,i)=>{
+    let status=e.matched?'<span style="color:var(--green)">Matched</span>':'<span style="color:var(--red)">Unmatched</span>';
+    h+='<tr class="'+(e.matched?'':'unmatched')+'" data-search="'+esc((e.account+' '+e.vchNo+' '+e.amount).toLowerCase())+'" data-dir="'+e.direction+'"><td>'+(i+1)+'</td><td>'+formatDate(e.date)+'</td><td>'+esc(e.type)+'</td><td>'+esc(e.vchNo)+'</td><td>'+esc(e.account)+'</td><td class="amount">'+(e.debit>0?formatAmount(e.debit):'')+'</td><td class="amount">'+(e.credit>0?formatAmount(e.credit):'')+'</td><td><span class="direction-tag '+(e.direction==='CREDIT'?'cr':'dr')+'">'+e.direction+'</span></td><td>'+status+'</td></tr>';
+  });
+  h+='</tbody></table>';document.getElementById('tab-allLedger').innerHTML=h;
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  ['matched','unmatchedBank','unmatchedLedger','allBank','allLedger'].forEach(t=>{document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab)});
+  filterTable();
+}
+
+function filterTable(){
+  let search=document.getElementById('searchInput').value.toLowerCase();
+  let dir=document.getElementById('dirFilter').value;
+  let table=document.querySelector('#tab-'+currentTab+' table');if(!table)return;
+  table.querySelectorAll('tbody tr').forEach(tr=>{
+    let matchSearch=!search||(tr.dataset.search||'').includes(search);
+    let matchDir=!dir||tr.dataset.dir===dir;
+    tr.style.display=(matchSearch&&matchDir)?'':'none';
+  });
+}
+
+function acceptSuggestion(type,idx){
+  if(type==='bank'){
+    let item=results.unmatchedBank[idx];if(!item||!item.suggestion)return;
+    let entry=item.suggestion.entry;
+    // Find original bank txn and ledger entry to update matched flags
+    let origBank=bankData.transactions.find(t=>t.id===item.id);
+    let origLedger=ledgerData.entries.find(e=>e.id===entry.id);
+    if(origBank){origBank.matched=true;origBank.matchedWith=entry}
+    if(origLedger){origLedger.matched=true;origLedger.matchedWith=item}
+    results.matched.push({type:'Manual Accept',bankTxn:item,ledgerEntry:entry,dateDiff:item.date&&entry.date?Math.round(Math.abs(item.date-entry.date)/86400000):0,confidence:'MANUAL'});
+    results.unmatchedBank.splice(idx,1);
+    results.unmatchedLedger=results.unmatchedLedger.filter(e=>e.id!==entry.id);
+  }else{
+    let item=results.unmatchedLedger[idx];if(!item||!item.suggestion)return;
+    let txn=item.suggestion.txn;
+    let origBank=bankData.transactions.find(t=>t.id===txn.id);
+    let origLedger=ledgerData.entries.find(e=>e.id===item.id);
+    if(origBank){origBank.matched=true;origBank.matchedWith=item}
+    if(origLedger){origLedger.matched=true;origLedger.matchedWith=txn}
+    results.matched.push({type:'Manual Accept',bankTxn:txn,ledgerEntry:item,dateDiff:txn.date&&item.date?Math.round(Math.abs(txn.date-item.date)/86400000):0,confidence:'MANUAL'});
+    results.unmatchedLedger.splice(idx,1);
+    results.unmatchedBank=results.unmatchedBank.filter(t=>t.id!==txn.id);
+  }
+  displayResults();switchTab(currentTab);
+}
+
+function resetAll(){
+  bankData=null;ledgerData=null;results={matched:[],unmatchedBank:[],unmatchedLedger:[]};
+  document.getElementById('results-section').style.display='none';
+  ['btnDownload','btnDownloadCorrected','btnReset'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('btnReconcile').disabled=true;
+  ['bankDropZone','ledgerDropZone'].forEach(id=>document.getElementById(id).classList.remove('loaded'));
+  ['bankFileInfo','ledgerFileInfo'].forEach(id=>{let el=document.getElementById(id);el.classList.add('hidden');el.textContent=''});
+  document.getElementById('bankFileInput').value='';document.getElementById('ledgerFileInput').value='';
+}
+
+function downloadResults(){
+  let wb=XLSX.utils.book_new();
+  let summaryData=[
+    ['SMTC BANK RECONCILIATION'],
+    ['Account',bankMeta.acctNo||'AXIS BANK LTD - CD - 918020093385758'],
+    ['Period',bankMeta.period||''],
+    [],
+    ['BALANCE CHECKS'],
+    ['Opening Balance (Bank Statement)',bankData.openBal],
+    ['Opening Balance (Ledger)',ledgerData.openBal,Math.abs(bankData.openBal-ledgerData.openBal)<1?'MATCH':'MISMATCH'],
+    ['Closing Balance (Bank Statement)',bankData.closeBal],
+    ['Closing Balance (Ledger)',ledgerData.closeBal,Math.abs(bankData.closeBal-ledgerData.closeBal)<1?'MATCH':'MISMATCH'],
+    [],['TRANSACTION COUNT'],
+    ['Bank Statement Transactions',bankData.transactions.length],
+    ['Ledger Entries',ledgerData.entries.length],
+    [],['MATCHING RESULTS'],
+    ['Total Matched',results.matched.length],
+    ['Unmatched Bank Entries',results.unmatchedBank.length],
+    ['Unmatched Ledger Entries',results.unmatchedLedger.length],
+    ['Match Rate (Bank)',(results.matched.length/bankData.transactions.length*100).toFixed(1)+'%'],
+    ['Match Rate (Ledger)',(results.matched.length/ledgerData.entries.length*100).toFixed(1)+'%']
+  ];
+  let wsSummary=XLSX.utils.aoa_to_sheet(summaryData);
+  wsSummary['!cols']=[{wch:35},{wch:25},{wch:15}];
+  XLSX.utils.book_append_sheet(wb,wsSummary,'Summary');
+
+  let matchedData=[['Match Type','Direction','Amount','Bank Date','Ledger Date','Date Diff (days)','Bank Narration','Ledger Account','Voucher No','Ledger Type','Confidence']];
+  results.matched.forEach(m=>{matchedData.push([m.type,m.bankTxn.direction,m.bankTxn.amount,m.bankTxn.date,m.ledgerEntry.date,m.dateDiff,m.bankTxn.narration,m.ledgerEntry.account,m.ledgerEntry.vchNo,m.ledgerEntry.type,m.confidence])});
+  let wsMatched=XLSX.utils.aoa_to_sheet(matchedData);
+  wsMatched['!cols']=[{wch:14},{wch:8},{wch:14},{wch:12},{wch:12},{wch:8},{wch:50},{wch:30},{wch:16},{wch:6},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,wsMatched,'Matched');
+
+  let umBankData=[['Bank ID','Transaction Date','Direction','Amount','Narration','Suggested Match']];
+  results.unmatchedBank.forEach(t=>{umBankData.push([t.sno,t.date,t.direction,t.amount,t.narration,t.suggestion?t.suggestion.reason:''])});
+  let wsUmBank=XLSX.utils.aoa_to_sheet(umBankData);
+  wsUmBank['!cols']=[{wch:8},{wch:12},{wch:8},{wch:14},{wch:55},{wch:50}];
+  XLSX.utils.book_append_sheet(wb,wsUmBank,'Unmatched Bank');
+
+  let umLedgerData=[['Date','Type','Voucher No','Account','Direction','Amount','Suggested Match']];
+  results.unmatchedLedger.forEach(e=>{umLedgerData.push([e.date,e.type,e.vchNo,e.account,e.direction,e.amount,e.suggestion?e.suggestion.reason:''])});
+  let wsUmLedger=XLSX.utils.aoa_to_sheet(umLedgerData);
+  wsUmLedger['!cols']=[{wch:12},{wch:6},{wch:16},{wch:30},{wch:8},{wch:14},{wch:50}];
+  XLSX.utils.book_append_sheet(wb,wsUmLedger,'Unmatched Ledger');
+
+  let now=new Date();
+  XLSX.writeFile(wb,'SMTC_Bank_Reconciliation_'+now.getFullYear()+'_'+String(now.getMonth()+1).padStart(2,'0')+'_'+String(now.getDate()).padStart(2,'0')+'.xlsx');
+}
+
+function downloadCorrected(){
+  let wb=XLSX.utils.book_new();
+  let bankSheet=[['S.No','Date','Direction','Debit','Credit','Balance','Narration','Match Status','Matched Ledger Account','Matched Voucher No']];
+  bankData.transactions.forEach(t=>{bankSheet.push([t.sno,t.date,t.direction,t.debit||'',t.credit||'',t.balance,t.narration,t.matched?'Matched':'UNMATCHED',t.matchedWith?(t.matchedWith.account||''):'',t.matchedWith?(t.matchedWith.vchNo||''):''])});
+  let wsBk=XLSX.utils.aoa_to_sheet(bankSheet);
+  wsBk['!cols']=[{wch:6},{wch:12},{wch:8},{wch:14},{wch:14},{wch:16},{wch:55},{wch:12},{wch:30},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,wsBk,'Bank Statement Annotated');
+
+  let ledgerSheet=[['Date','Type','Voucher No','Account','Debit','Credit','Direction','Match Status','Matched Bank Narration']];
+  ledgerData.entries.forEach(e=>{ledgerSheet.push([e.date,e.type,e.vchNo,e.account,e.debit||'',e.credit||'',e.direction,e.matched?'Matched':'UNMATCHED',e.matchedWith?(e.matchedWith.narration||'').substring(0,60):''])});
+  let wsLd=XLSX.utils.aoa_to_sheet(ledgerSheet);
+  wsLd['!cols']=[{wch:12},{wch:6},{wch:16},{wch:30},{wch:14},{wch:14},{wch:8},{wch:12},{wch:55}];
+  XLSX.utils.book_append_sheet(wb,wsLd,'Ledger Annotated');
+
+  let now=new Date();
+  XLSX.writeFile(wb,'SMTC_Annotated_Reconciliation_'+now.getFullYear()+'_'+String(now.getMonth()+1).padStart(2,'0')+'_'+String(now.getDate()).padStart(2,'0')+'.xlsx');
+}
+</script>
+</body>
+</html>
