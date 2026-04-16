@@ -6,7 +6,10 @@ This document describes the automated agent loop for processing feature requests
 
 - **GET** `https://spicemore-site.vercel.app/api/requests` — List all requests
 - **POST** `https://spicemore-site.vercel.app/api/request-update` — Update request status/feedback
-  - Body: `{ "id": "...", "status": "...", "note": "..." }`
+  - Status update: `{ "id": "...", "status": "...", "note": "..." }`
+  - Feedback: `{ "id": "...", "feedback": "...", "feedbackType": "feedback|suggestion|bug|approval", "feedbackFiles": [...] }`
+  - Note: Uses versioned blob paths (id-v{timestamp}.json) to avoid CDN stale reads
+  - Note: Emails are sent automatically on status changes via Resend
 - **POST** `https://spicemore-site.vercel.app/api/send-email` — Send notification email
   - Body: `{ "to": "...", "subject": "...", "html": "..." }`
 
