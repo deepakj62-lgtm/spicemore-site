@@ -1,4 +1,4 @@
-const { put, list, del } = require('@vercel/blob');
+const { put, list } = require('@vercel/blob');
 const { sendRequestConfirmation } = require('./_email');
 
 module.exports = async function handler(req, res) {
@@ -10,20 +10,31 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // List all requests
+      // List all request blobs (may include versioned blobs like id-v123.json)
       const { blobs } = await list({ prefix: 'requests/' });
-      const requests = [];
 
+      // Group blobs by request ID (extract ID before -v or .json)
+      const blobsByRequest = {};
       for (const blob of blobs) {
-        if (blob.pathname.endsWith('.json')) {
-          try {
-            const fetchUrl = blob.url + (blob.url.includes('?') ? '&' : '?') + '_t=' + Date.now();
-            const response = await fetch(fetchUrl, { cache: 'no-store' });
-            const data = await response.json();
-            requests.push(data);
-          } catch (e) {
-            // Skip corrupted entries
-          }
+        if (!blob.pathname.endsWith('.json')) continue;
+        // Extract request ID: "requests/abc123.json" or "requests/abc123-v1234567.json"
+        const filename = blob.pathname.replace('requests/', '').replace('.json', '');
+        const requestId = filename.replace(/-v\d+$/, '');
+        if (!blobsByRequest[requestId]) blobsByRequest[requestId] = [];
+        blobsByRequest[requestId].push(blob);
+      }
+
+      const requests = [];
+      for (const [requestId, versions] of Object.entries(blobsByRequest)) {
+        // Sort by uploadedAt descending, take latest
+        versions.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+        const latest = versions[0];
+        try {
+          const response = await fetch(latest.url);
+          const data = await response.json();
+          requests.push(data);
+        } catch (e) {
+          // Skip corrupted entries
         }
       }
 
@@ -76,7 +87,7 @@ module.exports = async function handler(req, res) {
         updatedAt: new Date().toISOString()
       };
 
-      // Save request metadata (no CDN cache so subsequent reads are fresh)
+      // Save request metadata (no CDN cache)
       await put(`requests/${id}.json`, JSON.stringify(request), {
         access: 'public',
         contentType: 'application/json',
@@ -84,7 +95,7 @@ module.exports = async function handler(req, res) {
         cacheControlMaxAge: 0
       });
 
-      // Send confirmation email before responding (must await or Vercel kills the function)
+      // Send confirmation email before responding
       await sendRequestConfirmation(request);
 
       return res.status(201).json({ request });

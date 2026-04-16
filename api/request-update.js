@@ -1,4 +1,4 @@
-const { put, list } = require('@vercel/blob');
+const { put, list, del } = require('@vercel/blob');
 const { sendStatusUpdate } = require('./_email');
 
 module.exports = async function handler(req, res) {
@@ -18,30 +18,20 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Request ID is required' });
     }
 
-    // Find the existing request blob
+    // Find all versions of this request blob
     const { blobs } = await list({ prefix: `requests/${id}` });
-    const requestBlob = blobs.find(b => b.pathname.includes(id));
-    if (!requestBlob) {
+    const matchingBlobs = blobs
+      .filter(b => b.pathname.includes(id) && b.pathname.endsWith('.json'))
+      .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
+    if (matchingBlobs.length === 0) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Fetch existing request data with retry for CDN propagation
-    let request;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const fetchUrl = requestBlob.url + (requestBlob.url.includes('?') ? '&' : '?') + '_t=' + Date.now() + '_' + attempt;
-        const response = await fetch(fetchUrl, {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-        });
-        const text = await response.text();
-        request = JSON.parse(text);
-        break;
-      } catch (e) {
-        if (attempt === 2) throw new Error('Failed to read request after 3 attempts: ' + e.message);
-        await new Promise(r => setTimeout(r, 500));
-      }
-    }
+    // Read the latest version
+    const latestBlob = matchingBlobs[0];
+    const response = await fetch(latestBlob.url);
+    const request = await response.json();
 
     // Update status if provided
     if (status) {
@@ -72,13 +62,19 @@ module.exports = async function handler(req, res) {
       await sendStatusUpdate(request, status, note);
     }
 
-    // Save updated request (overwrite)
-    await put(`requests/${id}.json`, JSON.stringify(request), {
+    // Write as a NEW versioned blob (new URL = no CDN staleness)
+    const version = Date.now();
+    await put(`requests/${id}-v${version}.json`, JSON.stringify(request), {
       access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
       cacheControlMaxAge: 0
     });
+
+    // Clean up old versions (keep only the latest)
+    for (const old of matchingBlobs) {
+      try { await del(old.url); } catch (e) { /* ignore cleanup errors */ }
+    }
 
     return res.status(200).json({ request });
 
