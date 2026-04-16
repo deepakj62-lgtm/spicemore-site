@@ -1,4 +1,4 @@
-const { put, list, del } = require('@vercel/blob');
+const { put, list } = require('@vercel/blob');
 const { sendStatusUpdate } = require('./_email');
 
 module.exports = async function handler(req, res) {
@@ -25,9 +25,23 @@ module.exports = async function handler(req, res) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Fetch existing request data
-    const response = await fetch(requestBlob.url, { cache: 'no-store' });
-    const request = await response.json();
+    // Fetch existing request data with retry for CDN propagation
+    let request;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const fetchUrl = requestBlob.url + (requestBlob.url.includes('?') ? '&' : '?') + '_t=' + Date.now() + '_' + attempt;
+        const response = await fetch(fetchUrl, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        });
+        const text = await response.text();
+        request = JSON.parse(text);
+        break;
+      } catch (e) {
+        if (attempt === 2) throw new Error('Failed to read request after 3 attempts: ' + e.message);
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
 
     // Update status if provided
     if (status) {
@@ -58,8 +72,7 @@ module.exports = async function handler(req, res) {
       await sendStatusUpdate(request, status, note);
     }
 
-    // Delete old blob first to force CDN cache invalidation, then write fresh
-    await del(requestBlob.url);
+    // Save updated request (overwrite)
     await put(`requests/${id}.json`, JSON.stringify(request), {
       access: 'public',
       contentType: 'application/json',
