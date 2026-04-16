@@ -1,4 +1,5 @@
 const { put, list } = require('@vercel/blob');
+const { sendStatusUpdate } = require('./_email');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -51,6 +52,11 @@ module.exports = async function handler(req, res) {
     }
 
     request.updatedAt = new Date().toISOString();
+
+    // Send status update email (non-blocking)
+    if (status) {
+      sendStatusUpdate(request, status, note).catch(() => {});
+    }
 
     // Save updated request (overwrite)
     await put(`requests/${id}.json`, JSON.stringify(request), {

@@ -1,4 +1,5 @@
 const { put, list, del } = require('@vercel/blob');
+const { sendRequestConfirmation } = require('./_email');
 
 module.exports = async function handler(req, res) {
   // CORS headers
@@ -80,6 +81,9 @@ module.exports = async function handler(req, res) {
         contentType: 'application/json',
         addRandomSuffix: false
       });
+
+      // Send confirmation email (non-blocking)
+      sendRequestConfirmation(request).catch(() => {});
 
       return res.status(201).json({ request });
 
