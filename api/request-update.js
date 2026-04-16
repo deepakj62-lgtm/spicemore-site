@@ -18,13 +18,14 @@ module.exports = async function handler(req, res) {
     }
 
     // Find the existing request blob
-    const { blobs } = await list({ prefix: `requests/${id}.json` });
-    if (!blobs.length) {
+    const { blobs } = await list({ prefix: `requests/${id}` });
+    const requestBlob = blobs.find(b => b.pathname.includes(id));
+    if (!requestBlob) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
     // Fetch existing request data
-    const response = await fetch(blobs[0].url);
+    const response = await fetch(requestBlob.url);
     const request = await response.json();
 
     // Update status if provided
@@ -54,7 +55,8 @@ module.exports = async function handler(req, res) {
     // Save updated request (overwrite)
     await put(`requests/${id}.json`, JSON.stringify(request), {
       access: 'public',
-      contentType: 'application/json'
+      contentType: 'application/json',
+      addRandomSuffix: false
     });
 
     return res.status(200).json({ request });

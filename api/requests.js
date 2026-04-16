@@ -41,7 +41,8 @@ module.exports = async function handler(req, res) {
             const buffer = Buffer.from(file.data, 'base64');
             const blob = await put(`files/${id}/${file.name}`, buffer, {
               access: 'public',
-              contentType: file.type || 'application/octet-stream'
+              contentType: file.type || 'application/octet-stream',
+              addRandomSuffix: false
             });
             uploadedFiles.push({
               name: file.name,
@@ -76,7 +77,8 @@ module.exports = async function handler(req, res) {
       // Save request metadata
       await put(`requests/${id}.json`, JSON.stringify(request), {
         access: 'public',
-        contentType: 'application/json'
+        contentType: 'application/json',
+        addRandomSuffix: false
       });
 
       return res.status(201).json({ request });
