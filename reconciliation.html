@@ -25,15 +25,40 @@
         <a href="gallery.html">Gallery</a>
         <a href="about.html">About Us</a>
         <a href="contact.html">Contact</a>
-        <a href="credit-assessor.html">Credit Assessor</a>
-        <a href="reconciliation.html" class="active">Bank Reconciliation</a>
+        <div class="nav-dropdown">
+          <a href="smtc-portal.html" class="dropdown-trigger active">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
+          <div class="dropdown-menu">
+            <a href="credit-assessor.html">Credit Assessor</a>
+            <a href="reconciliation.html" class="active">Bank Reconciliation</a>
+            <a href="smtc-request-tool.html">Request New Functionality</a>
+            <a href="smtc-requests-view.html">View Requests</a>
+          </div>
+        </div>
       </div>
     </div>
   </nav>
 
+  <!-- AUTH GATE -->
+  <div id="authRedirect" class="portal-gate" style="display:none">
+    <div class="gate-card">
+      <div class="gate-icon">&#128274;</div>
+      <h2>Authentication Required</h2>
+      <p>Please sign in through the SMTC Corporate portal first.</p>
+      <a href="smtc-portal.html" class="btn-submit" style="display:inline-block;text-align:center;margin-top:16px;text-decoration:none">Go to Portal</a>
+    </div>
+  </div>
+
   <!-- BANK RECONCILIATION IFRAME -->
-  <iframe src="tools/bank-reconciliation-tool.html" class="credit-assessor-frame" title="SMTC Bank Reconciliation Tool" allow="clipboard-write"></iframe>
+  <iframe id="toolFrame" src="" class="credit-assessor-frame" title="SMTC Bank Reconciliation Tool" allow="clipboard-write" style="display:none"></iframe>
 
   <script src="js/main.js"></script>
+  <script>
+    if (sessionStorage.getItem('smtc_auth') === 'true') {
+      document.getElementById('toolFrame').src = 'tools/bank-reconciliation-tool.html';
+      document.getElementById('toolFrame').style.display = 'block';
+    } else {
+      document.getElementById('authRedirect').style.display = 'flex';
+    }
+  </script>
 </body>
 </html>

@@ -1,5 +1,8 @@
 {
-  "buildCommand": "echo 'Static site - no build needed'",
-  "outputDirectory": ".",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 30
+    }
+  }
 }

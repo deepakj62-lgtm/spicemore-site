@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request New Functionality | SMTC Corporate</title>
+  <meta name="description" content="Submit a request for new custom functionality for Spice More Trading Company.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="images/logo.png" alt="Spice More Trading Company">
+      </a>
+      <button class="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <div class="nav-dropdown">
+          <a href="smtc-portal.html" class="dropdown-trigger active">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
+          <div class="dropdown-menu">
+            <a href="credit-assessor.html">Credit Assessor</a>
+            <a href="reconciliation.html">Bank Reconciliation</a>
+            <a href="smtc-request-tool.html" class="active">Request New Functionality</a>
+            <a href="smtc-requests-view.html">View Requests</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- AUTH CHECK -->
+  <div id="authRedirect" class="portal-gate" style="display:none">
+    <div class="gate-card">
+      <div class="gate-icon">&#128274;</div>
+      <h2>Authentication Required</h2>
+      <p>Please sign in through the SMTC Corporate portal first.</p>
+      <a href="smtc-portal.html" class="btn-submit" style="display:inline-block;text-align:center;margin-top:16px;text-decoration:none">Go to Portal</a>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="requestContent" style="display:none">
+    <section class="page-hero">
+      <h1>Request New Functionality</h1>
+      <p class="hero-subtitle">Describe the process you want automated. We'll build it and deploy it as a tool.</p>
+    </section>
+
+    <section class="section request-section">
+      <div class="section-container">
+
+        <!-- How it works -->
+        <div class="request-how">
+          <h2 class="section-title">How It Works</h2>
+          <div class="how-steps">
+            <div class="how-step">
+              <div class="step-num">1</div>
+              <h4>Describe &amp; Upload</h4>
+              <p>Name the functionality, upload sample input &amp; output files, and describe exactly how the transformation works. The more detail, the better.</p>
+            </div>
+            <div class="how-step">
+              <div class="step-num">2</div>
+              <h4>We Build It</h4>
+              <p>Our system picks up your request and builds a custom tool that replicates the process &mdash; replacing what you currently do manually in Busy or other software.</p>
+            </div>
+            <div class="how-step">
+              <div class="step-num">3</div>
+              <h4>Test &amp; Go Live</h4>
+              <p>You'll get an email when it's ready for testing. Try it, give feedback, and once approved it goes live on the portal for everyone.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Request Form -->
+        <form id="requestForm" class="request-form">
+
+          <!-- Tool Name -->
+          <div class="form-group">
+            <label for="toolName">Functionality Name <span class="req">*</span></label>
+            <span class="label-hint">Give it a clear, descriptive name so everyone knows what it does.</span>
+            <input type="text" id="toolName" placeholder="e.g., Daily Outstanding Report, Invoice Matcher, Dealer Ledger Summary" required>
+          </div>
+
+          <!-- Input Files -->
+          <div class="file-upload-group">
+            <label>Sample Input Files <span class="req">*</span></label>
+            <span class="label-hint">Upload one or more sample files that serve as the starting data. These are the files you currently feed into Busy or your manual process. Upload as many as needed.</span>
+            <div class="file-drop" id="inputDrop">
+              <input type="file" id="inputFile" accept=".xlsx,.xls,.csv,.pdf,.txt,.doc,.docx,.json,.xml" multiple>
+              <div class="drop-content">
+                <span class="drop-icon">&#128229;</span>
+                <p class="drop-text">Drag &amp; drop your <strong>input files</strong> here, or click to browse</p>
+                <p class="drop-hint">Excel, CSV, PDF, Word, Text, JSON, XML &mdash; any file format</p>
+              </div>
+            </div>
+            <div class="multi-file-list" id="inputFileList"></div>
+            <div class="file-preview" id="inputPreview"></div>
+          </div>
+
+          <!-- Output Files -->
+          <div class="file-upload-group">
+            <label>Sample Output Files <span class="req">*</span></label>
+            <span class="label-hint">Upload the expected result &mdash; what the final output should look like after processing. This is the "after" to the input's "before."</span>
+            <div class="file-drop" id="outputDrop">
+              <input type="file" id="outputFile" accept=".xlsx,.xls,.csv,.pdf,.txt,.doc,.docx,.json,.xml" multiple>
+              <div class="drop-content">
+                <span class="drop-icon">&#128228;</span>
+                <p class="drop-text">Drag &amp; drop your <strong>output files</strong> here, or click to browse</p>
+                <p class="drop-hint">Excel, CSV, PDF, Word, Text, JSON, XML &mdash; any file format</p>
+              </div>
+            </div>
+            <div class="multi-file-list" id="outputFileList"></div>
+            <div class="file-preview" id="outputPreview"></div>
+          </div>
+
+          <!-- Supporting Files -->
+          <div class="file-upload-group">
+            <label>Supporting Files (Optional)</label>
+            <span class="label-hint">Any additional reference files &mdash; templates, lookup tables, configuration sheets, existing reports, screenshots of the Busy process, etc.</span>
+            <div class="file-drop" id="supportDrop">
+              <input type="file" id="supportFile" accept="*/*" multiple>
+              <div class="drop-content">
+                <span class="drop-icon">&#128206;</span>
+                <p class="drop-text">Drag &amp; drop any <strong>supporting files</strong> here, or click to browse</p>
+                <p class="drop-hint">Any file type &mdash; screenshots, templates, reference docs, etc.</p>
+              </div>
+            </div>
+            <div class="multi-file-list" id="supportFileList"></div>
+          </div>
+
+          <!-- Process Description -->
+          <div class="form-group">
+            <label for="processDesc">Detailed Process Description <span class="req">*</span></label>
+            <span class="label-hint">This is the most important field. An AI system will read this to build the tool, so be as detailed as possible. Describe every step, rule, formula, condition, and exception. Think of it as writing instructions for someone who has never used Busy.</span>
+            <textarea id="processDesc" rows="12" placeholder="Describe in full detail how the input files are transformed into the output files. Include:
+
+&bull; What each input file contains (column names, data types, structure)
+&bull; What each output file should contain
+&bull; Step-by-step transformation logic (what happens to each field/column)
+&bull; Any formulas, calculations, or lookups involved
+&bull; Grouping, filtering, sorting, or aggregation rules
+&bull; Conditional logic or business rules (e.g., 'if amount > X, then...')
+&bull; How this is currently done in Busy (which menu, which report, what settings)
+&bull; Any edge cases or exceptions to handle
+&bull; Rounding rules, date formats, currency handling
+&bull; What the user should be able to configure or select when running the tool" required></textarea>
+          </div>
+
+          <!-- Additional Options -->
+          <div class="form-group">
+            <label for="additionalOptions">Additional Options &amp; Controls</label>
+            <span class="label-hint">What settings or options should the user have when running this tool? For example: date range picker, company selector, output format choice, etc.</span>
+            <textarea id="additionalOptions" rows="5" placeholder="e.g.:
+&bull; Date range selector (from/to)
+&bull; Dropdown to select company (SMTC / SEPL)
+&bull; Option to filter by specific dealer
+&bull; Toggle for including zero-balance accounts
+&bull; Export format: Excel, PDF, or both"></textarea>
+          </div>
+
+          <!-- Current Process Notes -->
+          <div class="form-group">
+            <label for="currentProcess">How Is This Done Today?</label>
+            <span class="label-hint">Describe the current workflow &mdash; which software (Busy, Excel, Tally, etc.), which steps, and what takes the most time.</span>
+            <textarea id="currentProcess" rows="4" placeholder="e.g., Currently we export from Busy > Sales Register, then manually copy to Excel, apply VLOOKUP against the dealer master, filter by date range, and format for printing. Takes about 2 hours each time."></textarea>
+          </div>
+
+          <!-- Additional Notes -->
+          <div class="form-group">
+            <label for="additionalNotes">Any Other Notes</label>
+            <textarea id="additionalNotes" rows="3" placeholder="Anything else &mdash; frequency of use, who uses it, urgency, related tools, etc."></textarea>
+          </div>
+
+          <!-- Priority -->
+          <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority">
+              <option value="normal">Normal</option>
+              <option value="high">High &mdash; Needed soon</option>
+              <option value="low">Low &mdash; Whenever possible</option>
+            </select>
+          </div>
+
+          <!-- Requester -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="requesterName">Your Name <span class="req">*</span></label>
+              <input type="text" id="requesterName" required>
+            </div>
+            <div class="form-group">
+              <label for="requesterEmail">Your Email <span class="req">*</span></label>
+              <span class="label-hint">We'll notify you when the tool is ready for testing.</span>
+              <input type="email" id="requesterEmail" placeholder="your@email.com" required>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-submit btn-large" id="submitBtn">Submit Request</button>
+          </div>
+
+          <!-- Submission progress -->
+          <div id="submitProgress" style="display:none;margin-top:20px;text-align:center">
+            <p style="color:var(--mid-gray)">Uploading files and submitting request...</p>
+          </div>
+
+          <!-- Success -->
+          <div id="requestSuccess" class="request-success" style="display:none">
+            <div class="success-icon">&#9989;</div>
+            <h3>Request Submitted Successfully!</h3>
+            <p>Your functionality request has been saved. You'll receive an email at <strong id="successEmail"></strong> when it's ready for testing.</p>
+            <div class="success-actions">
+              <a href="smtc-requests-view.html" class="btn-submit">View All Requests</a>
+              <button type="button" id="newRequestBtn" class="btn-submit btn-outline-dark">Submit Another</button>
+            </div>
+          </div>
+        </form>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Billing Address</h4>
+        <p>SPICE MORE TRADING COMPANY</p>
+        <p>KPXIV 11, 12, 13, 14</p>
+        <p>VATTATHARA BUILDINGS</p>
+        <p>KUMILY MUNNAR ROAD</p>
+        <p>KUMILY, Idukki, Kerala, 685509</p>
+        <p>GSTIN 32ABYFS2267G1ZS</p>
+      </div>
+      <div class="footer-col">
+        <h4>Bank Information</h4>
+        <p>Axis Bank, Bodinayakanur Branch</p>
+        <p>Account Number: 918020093385758</p>
+        <p>IFSC: UTIB0002671</p>
+      </div>
+      <div class="footer-col">
+        <h4>Licenses</h4>
+        <p>Auctioneer: MKT Auc/CS/S2069/0013/2018</p>
+        <p>Exporter: ML/REG/S2069/2017</p>
+        <p>Dealer: C.S./S2069/136/2017</p>
+        <p style="margin-top:12px"><a href="https://drive.google.com/file/d/1f55b2SeUfF0G3m8NOM3nBvcl_BXpgJSD/view" target="_blank" style="color:var(--green-primary)">View ISO Certificate</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 Spice More Trading Company. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function() {
+    // Auth check
+    if (sessionStorage.getItem('smtc_auth') !== 'true') {
+      document.getElementById('authRedirect').style.display = 'flex';
+      return;
+    }
+    document.getElementById('requestContent').style.display = 'block';
+
+    // Multi-file storage
+    const fileStore = { input: [], output: [], support: [] };
+
+    function setupMultiFileUpload(dropId, fileInputId, listId, key) {
+      const drop = document.getElementById(dropId);
+      const fileInput = document.getElementById(fileInputId);
+      const listEl = document.getElementById(listId);
+
+      ['dragenter', 'dragover'].forEach(evt => {
+        drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.add('dragover'); });
+      });
+      ['dragleave', 'drop'].forEach(evt => {
+        drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.remove('dragover'); });
+      });
+
+      drop.addEventListener('drop', e => {
+        if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+      });
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) addFiles(fileInput.files);
+        fileInput.value = '';
+      });
+
+      function addFiles(files) {
+        for (const file of files) {
+          // Read file as base64
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const base64 = e.target.result.split(',')[1];
+            fileStore[key].push({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              category: key,
+              data: base64
+            });
+            renderList();
+          };
+          reader.readAsDataURL(file);
+        }
+        drop.classList.add('loaded');
+      }
+
+      function renderList() {
+        if (!fileStore[key].length) {
+          listEl.innerHTML = '';
+          drop.classList.remove('loaded');
+          return;
+        }
+        listEl.innerHTML = fileStore[key].map((f, i) => `
+          <div class="multi-file-item">
+            <span class="loaded-icon">&#128196;</span>
+            <span class="file-info-text">${escHtml(f.name)}</span>
+            <span class="file-size">${formatSize(f.size)}</span>
+            <button type="button" class="file-remove" data-key="${key}" data-idx="${i}" title="Remove">&times;</button>
+          </div>
+        `).join('');
+
+        // Remove handlers
+        listEl.querySelectorAll('.file-remove').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const k = this.dataset.key;
+            const idx = parseInt(this.dataset.idx);
+            fileStore[k].splice(idx, 1);
+            renderList();
+          });
+        });
+      }
+    }
+
+    setupMultiFileUpload('inputDrop', 'inputFile', 'inputFileList', 'input');
+    setupMultiFileUpload('outputDrop', 'outputFile', 'outputFileList', 'output');
+    setupMultiFileUpload('supportDrop', 'supportFile', 'supportFileList', 'support');
+
+    // Form submission
+    const form = document.getElementById('requestForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const progress = document.getElementById('submitProgress');
+    const success = document.getElementById('requestSuccess');
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const email = document.getElementById('requesterEmail').value;
+
+      // Gather all files
+      const allFiles = [
+        ...fileStore.input,
+        ...fileStore.output,
+        ...fileStore.support
+      ];
+
+      const payload = {
+        toolName: document.getElementById('toolName').value,
+        processDesc: document.getElementById('processDesc').value,
+        additionalOptions: document.getElementById('additionalOptions').value,
+        currentProcess: document.getElementById('currentProcess').value,
+        additionalNotes: document.getElementById('additionalNotes').value,
+        priority: document.getElementById('priority').value,
+        requesterName: document.getElementById('requesterName').value,
+        requesterEmail: email,
+        files: allFiles
+      };
+
+      // Show progress, disable button
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      progress.style.display = 'block';
+
+      try {
+        const resp = await fetch('/api/requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) throw new Error('Failed to submit');
+
+        const data = await resp.json();
+
+        // Hide form, show success
+        Array.from(form.querySelectorAll('.form-group, .file-upload-group, .form-row, .form-actions, .request-how')).forEach(el => el.style.display = 'none');
+        progress.style.display = 'none';
+        document.getElementById('successEmail').textContent = email;
+        success.style.display = 'block';
+
+      } catch (err) {
+        // Fallback: save locally and offer email
+        console.error('API error:', err);
+        progress.innerHTML = '<p style="color:#ca8a04">Could not save to server. You can download the request and email it instead.</p>';
+
+        const summary = buildSummaryText(payload);
+        const blob = new Blob([summary], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'SMTC-Request-' + payload.toolName.replace(/\s+/g, '-') + '.txt';
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn-submit btn-outline-dark';
+        downloadBtn.textContent = 'Download Summary';
+        downloadBtn.style.marginTop = '12px';
+        downloadBtn.onclick = () => a.click();
+        progress.appendChild(downloadBtn);
+
+        const emailBtn = document.createElement('button');
+        emailBtn.className = 'btn-submit';
+        emailBtn.textContent = 'Send via Email';
+        emailBtn.style.marginTop = '12px';
+        emailBtn.style.marginLeft = '12px';
+        emailBtn.onclick = () => {
+          const subject = encodeURIComponent('SMTC Feature Request: ' + payload.toolName);
+          const body = encodeURIComponent(summary + '\n\nIMPORTANT: Please attach the sample input and output files to this email.');
+          window.location.href = 'mailto:deepak@spicemore.com?subject=' + subject + '&body=' + body;
+        };
+        progress.appendChild(emailBtn);
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Request';
+      }
+    });
+
+    // New request button
+    document.getElementById('newRequestBtn').addEventListener('click', function() {
+      form.reset();
+      fileStore.input = []; fileStore.output = []; fileStore.support = [];
+      document.querySelectorAll('.multi-file-list').forEach(el => el.innerHTML = '');
+      document.querySelectorAll('.file-drop').forEach(el => el.classList.remove('loaded'));
+      Array.from(form.querySelectorAll('.form-group, .file-upload-group, .form-row, .form-actions, .request-how')).forEach(el => el.style.display = '');
+      success.style.display = 'none';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Request';
+    });
+
+    function buildSummaryText(p) {
+      return 'SMTC FUNCTIONALITY REQUEST\n' +
+        '==========================\n\n' +
+        'Name: ' + p.toolName + '\n' +
+        'Requested By: ' + p.requesterName + ' (' + p.requesterEmail + ')\n' +
+        'Priority: ' + p.priority + '\n' +
+        'Date: ' + new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) + '\n\n' +
+        'INPUT FILES: ' + (fileStore.input.length ? fileStore.input.map(f => f.name).join(', ') : 'None') + '\n' +
+        'OUTPUT FILES: ' + (fileStore.output.length ? fileStore.output.map(f => f.name).join(', ') : 'None') + '\n' +
+        'SUPPORTING FILES: ' + (fileStore.support.length ? fileStore.support.map(f => f.name).join(', ') : 'None') + '\n\n' +
+        'DETAILED PROCESS DESCRIPTION:\n' + p.processDesc + '\n\n' +
+        (p.additionalOptions ? 'ADDITIONAL OPTIONS & CONTROLS:\n' + p.additionalOptions + '\n\n' : '') +
+        (p.currentProcess ? 'CURRENT PROCESS:\n' + p.currentProcess + '\n\n' : '') +
+        (p.additionalNotes ? 'OTHER NOTES:\n' + p.additionalNotes + '\n' : '');
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  })();
+  </script>
+</body>
+</html>

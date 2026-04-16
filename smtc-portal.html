@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMTC Corporate | Spice More</title>
+  <meta name="description" content="Spice More Trading Company - Internal corporate tools portal.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="images/logo.png" alt="Spice More Trading Company">
+      </a>
+      <button class="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <div class="nav-dropdown">
+          <a href="smtc-portal.html" class="dropdown-trigger active">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
+          <div class="dropdown-menu">
+            <a href="credit-assessor.html">Credit Assessor</a>
+            <a href="reconciliation.html">Bank Reconciliation</a>
+            <a href="smtc-request-tool.html">Request New Functionality</a>
+            <a href="smtc-requests-view.html">View Requests</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- PASSWORD GATE -->
+  <div id="passwordGate" class="portal-gate">
+    <div class="gate-card">
+      <div class="gate-icon">&#128274;</div>
+      <h2>SMTC Corporate Portal</h2>
+      <p>Enter the access code to continue</p>
+      <form id="passwordForm" class="gate-form">
+        <input type="password" id="accessCode" placeholder="Access Code" autocomplete="off" required>
+        <button type="submit" class="btn-submit">Enter</button>
+        <div id="gateError" class="gate-error">Incorrect access code. Please try again.</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PORTAL CONTENT (hidden until authenticated) -->
+  <div id="portalContent" class="portal-content" style="display:none">
+    <section class="page-hero">
+      <h1>SMTC Corporate Tools</h1>
+      <p class="hero-subtitle">Internal tools for Spice More Trading Company</p>
+    </section>
+
+    <section class="section portal-section">
+      <div class="section-container">
+        <h2 class="section-title">Available Tools</h2>
+        <div class="portal-grid">
+
+          <!-- Credit Assessor Card -->
+          <a href="credit-assessor.html" class="portal-card">
+            <div class="card-icon">&#128200;</div>
+            <h3>Credit Assessor</h3>
+            <p>Assess dealer credit limits based on payment history, sales data, and risk scoring. Generates recommended credit limits with detailed analysis.</p>
+            <span class="card-status status-live">Live</span>
+          </a>
+
+          <!-- Bank Reconciliation Card -->
+          <a href="reconciliation.html" class="portal-card">
+            <div class="card-icon">&#128182;</div>
+            <h3>Bank Reconciliation</h3>
+            <p>Reconcile bank statements with ledger records. Identify matched, unmatched, and discrepant transactions automatically.</p>
+            <span class="card-status status-live">Live</span>
+          </a>
+
+          <!-- Daily Outstanding Card -->
+          <div class="portal-card card-coming-soon">
+            <div class="card-icon">&#128203;</div>
+            <h3>Daily Outstanding</h3>
+            <p>Track and manage daily outstanding balances across dealers. Monitor receivables and flag overdue accounts.</p>
+            <span class="card-status status-coming">Coming Soon</span>
+          </div>
+
+        </div>
+
+        <div class="portal-divider"></div>
+
+        <h2 class="section-title">Functionality Requests</h2>
+        <div class="portal-grid">
+          <a href="smtc-request-tool.html" class="portal-card card-request">
+            <div class="card-icon">&#128736;</div>
+            <h3>Request New Functionality</h3>
+            <p>Have a process that needs automation? Upload your input and output files, describe the transformation, and we'll build a custom tool for it.</p>
+            <span class="card-action">Submit Request &rarr;</span>
+          </a>
+
+          <a href="smtc-requests-view.html" class="portal-card">
+            <div class="card-icon">&#128203;</div>
+            <h3>View All Requests</h3>
+            <p>Track the status of all submitted functionality requests. See what's being built, what's ready for testing, and leave feedback.</p>
+            <span class="card-action">View Requests &rarr;</span>
+          </a>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Billing Address</h4>
+        <p>SPICE MORE TRADING COMPANY</p>
+        <p>KPXIV 11, 12, 13, 14</p>
+        <p>VATTATHARA BUILDINGS</p>
+        <p>KUMILY MUNNAR ROAD</p>
+        <p>KUMILY, Idukki, Kerala, 685509</p>
+        <p>GSTIN 32ABYFS2267G1ZS</p>
+      </div>
+      <div class="footer-col">
+        <h4>Bank Information</h4>
+        <p>Axis Bank, Bodinayakanur Branch</p>
+        <p>Account Number: 918020093385758</p>
+        <p>IFSC: UTIB0002671</p>
+      </div>
+      <div class="footer-col">
+        <h4>Licenses</h4>
+        <p>Auctioneer: MKT Auc/CS/S2069/0013/2018</p>
+        <p>Exporter: ML/REG/S2069/2017</p>
+        <p>Dealer: C.S./S2069/136/2017</p>
+        <p style="margin-top:12px"><a href="https://drive.google.com/file/d/1f55b2SeUfF0G3m8NOM3nBvcl_BXpgJSD/view" target="_blank" style="color:var(--green-primary)">View ISO Certificate</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 Spice More Trading Company. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+    (function() {
+      const PASS = 'SPICE123';
+      const gate = document.getElementById('passwordGate');
+      const content = document.getElementById('portalContent');
+      const form = document.getElementById('passwordForm');
+      const input = document.getElementById('accessCode');
+      const error = document.getElementById('gateError');
+
+      // Check if already authenticated this session
+      if (sessionStorage.getItem('smtc_auth') === 'true') {
+        gate.style.display = 'none';
+        content.style.display = 'block';
+      }
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (input.value === PASS) {
+          sessionStorage.setItem('smtc_auth', 'true');
+          gate.style.display = 'none';
+          content.style.display = 'block';
+          error.style.display = 'none';
+        } else {
+          error.style.display = 'block';
+          input.value = '';
+          input.focus();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
