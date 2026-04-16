@@ -25,8 +25,9 @@ module.exports = async function handler(req, res) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Fetch existing request data
-    const response = await fetch(requestBlob.url);
+    // Fetch existing request data (bypass CDN cache to avoid stale reads)
+    const fetchUrl = requestBlob.url + (requestBlob.url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    const response = await fetch(fetchUrl, { cache: 'no-store' });
     const request = await response.json();
 
     // Update status if provided

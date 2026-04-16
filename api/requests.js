@@ -17,7 +17,8 @@ module.exports = async function handler(req, res) {
       for (const blob of blobs) {
         if (blob.pathname.endsWith('.json')) {
           try {
-            const response = await fetch(blob.url);
+            const fetchUrl = blob.url + (blob.url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+            const response = await fetch(fetchUrl, { cache: 'no-store' });
             const data = await response.json();
             requests.push(data);
           } catch (e) {
