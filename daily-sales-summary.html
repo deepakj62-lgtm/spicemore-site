@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Credit Assessor | Spice More</title>
-  <meta name="description" content="SMTC Credit Limit Assessor - Internal tool for dealer credit analysis.">
+  <title>Daily Sales Summary | Spice More</title>
+  <meta name="description" content="SMTC Daily Sales Summary - Dealer-wise sales analysis tool.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
@@ -28,9 +28,9 @@
         <div class="nav-dropdown">
           <a href="smtc-portal.html" class="dropdown-trigger active">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
           <div class="dropdown-menu">
-            <a href="credit-assessor.html" class="active">Credit Assessor</a>
+            <a href="credit-assessor.html">Credit Assessor</a>
             <a href="reconciliation.html">Bank Reconciliation</a>
-            <a href="daily-sales-summary.html">Daily Sales Summary</a>
+            <a href="daily-sales-summary.html" class="active">Daily Sales Summary</a>
             <a href="smtc-request-tool.html">Request New Functionality</a>
             <a href="smtc-requests-view.html">View Requests</a>
           </div>
@@ -49,13 +49,13 @@
     </div>
   </div>
 
-  <!-- CREDIT ASSESSOR IFRAME -->
-  <iframe id="toolFrame" src="" class="credit-assessor-frame" title="SMTC Credit Limit Assessor" allow="clipboard-write" style="display:none"></iframe>
+  <!-- DAILY SALES SUMMARY IFRAME -->
+  <iframe id="toolFrame" src="" class="credit-assessor-frame" title="SMTC Daily Sales Summary" allow="clipboard-write" style="display:none"></iframe>
 
   <script src="js/main.js"></script>
   <script>
     if (sessionStorage.getItem('smtc_auth') === 'true') {
-      document.getElementById('toolFrame').src = 'tools/credit-assessor-tool.html';
+      document.getElementById('toolFrame').src = 'tools/daily-sales-summary-tool.html';
       document.getElementById('toolFrame').style.display = 'block';
     } else {
       document.getElementById('authRedirect').style.display = 'flex';

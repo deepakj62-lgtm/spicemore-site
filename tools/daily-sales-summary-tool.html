@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMTC Daily Sales Summary</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--border:#dde1e6;--primary:#2563eb;--primary-dark:#1d4ed8;--green:#16a34a;--green-bg:#dcfce7;--yellow:#ca8a04;--yellow-bg:#fef9c3;--red:#dc2626;--red-bg:#fee2e2;--blue-bg:#dbeafe;--text:#1e293b;--text-light:#64748b;--shadow:0 1px 3px rgba(0,0,0,.1);--mono:'SF Mono','Menlo','Consolas',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.container{max-width:1600px;margin:0 auto;padding:20px 24px}
+header{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:20px 24px;display:flex;align-items:center;gap:16px}
+header h1{font-size:22px;font-weight:700}
+header .subtitle{font-size:13px;opacity:.8;margin-top:2px}
+.logo{width:44px;height:44px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a5f}
+
+/* Upload */
+.upload-section{margin:24px 0}
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;background:var(--card);transition:all .2s;cursor:pointer;position:relative;max-width:600px}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--primary);background:var(--blue-bg)}
+.drop-zone.loaded{border-color:var(--green);background:var(--green-bg)}
+.drop-zone h3{font-size:15px;margin-bottom:6px}
+.drop-zone p{font-size:12px;color:var(--text-light)}
+.drop-zone .icon{font-size:36px;margin-bottom:8px}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.file-info{margin-top:8px;font-size:12px;color:var(--green);font-weight:600}
+
+/* Controls bar */
+.controls-bar{display:flex;gap:12px;align-items:flex-end;margin:16px 0;flex-wrap:wrap;padding:16px;background:var(--card);border-radius:10px;box-shadow:var(--shadow)}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.3px}
+.control-group input[type=date]{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit}
+.control-group input[type=date]:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(37,99,235,.15)}
+.control-group input[type=text]{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:220px}
+.control-group input[type=text]:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(37,99,235,.15)}
+
+/* Toggle switch */
+.toggle-wrap{display:flex;align-items:center;gap:8px;padding-bottom:2px}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:#cbd5e1;border-radius:11px;transition:.2s}
+.toggle .slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:var(--primary)}
+.toggle input:checked+.slider::before{transform:translateX(18px)}
+.toggle-label{font-size:13px;font-weight:500}
+
+/* Buttons */
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+.btn-primary:disabled{background:#94a3b8;cursor:not-allowed}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#15803d}
+.btn-outline{background:var(--card);color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--bg)}
+.action-bar{display:flex;gap:12px;align-items:center;margin:16px 0;flex-wrap:wrap}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:20px 0}
+.stat-card{background:var(--card);border-radius:10px;padding:16px;box-shadow:var(--shadow);text-align:center}
+.stat-card .value{font-size:26px;font-weight:800}
+.stat-card .label{font-size:12px;color:var(--text-light);margin-top:2px}
+.stat-card.green .value{color:var(--green)}
+.stat-card.yellow .value{color:var(--yellow)}
+.stat-card.red .value{color:var(--red)}
+.stat-card.blue .value{color:var(--primary)}
+
+/* Table */
+.table-wrap{background:var(--card);border-radius:10px;box-shadow:var(--shadow);overflow-x:auto;margin-bottom:24px;max-height:70vh;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f8fafc;padding:10px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;color:var(--text-light);letter-spacing:.3px;position:sticky;top:0;border-bottom:2px solid var(--border);z-index:2;cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{background:#eef2f7}
+th .sort-icon{font-size:10px;margin-left:4px;opacity:.4}
+th .sort-icon.active{opacity:1}
+td{padding:8px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top;white-space:nowrap}
+tr:hover{background:#f8fafc}
+tr.grand-total{background:#eef2ff;font-weight:700}
+tr.grand-total td{border-top:2px solid var(--primary);font-size:13px}
+.amount{font-family:var(--mono);text-align:right;white-space:nowrap}
+.pct-bar-cell{min-width:120px}
+.pct-bar{height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin-top:4px}
+.pct-bar .fill{height:100%;background:var(--primary);border-radius:3px;transition:width .3s}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;align-items:center;padding:12px 16px;background:#f8fafc;border-bottom:1px solid var(--border);border-radius:10px 10px 0 0}
+.filter-bar input{padding:6px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:260px}
+.filter-bar input:focus{outline:none;border-color:var(--primary)}
+.filter-bar label{font-size:12px;color:var(--text-light);font-weight:600}
+
+/* Date range display */
+.date-range-display{font-size:13px;color:var(--text-light);padding:4px 12px;background:#f1f5f9;border-radius:6px;display:inline-flex;align-items:center;gap:6px}
+
+/* Progress */
+.progress-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:999}
+.progress-box{background:#fff;padding:32px 40px;border-radius:14px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.spinner{width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:#1e293b;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.15);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+
+.hidden{display:none}
+#results-section{display:none}
+.section-title{font-size:16px;font-weight:700;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+
+/* Password gate */
+.auth-gate{display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1e3a5f,#2563eb);align-items:center;justify-content:center;font-family:system-ui}
+.auth-box{background:#fff;border-radius:12px;padding:40px 36px;max-width:360px;width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.auth-box h2{font-size:18px;color:#1e3a5f;margin:0 0 4px}
+.auth-box p{font-size:12px;color:#6b7280;margin:0 0 24px}
+.auth-box input{width:100%;padding:12px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:15px;text-align:center;outline:none;transition:border .2s}
+.auth-box input:focus{border-color:#2563eb}
+.auth-box button{width:100%;margin-top:12px;padding:12px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+.auth-box button:hover{background:#1d4ed8}
+#authErr{color:#dc2626;font-size:12px;margin-top:10px;display:none}
+
+/* Responsive */
+@media(max-width:768px){
+  .controls-bar{flex-direction:column;align-items:stretch}
+  .control-group input[type=text]{width:100%}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="authGate" class="auth-gate">
+  <div class="auth-box">
+    <h2>SMTC Daily Sales Summary</h2>
+    <p>Enter password to continue</p>
+    <input id="authPwd" type="password" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')authCheck()">
+    <button onclick="authCheck()">Unlock</button>
+    <p id="authErr">Incorrect password</p>
+  </div>
+</div>
+<script>
+(function(){
+  const KEY='smtc_sales_auth', HASH='a3c2f8b1';
+  function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return(h>>>0).toString(16).slice(0,8);}
+  if(sessionStorage.getItem(KEY)===HASH){document.getElementById('authGate').style.display='none';}
+  window.authCheck=function(){
+    const v=document.getElementById('authPwd').value;
+    if(simpleHash(v)==='87afac64'){
+      sessionStorage.setItem(KEY,HASH);
+      document.getElementById('authGate').style.display='none';
+    } else {
+      document.getElementById('authErr').style.display='block';
+      document.getElementById('authPwd').style.borderColor='#dc2626';
+      setTimeout(()=>{document.getElementById('authErr').style.display='none';
+        document.getElementById('authPwd').style.borderColor='#d1d5db';},2000);
+    }
+  };
+})();
+</script>
+
+<header>
+  <div class="logo">SM</div>
+  <div>
+    <h1>SMTC Daily Sales Summary</h1>
+    <div class="subtitle">Spice More Trading Company &mdash; Dealer-wise Sales Analysis</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Upload Section -->
+  <div class="upload-section">
+    <div class="drop-zone" id="dropZone">
+      <input type="file" accept=".xlsx,.xls,.csv" id="fileInput">
+      <div class="icon">&#x1F4CA;</div>
+      <h3>Sales Ledger</h3>
+      <p>Busy Accounting export (.xlsx)<br>Columns: Date, Voucher No, Dealer Name, Item Name, Quantity, Rate, Amount, GST Amount, Total Amount</p>
+      <div class="file-info hidden" id="fileInfo"></div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-bar hidden" id="controlsBar">
+    <div class="control-group">
+      <label>Date From</label>
+      <input type="date" id="dateFrom" onchange="applyFilters()">
+    </div>
+    <div class="control-group">
+      <label>Date To</label>
+      <input type="date" id="dateTo" onchange="applyFilters()">
+    </div>
+    <div class="control-group">
+      <label>Search Dealer</label>
+      <input type="text" id="dealerSearch" placeholder="Filter by dealer name..." oninput="applyFilters()">
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <div class="toggle-wrap">
+        <label class="toggle">
+          <input type="checkbox" id="gstToggle" checked onchange="applyFilters()">
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">Include GST</span>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>&nbsp;</label>
+      <button class="btn btn-outline" onclick="resetFilters()">&#8634; Reset Filters</button>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="action-bar">
+    <button class="btn btn-primary hidden" id="btnProcess" onclick="processData()">&#9654; Generate Summary</button>
+    <button class="btn btn-success hidden" id="btnExport" onclick="exportToExcel()">&#11015; Export to Excel</button>
+    <button class="btn btn-outline hidden" id="btnCopy" onclick="copyToClipboard()">&#128203; Copy for Google Sheets</button>
+    <button class="btn btn-outline hidden" id="btnReset" onclick="resetAll()">&#8634; Reset</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-overlay" id="progressOverlay">
+    <div class="progress-box">
+      <div class="spinner"></div>
+      <div id="progressText">Processing sales data...</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-section">
+    <h2 class="section-title">Sales Summary</h2>
+    <div id="dateRangeInfo" style="margin-bottom:12px"></div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="filter-bar">
+      <label>Search in table:</label>
+      <input type="text" id="tableSearch" placeholder="Filter results by dealer name..." oninput="filterTable()">
+    </div>
+    <div class="table-wrap">
+      <table id="summaryTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+let rawData = [];        // all parsed rows
+let filteredData = [];   // after date/dealer filters
+let summaryRows = [];    // dealer-wise aggregated
+let sortCol = 'totalAmount';
+let sortDir = 'desc';
+let dateMin = null, dateMax = null;
+
+/* ============================================================
+   FILE HANDLING
+   ============================================================ */
+(function setupDrop(){
+  const zone = document.getElementById('dropZone');
+  const input = document.getElementById('fileInput');
+  const info = document.getElementById('fileInfo');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  input.addEventListener('change', e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+})();
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true, cellText: false, cellNF: false });
+      rawData = parseSalesLedger(wb);
+      const info = document.getElementById('fileInfo');
+      info.textContent = 'Loaded: ' + file.name + ' \u2014 ' + rawData.length + ' transactions';
+      info.classList.remove('hidden');
+      document.getElementById('dropZone').classList.add('loaded');
+      document.getElementById('btnProcess').classList.remove('hidden');
+      document.getElementById('btnReset').classList.remove('hidden');
+      // Set date range from data
+      if (rawData.length > 0) {
+        const dates = rawData.map(r => r.date).filter(d => d);
+        dateMin = new Date(Math.min(...dates));
+        dateMax = new Date(Math.max(...dates));
+        document.getElementById('dateFrom').value = fmtISO(dateMin);
+        document.getElementById('dateTo').value = fmtISO(dateMax);
+      }
+    } catch (err) {
+      alert('Error reading file: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ============================================================
+   PARSING
+   ============================================================ */
+function parseSalesLedger(wb) {
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const json = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, dateNF: 'yyyy-mm-dd' });
+  let headerRow = -1;
+  const colMap = {};
+
+  // Find header row by scanning for known column names
+  for (let i = 0; i < Math.min(30, json.length); i++) {
+    const row = json[i];
+    if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      const cell = String(row[c] || '').toLowerCase().trim();
+      if (cell.includes('date') && !colMap.date) colMap.date = c;
+      if ((cell.includes('voucher') || cell.includes('vch') || cell.includes('bill')) && !colMap.voucherNo) colMap.voucherNo = c;
+      if ((cell.includes('dealer') || cell.includes('party') || cell.includes('account') || cell.includes('customer') || cell.includes('name')) && !cell.includes('item') && !colMap.dealerName) colMap.dealerName = c;
+      if ((cell.includes('item') || cell.includes('product') || cell.includes('particular') || cell.includes('goods')) && !colMap.itemName) colMap.itemName = c;
+      if ((cell.includes('qty') || cell.includes('quantity') || cell === 'kgs' || cell.includes('weight')) && !colMap.quantity) colMap.quantity = c;
+      if ((cell === 'rate' || cell.includes('rate') || cell.includes('price')) && !cell.includes('gst') && !colMap.rate) colMap.rate = c;
+      if ((cell === 'amount' || cell === 'amt' || cell.includes('value') || cell.includes('basic')) && !cell.includes('gst') && !cell.includes('total') && !colMap.amount) colMap.amount = c;
+      if ((cell.includes('gst') || cell.includes('tax') || cell.includes('cgst') || cell.includes('sgst') || cell.includes('igst')) && !colMap.gstAmount) colMap.gstAmount = c;
+      if ((cell.includes('total') || cell.includes('net') || cell.includes('gross') || cell.includes('invoice')) && !colMap.totalAmount) colMap.totalAmount = c;
+    }
+    // If we found at least date and dealer/amount, this is the header
+    if (colMap.date !== undefined && (colMap.dealerName !== undefined || colMap.amount !== undefined)) {
+      headerRow = i;
+      break;
+    }
+  }
+
+  // Fallback: assume columns in order if header not detected
+  if (headerRow === -1) {
+    headerRow = 0;
+    for (let i = 0; i < Math.min(10, json.length); i++) {
+      const row = json[i];
+      if (row && row.length >= 5) {
+        const firstCell = String(row[0] || '').toLowerCase();
+        if (firstCell.includes('date') || firstCell.includes('sl') || firstCell === 's.no') {
+          headerRow = i;
+          break;
+        }
+      }
+    }
+    // Assign positionally: Date, Voucher No, Dealer Name, Item Name, Quantity, Rate, Amount, GST Amount, Total Amount
+    const hRow = json[headerRow];
+    if (hRow) {
+      let col = 0;
+      if (colMap.date === undefined) colMap.date = col++;
+      else col = colMap.date + 1;
+      if (colMap.voucherNo === undefined) colMap.voucherNo = col++;
+      if (colMap.dealerName === undefined) colMap.dealerName = col++;
+      if (colMap.itemName === undefined) colMap.itemName = col++;
+      if (colMap.quantity === undefined) colMap.quantity = col++;
+      if (colMap.rate === undefined) colMap.rate = col++;
+      if (colMap.amount === undefined) colMap.amount = col++;
+      if (colMap.gstAmount === undefined) colMap.gstAmount = col++;
+      if (colMap.totalAmount === undefined) colMap.totalAmount = col++;
+    }
+  }
+
+  const rows = [];
+  for (let i = headerRow + 1; i < json.length; i++) {
+    const row = json[i];
+    if (!row || row.length < 3) continue;
+
+    const dateVal = parseDateVal(row[colMap.date]);
+    const dealer = String(row[colMap.dealerName] || '').trim();
+    if (!dealer || dealer === '') continue;
+
+    const voucherNo = String(row[colMap.voucherNo] || '').trim();
+    const itemName = String(row[colMap.itemName] || '').trim();
+    const quantity = parseNum(row[colMap.quantity]);
+    const rate = parseNum(row[colMap.rate]);
+    const amount = parseNum(row[colMap.amount]);
+    const gstAmount = parseNum(row[colMap.gstAmount]);
+    const totalAmount = colMap.totalAmount !== undefined ? parseNum(row[colMap.totalAmount]) : (amount + gstAmount);
+
+    // Skip rows with no meaningful data
+    if (amount === 0 && totalAmount === 0 && quantity === 0) continue;
+
+    rows.push({
+      date: dateVal,
+      voucherNo,
+      dealerName: dealer,
+      itemName,
+      quantity,
+      rate,
+      amount,
+      gstAmount,
+      totalAmount: totalAmount || (amount + gstAmount)
+    });
+  }
+  return rows;
+}
+
+function parseNum(val) {
+  if (val == null || val === '') return 0;
+  if (typeof val === 'number') return val;
+  let s = String(val).replace(/[₹Rs.\s]/g, '').replace(/,/g, '').trim();
+  if (s === '' || s === '-') return 0;
+  return parseFloat(s) || 0;
+}
+
+function parseDateVal(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  let s = String(val).trim();
+  // Try DD/MM/YYYY or DD-MM-YYYY
+  let parts = s.split(/[-\/]/);
+  if (parts.length === 3) {
+    let day = parseInt(parts[0]), month = parseInt(parts[1]), year = parseInt(parts[2]);
+    if (day > 31) { let t = day; day = year; year = t; } // YYYY/MM/DD
+    if (year < 100) year += 2000;
+    let d = new Date(year, month - 1, day);
+    if (!isNaN(d)) return d;
+  }
+  let d = new Date(s);
+  if (!isNaN(d)) return d;
+  return null;
+}
+
+/* ============================================================
+   FORMATTING HELPERS
+   ============================================================ */
+function formatINR(n) {
+  if (n == null || isNaN(n)) return '0';
+  return n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function formatKgs(n) {
+  if (n == null || isNaN(n)) return '0';
+  return n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  if (typeof d === 'string') d = new Date(d);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function fmtISO(d) {
+  if (!d) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+/* ============================================================
+   PROCESSING
+   ============================================================ */
+function processData() {
+  if (rawData.length === 0) return;
+  document.getElementById('progressOverlay').style.display = 'flex';
+  document.getElementById('progressText').textContent = 'Generating sales summary...';
+  setTimeout(() => {
+    try {
+      document.getElementById('controlsBar').classList.remove('hidden');
+      applyFilters();
+      document.getElementById('results-section').style.display = 'block';
+      document.getElementById('btnExport').classList.remove('hidden');
+      document.getElementById('btnCopy').classList.remove('hidden');
+      document.getElementById('btnProcess').textContent = '\u21BB Refresh Summary';
+    } catch (err) {
+      alert('Processing error: ' + err.message);
+      console.error(err);
+    }
+    document.getElementById('progressOverlay').style.display = 'none';
+  }, 100);
+}
+
+function applyFilters() {
+  const fromDate = document.getElementById('dateFrom').value ? new Date(document.getElementById('dateFrom').value + 'T00:00:00') : null;
+  const toDate = document.getElementById('dateTo').value ? new Date(document.getElementById('dateTo').value + 'T23:59:59') : null;
+  const dealerSearch = document.getElementById('dealerSearch').value.toLowerCase().trim();
+  const includeGST = document.getElementById('gstToggle').checked;
+
+  // Filter raw data
+  filteredData = rawData.filter(r => {
+    if (fromDate && r.date && r.date < fromDate) return false;
+    if (toDate && r.date && r.date > toDate) return false;
+    if (dealerSearch && !r.dealerName.toLowerCase().includes(dealerSearch)) return false;
+    return true;
+  });
+
+  // Aggregate by dealer
+  const dealerMap = {};
+  filteredData.forEach(r => {
+    const key = r.dealerName;
+    if (!dealerMap[key]) {
+      dealerMap[key] = {
+        dealerName: key,
+        totalQuantity: 0,
+        totalAmount: 0,
+        totalGST: 0,
+        totalWithGST: 0,
+        vouchers: new Set(),
+        items: new Set()
+      };
+    }
+    const d = dealerMap[key];
+    d.totalQuantity += r.quantity;
+    d.totalAmount += r.amount;
+    d.totalGST += r.gstAmount;
+    d.totalWithGST += r.totalAmount;
+    if (r.voucherNo) d.vouchers.add(r.voucherNo);
+    if (r.itemName) d.items.add(r.itemName);
+  });
+
+  // Build summary rows
+  summaryRows = Object.values(dealerMap).map(d => {
+    const displayAmount = includeGST ? d.totalWithGST : d.totalAmount;
+    return {
+      dealerName: d.dealerName,
+      totalQuantity: d.totalQuantity,
+      totalAmount: d.totalAmount,
+      totalGST: d.totalGST,
+      totalWithGST: d.totalWithGST,
+      displayAmount: displayAmount,
+      avgRate: d.totalQuantity > 0 ? d.totalAmount / d.totalQuantity : 0,
+      txnCount: d.vouchers.size || 1,
+      itemCount: d.items.size,
+      pctOfTotal: 0 // calculated after
+    };
+  });
+
+  // Calculate percentage of total
+  const grandTotal = summaryRows.reduce((s, r) => s + r.displayAmount, 0);
+  summaryRows.forEach(r => {
+    r.pctOfTotal = grandTotal > 0 ? (r.displayAmount / grandTotal * 100) : 0;
+  });
+
+  // Sort
+  sortSummary();
+
+  // Render
+  renderStats(includeGST);
+  renderDateRange();
+  renderTable(includeGST);
+}
+
+function sortSummary() {
+  summaryRows.sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (sortDir === 'asc') return va > vb ? 1 : va < vb ? -1 : 0;
+    return va < vb ? 1 : va > vb ? -1 : 0;
+  });
+}
+
+function handleSort(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    sortCol = col;
+    sortDir = col === 'dealerName' ? 'asc' : 'desc';
+  }
+  sortSummary();
+  const includeGST = document.getElementById('gstToggle').checked;
+  renderTable(includeGST);
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+function renderDateRange() {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  let html = '';
+  if (from || to) {
+    html = '<span class="date-range-display">&#128197; ';
+    if (from) html += formatDate(new Date(from + 'T00:00:00'));
+    html += ' &mdash; ';
+    if (to) html += formatDate(new Date(to + 'T00:00:00'));
+    html += ' &nbsp;|&nbsp; ' + filteredData.length + ' transactions</span>';
+  }
+  document.getElementById('dateRangeInfo').innerHTML = html;
+}
+
+function renderStats(includeGST) {
+  const totalDealers = summaryRows.length;
+  const totalQty = summaryRows.reduce((s, r) => s + r.totalQuantity, 0);
+  const totalAmt = summaryRows.reduce((s, r) => s + r.displayAmount, 0);
+  const totalTxn = summaryRows.reduce((s, r) => s + r.txnCount, 0);
+  const avgRate = totalQty > 0 ? summaryRows.reduce((s, r) => s + r.totalAmount, 0) / totalQty : 0;
+  const totalGST = summaryRows.reduce((s, r) => s + r.totalGST, 0);
+
+  document.getElementById('statsGrid').innerHTML =
+    '<div class="stat-card blue"><div class="value">' + totalDealers + '</div><div class="label">Active Dealers</div></div>' +
+    '<div class="stat-card green"><div class="value">\u20B9' + formatINR(totalAmt) + '</div><div class="label">Total Sales' + (includeGST ? ' (incl. GST)' : ' (excl. GST)') + '</div></div>' +
+    '<div class="stat-card blue"><div class="value">' + formatKgs(totalQty) + '</div><div class="label">Total Quantity (Kgs)</div></div>' +
+    '<div class="stat-card yellow"><div class="value">\u20B9' + formatINR(avgRate) + '</div><div class="label">Avg Rate / Kg</div></div>' +
+    '<div class="stat-card blue"><div class="value">' + totalTxn + '</div><div class="label">Total Transactions</div></div>' +
+    '<div class="stat-card green"><div class="value">\u20B9' + formatINR(totalGST) + '</div><div class="label">Total GST</div></div>';
+}
+
+function renderTable(includeGST) {
+  // Header
+  const cols = [
+    { key: 'dealerName', label: 'Dealer Name', align: 'left' },
+    { key: 'totalQuantity', label: 'Total Qty (Kgs)', align: 'right' },
+    { key: 'displayAmount', label: includeGST ? 'Total Amount (incl. GST)' : 'Total Amount (excl. GST)', align: 'right' },
+    { key: 'avgRate', label: 'Avg Rate / Kg', align: 'right' },
+    { key: 'txnCount', label: 'Transactions', align: 'right' },
+    { key: 'pctOfTotal', label: '% of Total Sales', align: 'left' }
+  ];
+
+  let thead = '<tr>';
+  cols.forEach(col => {
+    const isActive = sortCol === col.key;
+    const arrow = isActive ? (sortDir === 'asc' ? '\u25B2' : '\u25BC') : '\u25BC';
+    thead += '<th onclick="handleSort(\'' + col.key + '\')" style="text-align:' + col.align + '">' +
+      esc(col.label) +
+      '<span class="sort-icon ' + (isActive ? 'active' : '') + '">' + arrow + '</span></th>';
+  });
+  thead += '</tr>';
+  document.getElementById('tableHead').innerHTML = thead;
+
+  // Body
+  const searchTerm = (document.getElementById('tableSearch').value || '').toLowerCase();
+  let tbody = '';
+  let grandQty = 0, grandAmt = 0, grandGST = 0, grandTxn = 0;
+
+  summaryRows.forEach((r, idx) => {
+    if (searchTerm && !r.dealerName.toLowerCase().includes(searchTerm)) return;
+
+    grandQty += r.totalQuantity;
+    grandAmt += r.displayAmount;
+    grandGST += r.totalGST;
+    grandTxn += r.txnCount;
+
+    tbody += '<tr data-search="' + esc(r.dealerName.toLowerCase()) + '">' +
+      '<td><strong>' + esc(r.dealerName) + '</strong></td>' +
+      '<td class="amount">' + formatKgs(r.totalQuantity) + '</td>' +
+      '<td class="amount">\u20B9' + formatINR(r.displayAmount) + '</td>' +
+      '<td class="amount">\u20B9' + formatINR(r.avgRate) + '</td>' +
+      '<td class="amount">' + r.txnCount + '</td>' +
+      '<td class="pct-bar-cell"><span>' + r.pctOfTotal.toFixed(1) + '%</span>' +
+      '<div class="pct-bar"><div class="fill" style="width:' + Math.min(r.pctOfTotal, 100) + '%"></div></div></td>' +
+      '</tr>';
+  });
+
+  // Grand totals
+  const grandPct = grandAmt > 0 ? 100 : 0;
+  const grandAvgRate = grandQty > 0 ? summaryRows.reduce((s, r) => s + r.totalAmount, 0) / grandQty : 0;
+  tbody += '<tr class="grand-total">' +
+    '<td>GRAND TOTAL</td>' +
+    '<td class="amount">' + formatKgs(grandQty) + '</td>' +
+    '<td class="amount">\u20B9' + formatINR(grandAmt) + '</td>' +
+    '<td class="amount">\u20B9' + formatINR(grandAvgRate) + '</td>' +
+    '<td class="amount">' + grandTxn + '</td>' +
+    '<td>' + grandPct.toFixed(1) + '%</td>' +
+    '</tr>';
+
+  document.getElementById('tableBody').innerHTML = tbody;
+}
+
+function filterTable() {
+  const search = (document.getElementById('tableSearch').value || '').toLowerCase();
+  const rows = document.querySelectorAll('#tableBody tr:not(.grand-total)');
+  rows.forEach(tr => {
+    const match = !search || (tr.dataset.search || '').includes(search);
+    tr.style.display = match ? '' : 'none';
+  });
+}
+
+/* ============================================================
+   FILTER CONTROLS
+   ============================================================ */
+function resetFilters() {
+  if (dateMin) document.getElementById('dateFrom').value = fmtISO(dateMin);
+  if (dateMax) document.getElementById('dateTo').value = fmtISO(dateMax);
+  document.getElementById('dealerSearch').value = '';
+  document.getElementById('gstToggle').checked = true;
+  document.getElementById('tableSearch').value = '';
+  applyFilters();
+}
+
+/* ============================================================
+   EXPORT TO EXCEL
+   ============================================================ */
+function exportToExcel() {
+  const includeGST = document.getElementById('gstToggle').checked;
+  const wb = XLSX.utils.book_new();
+
+  // Summary sheet
+  const summaryData = [
+    ['SMTC DAILY SALES SUMMARY'],
+    ['Generated', new Date().toLocaleString('en-IN')],
+    ['Date Range', (document.getElementById('dateFrom').value || 'All') + ' to ' + (document.getElementById('dateTo').value || 'All')],
+    ['GST', includeGST ? 'Included' : 'Excluded'],
+    [],
+    ['Dealer Name', 'Total Quantity (Kgs)', includeGST ? 'Total Amount (incl. GST)' : 'Total Amount (excl. GST)', 'Avg Rate / Kg', 'No. of Transactions', '% of Total Sales']
+  ];
+
+  summaryRows.forEach(r => {
+    summaryData.push([
+      r.dealerName,
+      Math.round(r.totalQuantity * 100) / 100,
+      Math.round(r.displayAmount * 100) / 100,
+      Math.round(r.avgRate * 100) / 100,
+      r.txnCount,
+      Math.round(r.pctOfTotal * 10) / 10
+    ]);
+  });
+
+  // Grand totals
+  const grandQty = summaryRows.reduce((s, r) => s + r.totalQuantity, 0);
+  const grandAmt = summaryRows.reduce((s, r) => s + r.displayAmount, 0);
+  const grandAvgRate = grandQty > 0 ? summaryRows.reduce((s, r) => s + r.totalAmount, 0) / grandQty : 0;
+  const grandTxn = summaryRows.reduce((s, r) => s + r.txnCount, 0);
+
+  summaryData.push([
+    'GRAND TOTAL',
+    Math.round(grandQty * 100) / 100,
+    Math.round(grandAmt * 100) / 100,
+    Math.round(grandAvgRate * 100) / 100,
+    grandTxn,
+    100
+  ]);
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  wsSummary['!cols'] = [{ wch: 35 }, { wch: 18 }, { wch: 25 }, { wch: 16 }, { wch: 16 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Dealer Summary');
+
+  // Raw data sheet
+  const rawSheet = [['Date', 'Voucher No', 'Dealer Name', 'Item Name', 'Quantity (Kgs)', 'Rate / Kg', 'Amount', 'GST Amount', 'Total Amount']];
+  filteredData.forEach(r => {
+    rawSheet.push([
+      r.date ? formatDate(r.date) : '',
+      r.voucherNo,
+      r.dealerName,
+      r.itemName,
+      r.quantity,
+      r.rate,
+      r.amount,
+      r.gstAmount,
+      r.totalAmount
+    ]);
+  });
+  const wsRaw = XLSX.utils.aoa_to_sheet(rawSheet);
+  wsRaw['!cols'] = [{ wch: 14 }, { wch: 14 }, { wch: 30 }, { wch: 30 }, { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 16 }];
+  XLSX.utils.book_append_sheet(wb, wsRaw, 'Transaction Details');
+
+  const now = new Date();
+  XLSX.writeFile(wb, 'SMTC_Sales_Summary_' + now.getFullYear() + '_' + String(now.getMonth() + 1).padStart(2, '0') + '_' + String(now.getDate()).padStart(2, '0') + '.xlsx');
+  showToast('Excel file downloaded');
+}
+
+/* ============================================================
+   COPY TO CLIPBOARD
+   ============================================================ */
+function copyToClipboard() {
+  const includeGST = document.getElementById('gstToggle').checked;
+  let tsv = 'Dealer Name\tTotal Quantity (Kgs)\t' + (includeGST ? 'Total Amount (incl. GST)' : 'Total Amount (excl. GST)') + '\tAvg Rate / Kg\tTransactions\t% of Total Sales\n';
+
+  summaryRows.forEach(r => {
+    tsv += r.dealerName + '\t' +
+      (Math.round(r.totalQuantity * 100) / 100) + '\t' +
+      (Math.round(r.displayAmount * 100) / 100) + '\t' +
+      (Math.round(r.avgRate * 100) / 100) + '\t' +
+      r.txnCount + '\t' +
+      (Math.round(r.pctOfTotal * 10) / 10) + '%\n';
+  });
+
+  // Grand totals
+  const grandQty = summaryRows.reduce((s, r) => s + r.totalQuantity, 0);
+  const grandAmt = summaryRows.reduce((s, r) => s + r.displayAmount, 0);
+  const grandAvgRate = grandQty > 0 ? summaryRows.reduce((s, r) => s + r.totalAmount, 0) / grandQty : 0;
+  const grandTxn = summaryRows.reduce((s, r) => s + r.txnCount, 0);
+
+  tsv += 'GRAND TOTAL\t' +
+    (Math.round(grandQty * 100) / 100) + '\t' +
+    (Math.round(grandAmt * 100) / 100) + '\t' +
+    (Math.round(grandAvgRate * 100) / 100) + '\t' +
+    grandTxn + '\t100%\n';
+
+  navigator.clipboard.writeText(tsv).then(() => {
+    showToast('Copied to clipboard \u2014 paste into Google Sheets');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = tsv;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied to clipboard');
+  });
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+function resetAll() {
+  rawData = [];
+  filteredData = [];
+  summaryRows = [];
+  dateMin = null;
+  dateMax = null;
+  sortCol = 'totalAmount';
+  sortDir = 'desc';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('controlsBar').classList.add('hidden');
+  ['btnProcess', 'btnExport', 'btnCopy', 'btnReset'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('dropZone').classList.remove('loaded');
+  const info = document.getElementById('fileInfo');
+  info.classList.add('hidden');
+  info.textContent = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  document.getElementById('dealerSearch').value = '';
+  document.getElementById('tableSearch').value = '';
+  document.getElementById('gstToggle').checked = true;
+}
+</script>
+</body>
+</html>
