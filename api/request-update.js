@@ -1,4 +1,4 @@
-const { put, list } = require('@vercel/blob');
+const { put, list, del } = require('@vercel/blob');
 const { sendStatusUpdate } = require('./_email');
 
 module.exports = async function handler(req, res) {
@@ -25,9 +25,8 @@ module.exports = async function handler(req, res) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Fetch existing request data (bypass CDN cache to avoid stale reads)
-    const fetchUrl = requestBlob.url + (requestBlob.url.includes('?') ? '&' : '?') + '_t=' + Date.now();
-    const response = await fetch(fetchUrl, { cache: 'no-store' });
+    // Fetch existing request data
+    const response = await fetch(requestBlob.url, { cache: 'no-store' });
     const request = await response.json();
 
     // Update status if provided
@@ -59,7 +58,8 @@ module.exports = async function handler(req, res) {
       await sendStatusUpdate(request, status, note);
     }
 
-    // Save updated request (overwrite, no CDN cache so subsequent reads are fresh)
+    // Delete old blob first to force CDN cache invalidation, then write fresh
+    await del(requestBlob.url);
     await put(`requests/${id}.json`, JSON.stringify(request), {
       access: 'public',
       contentType: 'application/json',
