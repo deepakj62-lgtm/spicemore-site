@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { id, status, note, feedback } = req.body;
+    const { id, status, note, feedback, feedbackType, feedbackFiles } = req.body;
 
     if (!id) {
       return res.status(400).json({ error: 'Request ID is required' });
@@ -49,10 +49,37 @@ module.exports = async function handler(req, res) {
 
     // Add feedback if provided
     if (feedback) {
-      request.feedback.push({
+      const feedbackEntry = {
         message: feedback,
+        type: feedbackType || 'feedback',
         date: new Date().toISOString()
-      });
+      };
+
+      // Upload feedback files if any
+      if (feedbackFiles && Array.isArray(feedbackFiles) && feedbackFiles.length > 0) {
+        const uploadedFiles = [];
+        for (const file of feedbackFiles) {
+          if (file.data && file.name) {
+            const buffer = Buffer.from(file.data, 'base64');
+            const blob = await put(`feedback-files/${id}/${Date.now()}-${file.name}`, buffer, {
+              access: 'public',
+              contentType: file.type || 'application/octet-stream',
+              addRandomSuffix: false
+            });
+            uploadedFiles.push({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              url: blob.url
+            });
+          }
+        }
+        if (uploadedFiles.length > 0) {
+          feedbackEntry.files = uploadedFiles;
+        }
+      }
+
+      request.feedback.push(feedbackEntry);
     }
 
     request.updatedAt = new Date().toISOString();

@@ -45,9 +45,29 @@
     .feedback-item { padding: 10px 14px; background: var(--cream); border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
     .feedback-item .feedback-date { font-size: 11px; color: var(--mid-gray); margin-top: 4px; }
 
-    .feedback-form { display: flex; gap: 10px; margin-top: 12px; }
-    .feedback-form textarea { flex: 1; padding: 10px 12px; border: 1px solid var(--light-gray); border-radius: 8px; font-family: var(--font-body); font-size: 13px; resize: vertical; min-height: 60px; }
-    .feedback-form button { align-self: flex-end; }
+    .feedback-form { margin-top: 12px; }
+    .feedback-form textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--light-gray); border-radius: 8px; font-family: var(--font-body); font-size: 13px; resize: vertical; min-height: 60px; box-sizing: border-box; margin-bottom: 8px; }
+    .feedback-form select { padding: 8px 12px; border: 1px solid var(--light-gray); border-radius: 8px; font-family: var(--font-body); font-size: 13px; margin-bottom: 8px; background: var(--white); }
+    .feedback-form button { margin-left: 8px; }
+
+    .feedback-file-zone { border: 2px dashed var(--light-gray); border-radius: 8px; padding: 14px; text-align: center; margin-bottom: 10px; cursor: pointer; transition: border-color 0.2s; position: relative; font-size: 13px; color: var(--mid-gray); }
+    .feedback-file-zone:hover { border-color: var(--green-primary); }
+    .feedback-file-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .feedback-file-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .feedback-file-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: var(--cream); border: 1px solid var(--light-gray); border-radius: 6px; font-size: 11px; }
+    .feedback-file-chip .remove-file { cursor: pointer; color: #dc2626; font-weight: bold; margin-left: 4px; }
+    .feedback-file-chip img { width: 20px; height: 20px; object-fit: cover; border-radius: 3px; }
+
+    .feedback-item .feedback-type { display: inline-block; font-size: 10px; text-transform: uppercase; padding: 1px 8px; border-radius: 10px; font-weight: 600; margin-right: 6px; }
+    .feedback-item .type-feedback { background: #dbeafe; color: #2563eb; }
+    .feedback-item .type-suggestion { background: #fef3c7; color: #d97706; }
+    .feedback-item .type-bug { background: #fee2e2; color: #dc2626; }
+    .feedback-item .type-approval { background: #d1fae5; color: #059669; }
+    .feedback-item .feedback-files { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .feedback-item .feedback-file-link { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: white; border: 1px solid var(--light-gray); border-radius: 6px; font-size: 11px; text-decoration: none; color: var(--dark-text); }
+    .feedback-item .feedback-file-link:hover { border-color: var(--green-primary); }
+    .feedback-item .feedback-img-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--light-gray); cursor: pointer; }
+    .feedback-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
     .status-timeline { margin-top: 12px; }
     .timeline-item { display: flex; gap: 12px; padding: 6px 0; font-size: 12px; }
@@ -315,11 +335,24 @@
 
               ${(r.feedback && r.feedback.length) ? `
               <div class="detail-section">
-                <h4>Feedback</h4>
+                <h4>Feedback &amp; Suggestions (${r.feedback.length})</h4>
                 <div class="feedback-list">
                   ${r.feedback.map(f => `
                     <div class="feedback-item">
-                      <div>${esc(f.message)}</div>
+                      <div>
+                        ${f.type ? `<span class="feedback-type type-${f.type}">${f.type}</span>` : ''}
+                        ${esc(f.message)}
+                      </div>
+                      ${(f.files && f.files.length) ? `
+                        <div class="feedback-files">
+                          ${f.files.map(ff => {
+                            const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(ff.name);
+                            return isImg
+                              ? `<a href="${ff.url}" target="_blank"><img src="${ff.url}" class="feedback-img-preview" alt="${esc(ff.name)}" title="${esc(ff.name)}"></a>`
+                              : `<a href="${ff.url}" target="_blank" class="feedback-file-link">&#128206; ${esc(ff.name)}</a>`;
+                          }).join('')}
+                        </div>
+                      ` : ''}
                       <div class="feedback-date">${new Date(f.date).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                   `).join('')}
@@ -327,10 +360,25 @@
               </div>` : ''}
 
               <div class="detail-section">
-                <h4>Add Feedback</h4>
-                <div class="feedback-form">
-                  <textarea id="feedback-${r.id}" placeholder="Leave feedback, suggestions, or report issues..."></textarea>
-                  <button class="btn-submit" onclick="submitFeedback('${r.id}')">Send</button>
+                <h4>Add Feedback / Suggestion</h4>
+                <div class="feedback-form" id="feedbackForm-${r.id}">
+                  <div class="feedback-actions">
+                    <select id="feedbackType-${r.id}">
+                      <option value="feedback">Feedback</option>
+                      <option value="suggestion">Suggestion</option>
+                      <option value="bug">Bug Report</option>
+                      <option value="approval">Approval</option>
+                    </select>
+                  </div>
+                  <textarea id="feedback-${r.id}" placeholder="Describe your feedback, suggestion, or issue..."></textarea>
+                  <div class="feedback-file-zone" id="feedbackDropZone-${r.id}">
+                    &#128206; Drag &amp; drop files/screenshots here, or click to browse
+                    <input type="file" multiple onchange="handleFeedbackFiles('${r.id}', this.files)">
+                  </div>
+                  <div class="feedback-file-list" id="feedbackFileList-${r.id}"></div>
+                  <div class="feedback-actions">
+                    <button class="btn-submit" onclick="submitFeedback('${r.id}')">Submit</button>
+                  </div>
                 </div>
               </div>
 
@@ -352,23 +400,81 @@
       expand.classList.toggle('expanded');
     };
 
-    // Submit feedback
+    // Feedback file storage per request
+    const feedbackFiles = {};
+
+    window.handleFeedbackFiles = function(id, fileList) {
+      if (!feedbackFiles[id]) feedbackFiles[id] = [];
+      for (const file of fileList) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          feedbackFiles[id].push({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            data: e.target.result.split(',')[1] // base64
+          });
+          renderFeedbackFiles(id);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+
+    function renderFeedbackFiles(id) {
+      const listEl = document.getElementById('feedbackFileList-' + id);
+      if (!listEl || !feedbackFiles[id]) return;
+      listEl.innerHTML = feedbackFiles[id].map((f, i) => {
+        const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(f.name);
+        return `<span class="feedback-file-chip">
+          ${isImg ? `<img src="data:${f.type};base64,${f.data}" alt="">` : '&#128196;'}
+          ${esc(f.name)}
+          <span class="remove-file" onclick="removeFeedbackFile('${id}',${i})">&times;</span>
+        </span>`;
+      }).join('');
+    }
+
+    window.removeFeedbackFile = function(id, index) {
+      if (feedbackFiles[id]) {
+        feedbackFiles[id].splice(index, 1);
+        renderFeedbackFiles(id);
+      }
+    };
+
+    // Submit feedback with type and files
     window.submitFeedback = async function(id) {
       const textarea = document.getElementById('feedback-' + id);
+      const typeSelect = document.getElementById('feedbackType-' + id);
       const message = textarea.value.trim();
       if (!message) return;
 
+      const btn = document.querySelector(`#feedbackForm-${id} .btn-submit`);
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
       try {
+        const payload = {
+          id,
+          feedback: message,
+          feedbackType: typeSelect ? typeSelect.value : 'feedback',
+          feedbackFiles: feedbackFiles[id] || []
+        };
+
         const resp = await fetch('/api/request-update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, feedback: message })
+          body: JSON.stringify(payload)
         });
         if (!resp.ok) throw new Error('Failed');
         textarea.value = '';
-        await loadRequests(); // Reload to show updated feedback
+        feedbackFiles[id] = [];
+        renderFeedbackFiles(id);
+        if (typeSelect) typeSelect.value = 'feedback';
+        await loadRequests();
       } catch (err) {
         alert('Could not submit feedback. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Submit';
       }
     };
 
