@@ -59,11 +59,12 @@ module.exports = async function handler(req, res) {
       await sendStatusUpdate(request, status, note);
     }
 
-    // Save updated request (overwrite)
+    // Save updated request (overwrite, no CDN cache so subsequent reads are fresh)
     await put(`requests/${id}.json`, JSON.stringify(request), {
       access: 'public',
       contentType: 'application/json',
-      addRandomSuffix: false
+      addRandomSuffix: false,
+      cacheControlMaxAge: 0
     });
 
     return res.status(200).json({ request });

@@ -76,11 +76,12 @@ module.exports = async function handler(req, res) {
         updatedAt: new Date().toISOString()
       };
 
-      // Save request metadata
+      // Save request metadata (no CDN cache so subsequent reads are fresh)
       await put(`requests/${id}.json`, JSON.stringify(request), {
         access: 'public',
         contentType: 'application/json',
-        addRandomSuffix: false
+        addRandomSuffix: false,
+        cacheControlMaxAge: 0
       });
 
       // Send confirmation email before responding (must await or Vercel kills the function)
