@@ -53,9 +53,9 @@ module.exports = async function handler(req, res) {
 
     request.updatedAt = new Date().toISOString();
 
-    // Send status update email (non-blocking)
+    // Send status update email (must await or Vercel kills the function)
     if (status) {
-      sendStatusUpdate(request, status, note).catch(() => {});
+      await sendStatusUpdate(request, status, note);
     }
 
     // Save updated request (overwrite)

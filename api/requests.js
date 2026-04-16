@@ -82,8 +82,8 @@ module.exports = async function handler(req, res) {
         addRandomSuffix: false
       });
 
-      // Send confirmation email (non-blocking)
-      sendRequestConfirmation(request).catch(() => {});
+      // Send confirmation email before responding (must await or Vercel kills the function)
+      await sendRequestConfirmation(request);
 
       return res.status(201).json({ request });
 
