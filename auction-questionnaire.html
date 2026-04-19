@@ -35,6 +35,7 @@
     }
     .respondent-box h4 { color: var(--green-dark); font-family: var(--font-heading); margin-bottom: 12px; font-size: 16px; }
     .resp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .resp-row-single { grid-template-columns: 1fr; max-width: 420px; }
     .resp-row input {
       width: 100%; padding: 10px 14px; border: 1px solid var(--light-gray); border-radius: 8px;
       font-family: var(--font-body); font-size: 14px; background: #fff;
@@ -332,12 +333,9 @@
 
     <!-- Respondent info -->
     <div class="respondent-box">
-      <h4>Who's answering? (optional but helpful)</h4>
-      <div class="resp-row">
+      <h4>Who's answering?</h4>
+      <div class="resp-row resp-row-single">
         <input type="text" id="respName" placeholder="Your name" autocomplete="name">
-        <input type="tel" id="respPhone" placeholder="Phone (optional)" autocomplete="tel">
-        <input type="text" id="respRole" placeholder="Your role (e.g. depot manager)">
-        <input type="text" id="respDepot" placeholder="Depot / location">
       </div>
       <div class="resp-note">Filled in once — we remember it on this device while you answer more questions.</div>
     </div>
@@ -594,9 +592,10 @@
     localStorage.setItem('aq_sessionId', sessionId);
   }
 
-  // Restore respondent info
-  ['Name', 'Phone', 'Role', 'Depot'].forEach(k => {
+  // Restore respondent info (name only — other fields removed to keep the form simple)
+  ['Name'].forEach(k => {
     const el = document.getElementById('resp' + k);
+    if (!el) return;
     const stored = localStorage.getItem('aq_resp' + k);
     if (stored) el.value = stored;
     el.addEventListener('input', () => localStorage.setItem('aq_resp' + k, el.value));
@@ -946,10 +945,10 @@
       sessionId,
       questionId: qn,
       respondent: {
-        name:  document.getElementById('respName').value.trim(),
-        phone: document.getElementById('respPhone').value.trim(),
-        role:  document.getElementById('respRole').value.trim(),
-        depot: document.getElementById('respDepot').value.trim()
+        name:  (document.getElementById('respName') || { value: '' }).value.trim(),
+        phone: '',
+        role:  '',
+        depot: ''
       },
       rawTranscript: qState[qn].transcript.trim(),
       cleanedText:   qState[qn].cleanedText || '',
