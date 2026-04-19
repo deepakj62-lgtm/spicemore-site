@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auction Questionnaire Responses | Spice More</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&family=Noto+Sans+Malayalam:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .rv-page { padding: 100px 20px 60px; max-width: 1100px; margin: 0 auto; }
+    .rv-header { margin-bottom: 18px; }
+    .rv-header h1 { font-family: var(--font-heading); font-size: 32px; color: var(--green-dark); }
+    .rv-header .subtitle { color: var(--brown-light); }
+
+    .rv-stats {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin: 18px 0 24px;
+    }
+    .rv-stat {
+      background: #fff; border: 1px solid var(--light-gray);
+      border-left: 4px solid var(--green-primary);
+      padding: 12px 20px; border-radius: 10px;
+      min-width: 150px;
+    }
+    .rv-stat .n { font-family: var(--font-heading); font-size: 28px; color: var(--green-dark); font-weight: 700; }
+    .rv-stat .l { font-size: 12px; color: var(--brown-light); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .rv-filters {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      padding: 14px 18px; background: #fff; border-radius: 10px;
+      border: 1px solid var(--light-gray); margin-bottom: 20px;
+    }
+    .rv-filters input, .rv-filters select {
+      padding: 8px 12px; border: 1px solid var(--light-gray); border-radius: 6px;
+      font-family: var(--font-body); font-size: 14px;
+    }
+    .rv-filters input { flex: 1; min-width: 180px; }
+    .rv-refresh {
+      background: var(--green-primary); color: #fff; border: none;
+      padding: 8px 16px; border-radius: 6px; cursor: pointer;
+      font-family: var(--font-body); font-size: 14px; font-weight: 500;
+    }
+    .rv-refresh:hover { background: var(--green-dark); }
+
+    .rv-q-section {
+      background: #fff; border-radius: 12px; margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(26,48,9,0.05); overflow: hidden;
+    }
+    .rv-q-header {
+      padding: 16px 22px; cursor: pointer;
+      background: linear-gradient(135deg, var(--green-dark), var(--green-primary));
+      color: #fff; display: flex; align-items: center; gap: 14px;
+      transition: background 0.2s;
+    }
+    .rv-q-header:hover { filter: brightness(1.1); }
+    .rv-q-num {
+      background: rgba(255,255,255,0.22); padding: 6px 12px;
+      border-radius: 99px; font-weight: 700; font-size: 14px;
+      font-family: var(--font-body); min-width: 46px; text-align: center;
+    }
+    .rv-q-title { flex: 1; font-family: var(--font-body); font-weight: 500; }
+    .rv-q-count {
+      background: #fff; color: var(--green-dark); padding: 4px 12px;
+      border-radius: 99px; font-size: 13px; font-weight: 600;
+    }
+    .rv-q-toggle { font-size: 18px; transition: transform 0.2s; }
+    .rv-q-section.open .rv-q-toggle { transform: rotate(180deg); }
+
+    .rv-q-body { display: none; padding: 14px 22px 22px; }
+    .rv-q-section.open .rv-q-body { display: block; }
+
+    .rv-answer {
+      border: 1px solid var(--light-gray); border-radius: 10px;
+      padding: 16px 18px; margin-top: 12px; background: #f9fafb;
+    }
+    .rv-answer-head {
+      display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+      padding-bottom: 10px; border-bottom: 1px dashed var(--light-gray);
+      margin-bottom: 10px; font-size: 13px;
+    }
+    .rv-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .rv-badge.name { background: var(--green-dark); color: #fff; }
+    .rv-badge.phone { background: #e0f2fe; color: #075985; }
+    .rv-badge.role { background: #f3e8ff; color: #6b21a8; }
+    .rv-badge.depot { background: #fef3c7; color: #78350f; }
+    .rv-badge.lang { background: #dbeafe; color: #1e3a8a; }
+    .rv-badge.time { background: #f1f5f9; color: #475569; }
+
+    .rv-transcript {
+      background: #fff; padding: 12px 16px; border-radius: 8px;
+      border-left: 3px solid var(--green-primary); margin-top: 8px;
+      font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    }
+    .rv-transcript.ml { font-family: 'Noto Sans Malayalam', var(--font-body); line-height: 1.8; }
+    .rv-transcript.ta { font-family: 'Noto Sans Tamil', var(--font-body); line-height: 1.8; }
+    .rv-transcript-label {
+      font-size: 11px; color: var(--brown-light); text-transform: uppercase;
+      letter-spacing: 0.5px; margin-top: 10px; margin-bottom: 4px; font-weight: 500;
+    }
+
+    .rv-files { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .rv-file {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; background: #fff;
+      border: 1px solid var(--green-primary); border-radius: 8px;
+      text-decoration: none; color: var(--green-dark);
+      font-size: 13px; font-weight: 500; transition: all 0.2s;
+    }
+    .rv-file:hover { background: var(--green-primary); color: #fff; }
+
+    .rv-empty {
+      text-align: center; padding: 40px 20px;
+      background: #fff; border-radius: 10px;
+      border: 2px dashed var(--light-gray);
+      color: var(--mid-gray);
+    }
+    .rv-loading {
+      text-align: center; padding: 40px 20px;
+      color: var(--brown-light); font-size: 14px;
+    }
+
+    .rv-copy-btn {
+      background: none; border: 1px solid var(--light-gray);
+      padding: 4px 10px; border-radius: 6px; cursor: pointer;
+      font-size: 11px; color: var(--brown-light);
+      margin-left: auto;
+    }
+    .rv-copy-btn:hover { background: var(--light-gray); color: var(--dark-text); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo"><img src="images/logo.png" alt="Spice More Trading Company"></a>
+      <button class="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <div class="nav-dropdown">
+          <a href="smtc-portal.html" class="dropdown-trigger">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
+          <div class="dropdown-menu">
+            <a href="credit-assessor.html">Credit Assessor</a>
+            <a href="reconciliation.html">Bank Reconciliation</a>
+            <a href="daily-sales-summary.html">Daily Sales Summary</a>
+            <a href="smtc-request-tool.html">Request New Functionality</a>
+            <a href="smtc-requests-view.html">View Requests</a>
+            <a href="auction-questionnaire.html">Auction Questionnaire</a>
+            <a href="auction-responses-view.html" class="active">Auction Responses</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="rv-page">
+    <div class="rv-header">
+      <h1>Auction Questionnaire — Responses</h1>
+      <div class="subtitle">Everything submitted from <a href="auction-questionnaire.html" style="color:var(--green-primary)">the public questionnaire</a>.</div>
+    </div>
+
+    <div class="rv-stats" id="stats"></div>
+
+    <div class="rv-filters">
+      <input type="text" id="searchInput" placeholder="Search by name, depot, transcript text...">
+      <select id="langFilter">
+        <option value="">All languages</option>
+        <option value="ml-IN">Malayalam</option>
+        <option value="ta-IN">Tamil</option>
+        <option value="en-IN">English</option>
+        <option value="hi-IN">Hindi</option>
+      </select>
+      <button class="rv-refresh" id="refreshBtn">↻ Refresh</button>
+    </div>
+
+    <div id="content">
+      <div class="rv-loading">Loading responses...</div>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+  <script>
+  // Question titles (short form) for display in section headers
+  const QUESTION_TITLES = {
+    1: "Depots — addresses, activities, staff count",
+    2: "Management hierarchy",
+    3: "Peak vs lean months",
+    4: "Average monthly stock volume",
+    5: "Who brings stock — planters/brokers/own",
+    6: "Intake documents",
+    7: "Weighbridge",
+    8: "Sampling at intake",
+    9: "Grades handled + price bands",
+    10: "Grading authority",
+    11: "Storage + lot identification + insurance",
+    12: "Stock register — who/format/update cadence",
+    13: "Auction venue",
+    14: "Auction frequency",
+    15: "Auction format (physical / e-auction)",
+    16: "Auctioneer",
+    17: "Scale (lots + buyers per auction)",
+    18: "Buyer types",
+    19: "Buyer onboarding / KYC",
+    20: "Buyer ID system",
+    21: "Active buyer count",
+    22: "Bid mechanics",
+    23: "Minimum increment / reserve",
+    24: "Knock-down / sale confirmation",
+    25: "Unsold lots handling",
+    26: "Buyer payment terms",
+    27: "Consignor payment + deductions",
+    28: "Commission rate",
+    29: "Invoicing flow + GST on commission",
+    30: "Spices Board licenses + cess",
+    31: "GST treatment (pure-agent vs principal)",
+    32: "E-way bill",
+    33: "TDS / TCS (194Q / 206C(1H) / 194H)",
+    34: "Software used today",
+    35: "Biggest daily pain",
+    36: "Reports you wish you had",
+    37: "Quality / moisture disputes",
+    38: "Buyer default / consignor default",
+    39: "Stock loss / damage / theft"
+  };
+
+  const LANG_LABEL = {
+    'ml-IN': 'Malayalam',
+    'ta-IN': 'Tamil',
+    'en-IN': 'English',
+    'hi-IN': 'Hindi'
+  };
+
+  let allData = null;
+
+  async function load() {
+    const content = document.getElementById('content');
+    content.innerHTML = '<div class="rv-loading">Loading responses...</div>';
+    try {
+      const resp = await fetch('/api/auction-response', { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      allData = await resp.json();
+      render();
+    } catch (e) {
+      content.innerHTML = '<div class="rv-empty">Could not load responses: ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  function render() {
+    const search = document.getElementById('searchInput').value.trim().toLowerCase();
+    const langFilter = document.getElementById('langFilter').value;
+
+    const all = allData.responses || [];
+    const filtered = all.filter(r => {
+      if (langFilter && r.lang !== langFilter) return false;
+      if (search) {
+        const hay = [
+          r.respondent?.name, r.respondent?.phone, r.respondent?.role, r.respondent?.depot,
+          r.rawTranscript, r.cleanedText, r.typedNotes
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      return true;
+    });
+
+    // Group filtered by question
+    const byQ = {};
+    for (const r of filtered) (byQ[r.questionId] = byQ[r.questionId] || []).push(r);
+
+    // Stats
+    const uniqueRespondents = new Set(all.map(r => r.respondent?.name || r.respondent?.phone || r.sessionId)).size;
+    const totalFiles = all.reduce((sum, r) => sum + (r.files?.length || 0), 0);
+    const answeredQs = Object.keys(byQ).length;
+
+    document.getElementById('stats').innerHTML = `
+      <div class="rv-stat"><div class="n">${all.length}</div><div class="l">Total answers</div></div>
+      <div class="rv-stat"><div class="n">${answeredQs} / 39</div><div class="l">Questions answered</div></div>
+      <div class="rv-stat"><div class="n">${uniqueRespondents}</div><div class="l">Respondents</div></div>
+      <div class="rv-stat"><div class="n">${totalFiles}</div><div class="l">Files attached</div></div>
+    `;
+
+    // Render
+    const content = document.getElementById('content');
+    if (filtered.length === 0) {
+      content.innerHTML = '<div class="rv-empty">No responses match your filters.</div>';
+      return;
+    }
+
+    const sortedQs = Object.keys(byQ).map(Number).sort((a, b) => a - b);
+    content.innerHTML = sortedQs.map(qn => {
+      const answers = byQ[qn].slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const title = QUESTION_TITLES[qn] || ('Question ' + qn);
+      return `
+        <div class="rv-q-section open" data-q="${qn}">
+          <div class="rv-q-header">
+            <div class="rv-q-num">Q${qn}</div>
+            <div class="rv-q-title">${escapeHtml(title)}</div>
+            <div class="rv-q-count">${answers.length} answer${answers.length === 1 ? '' : 's'}</div>
+            <div class="rv-q-toggle">▾</div>
+          </div>
+          <div class="rv-q-body">
+            ${answers.map(renderAnswer).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Collapse/expand
+    document.querySelectorAll('.rv-q-header').forEach(h => {
+      h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+    });
+    // Copy buttons
+    document.querySelectorAll('.rv-copy-btn').forEach(b => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(b.dataset.text || '').then(() => {
+          const orig = b.textContent;
+          b.textContent = '✓ Copied';
+          setTimeout(() => { b.textContent = orig; }, 1500);
+        });
+      });
+    });
+  }
+
+  function renderAnswer(r) {
+    const resp = r.respondent || {};
+    const langCode = r.lang || '';
+    const scriptClass = langCode === 'ml-IN' ? 'ml' : (langCode === 'ta-IN' ? 'ta' : '');
+    const date = r.createdAt ? new Date(r.createdAt) : null;
+    const when = date ? date.toLocaleString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+
+    const badges = [];
+    if (resp.name)  badges.push(`<span class="rv-badge name">${escapeHtml(resp.name)}</span>`);
+    else            badges.push(`<span class="rv-badge name" style="background:#94a3b8">(anonymous)</span>`);
+    if (resp.role)  badges.push(`<span class="rv-badge role">${escapeHtml(resp.role)}</span>`);
+    if (resp.depot) badges.push(`<span class="rv-badge depot">${escapeHtml(resp.depot)}</span>`);
+    if (resp.phone) badges.push(`<span class="rv-badge phone">📞 ${escapeHtml(resp.phone)}</span>`);
+    if (langCode)   badges.push(`<span class="rv-badge lang">${LANG_LABEL[langCode] || langCode}</span>`);
+    if (when)       badges.push(`<span class="rv-badge time">${escapeHtml(when)}</span>`);
+
+    let body = '';
+    if (r.rawTranscript && r.rawTranscript.trim()) {
+      const copyText = r.rawTranscript.trim();
+      body += `
+        <div class="rv-transcript-label">Voice transcript</div>
+        <div class="rv-transcript ${scriptClass}">${escapeHtml(r.rawTranscript.trim())}
+          <button class="rv-copy-btn" data-text="${escapeHtml(copyText)}" style="margin-top:8px">📋 Copy</button>
+        </div>
+      `;
+    }
+    if (r.typedNotes && r.typedNotes.trim() && r.typedNotes.trim() !== (r.rawTranscript || '').trim()) {
+      body += `
+        <div class="rv-transcript-label">Typed notes</div>
+        <div class="rv-transcript ${scriptClass}">${escapeHtml(r.typedNotes.trim())}</div>
+      `;
+    }
+    if (r.cleanedText && r.cleanedText.trim()) {
+      body += `
+        <div class="rv-transcript-label">Cleaned (English)</div>
+        <div class="rv-transcript">${escapeHtml(r.cleanedText.trim())}</div>
+      `;
+    }
+    if (Array.isArray(r.files) && r.files.length) {
+      body += `
+        <div class="rv-transcript-label">Attached files (${r.files.length})</div>
+        <div class="rv-files">
+          ${r.files.map(f => `
+            <a class="rv-file" href="${escapeHtml(f.url)}" target="_blank" rel="noopener">
+              📎 ${escapeHtml(f.name)} <span style="color:var(--mid-gray);font-size:11px">(${formatSize(f.size)})</span>
+            </a>
+          `).join('')}
+        </div>
+      `;
+    }
+    if (!body) body = '<div class="rv-transcript" style="color:var(--mid-gray)"><em>(empty answer)</em></div>';
+
+    return `
+      <div class="rv-answer">
+        <div class="rv-answer-head">${badges.join('')}</div>
+        ${body}
+      </div>
+    `;
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function formatSize(bytes) {
+    if (!bytes) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1024/1024).toFixed(1) + ' MB';
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', load);
+  document.getElementById('searchInput').addEventListener('input', () => { if (allData) render(); });
+  document.getElementById('langFilter').addEventListener('change', () => { if (allData) render(); });
+
+  load();
+  </script>
+</body>
+</html>
