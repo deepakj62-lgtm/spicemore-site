@@ -620,7 +620,7 @@
     container.appendChild(header);
 
     section.questions.forEach(q => {
-      qState[q.n] = { transcript: '', cleanedText: '', lang: 'auto', files: [], recognition: null, isRecording: false, saved: false, questionText: q.en.replace(/<[^>]+>/g, '') };
+      qState[q.n] = { transcript: '', cleanedText: '', lang: 'ml-IN', files: [], recognition: null, isRecording: false, saved: false, questionText: q.en.replace(/<[^>]+>/g, '') };
       const card = document.createElement('div');
       card.className = 'q-card';
       card.id = 'q-card-' + q.n;
@@ -632,12 +632,11 @@
           <div class="ta">${q.ta}</div>
         </div>
         <div class="q-controls">
-          <select class="lang-select" data-q="${q.n}" aria-label="Speech language" title="Speech language — leave on Auto for mixed-language speech">
-            <option value="auto" selected>🌐 Auto (mixed OK)</option>
-            <option value="ml-IN">🗣️ Malayalam only</option>
-            <option value="ta-IN">🗣️ Tamil only</option>
-            <option value="en-IN">🗣️ English only</option>
-            <option value="hi-IN">🗣️ Hindi only</option>
+          <select class="lang-select" data-q="${q.n}" aria-label="Speech language" title="Pick the language you'll speak in — very important for good transcription">
+            <option value="ml-IN" selected>🗣️ Malayalam (മലയാളം)</option>
+            <option value="ta-IN">🗣️ Tamil (தமிழ்)</option>
+            <option value="en-IN">🗣️ English</option>
+            <option value="hi-IN">🗣️ Hindi (हिन्दी)</option>
           </select>
           <button class="btn-speak" data-q="${q.n}" ${speechSupported ? '' : 'disabled'}>
             <svg viewBox="0 0 24 24"><path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 15 6.7 12H5c0 3.41 2.72 6.23 6 6.72V22h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
@@ -731,10 +730,10 @@
   // SPEECH RECOGNITION (per question)
   // =========================================================================
   // Map UI language choice to an actual BCP-47 tag for Web Speech.
-  // 'auto' uses en-IN because Chrome's en-IN model handles Indian-English
-  // code-switching best (English business terms + native-language words).
+  // We removed the "auto" option because it biased too hard toward English
+  // and mangled Malayalam / Tamil speech. Respondent picks their language.
   function resolveLang(choice) {
-    if (!choice || choice === 'auto') return 'en-IN';
+    if (!choice) return 'ml-IN';
     return choice;
   }
 
@@ -827,7 +826,7 @@
     if (ta && !ta.value.trim()) ta.value = text;
     updateSaveButton(qn);
 
-    // Ask Claude to clean up the mixed-language transcript
+    // Ask Claude to clean up the transcript — keeping the SAME language as the respondent spoke
     if (live) {
       live.textContent = '✨ Cleaning up your answer with AI... (a few seconds)';
       live.classList.add('processing');
@@ -840,14 +839,15 @@
         body: JSON.stringify({
           transcript: text,
           questionId: qn,
-          questionText: qState[qn].questionText || ''
+          questionText: qState[qn].questionText || '',
+          lang: qState[qn].lang || 'ml-IN'
         })
       });
       if (resp.ok) {
         const data = await resp.json();
         if (data.cleanedText && data.cleanedText.trim()) {
           qState[qn].cleanedText = data.cleanedText.trim();
-          // Replace textarea contents with cleaned English so user can review/edit
+          // Replace textarea contents with cleaned text (same language as input) so user can review/edit
           if (ta) ta.value = data.cleanedText.trim();
           if (live) { live.textContent = '✓ Cleaned up. Review/edit below, then Save answer. (Original voice transcript also saved.)'; }
         } else {
