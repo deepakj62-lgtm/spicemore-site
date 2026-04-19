@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auction Business Questionnaire | Spice More</title>
+  <meta name="description" content="Help us understand our auction business — speak your answer in English, Malayalam, or Tamil. Attach files too.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&family=Noto+Sans+Malayalam:wght@400;500;600&family=Noto+Sans+Tamil:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ============== PAGE ============== */
+    .aq-page { padding: 100px 20px 80px; max-width: 960px; margin: 0 auto; }
+    .aq-header { text-align: left; margin-bottom: 24px; }
+    .aq-header h1 { font-family: var(--font-heading); font-size: 36px; color: var(--green-dark); font-weight: 700; margin-bottom: 8px; }
+    .aq-header .subtitle { color: var(--brown-light); font-size: 16px; }
+
+    .aq-intro {
+      background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px;
+      padding: 20px 24px; margin: 20px 0 28px; font-size: 15px; line-height: 1.6;
+    }
+    .aq-intro h3 { color: var(--green-dark); font-family: var(--font-heading); margin-bottom: 8px; font-size: 18px; }
+    .aq-intro ul { padding-left: 18px; margin: 8px 0 0; }
+    .aq-intro li { margin-bottom: 4px; }
+    .aq-intro .lang-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .aq-intro .lang-pill {
+      background: var(--green-primary); color: #fff; padding: 3px 12px; border-radius: 99px;
+      font-size: 13px; font-weight: 500;
+    }
+
+    /* ============== RESPONDENT ============== */
+    .respondent-box {
+      background: #fff; border: 2px solid var(--green-primary); border-radius: 12px;
+      padding: 18px 22px; margin-bottom: 28px;
+    }
+    .respondent-box h4 { color: var(--green-dark); font-family: var(--font-heading); margin-bottom: 12px; font-size: 16px; }
+    .resp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .resp-row input {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--light-gray); border-radius: 8px;
+      font-family: var(--font-body); font-size: 14px; background: #fff;
+    }
+    .resp-row input:focus { outline: none; border-color: var(--green-primary); }
+    .resp-note { color: var(--mid-gray); font-size: 12px; margin-top: 8px; }
+
+    /* ============== SECTION TITLE ============== */
+    .aq-section-header {
+      margin: 36px 0 14px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, var(--green-dark), var(--green-primary));
+      color: #fff; border-radius: 10px;
+    }
+    .aq-section-header .en { font-family: var(--font-heading); font-size: 20px; font-weight: 600; }
+    .aq-section-header .ml { font-family: 'Noto Sans Malayalam', sans-serif; font-size: 15px; opacity: 0.92; line-height: 1.7; }
+    .aq-section-header .ta { font-family: 'Noto Sans Tamil', sans-serif; font-size: 15px; opacity: 0.92; line-height: 1.7; }
+
+    /* ============== QUESTION CARD ============== */
+    .q-card {
+      background: #fff; border-radius: 14px; padding: 22px 24px 24px;
+      box-shadow: 0 2px 10px rgba(26,48,9,0.06);
+      margin-bottom: 18px; border-left: 5px solid var(--green-primary);
+      position: relative; transition: box-shadow 0.2s;
+    }
+    .q-card:hover { box-shadow: 0 4px 16px rgba(26,48,9,0.1); }
+    .q-card.saved { border-left-color: #16a34a; background: #f0fdf4; }
+
+    .q-num-badge {
+      position: absolute; top: -12px; left: 20px;
+      background: var(--green-dark); color: #fff; font-weight: 700;
+      padding: 6px 14px; border-radius: 99px; font-size: 13px;
+      font-family: var(--font-body); letter-spacing: 0.5px;
+    }
+    .q-card.saved .q-num-badge { background: #16a34a; }
+
+    .q-text { margin-top: 8px; }
+    .q-text .en { font-size: 16px; line-height: 1.55; color: var(--dark-text); margin-bottom: 10px; }
+    .q-text .ml { font-family: 'Noto Sans Malayalam', sans-serif; font-size: 15px; line-height: 1.8; color: #374151; margin-bottom: 8px; padding-top: 8px; border-top: 1px dashed var(--light-gray); }
+    .q-text .ta { font-family: 'Noto Sans Tamil', sans-serif; font-size: 15px; line-height: 1.8; color: #374151; padding-top: 8px; border-top: 1px dashed var(--light-gray); }
+    .q-text strong { font-weight: 600; color: var(--green-dark); }
+
+    /* ============== CONTROLS ============== */
+    .q-controls {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--light-gray);
+    }
+    .lang-select {
+      padding: 8px 12px; border: 1px solid var(--light-gray); border-radius: 8px;
+      font-family: var(--font-body); font-size: 13px; background: #fff; cursor: pointer;
+    }
+
+    .btn-speak, .btn-file, .btn-save, .btn-clear {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: 10px; cursor: pointer;
+      font-family: var(--font-body); font-size: 14px; font-weight: 500;
+      border: 2px solid var(--green-primary); background: #fff; color: var(--green-dark);
+      transition: all 0.2s;
+    }
+    .btn-speak:hover, .btn-file:hover { background: var(--green-primary); color: #fff; }
+    .btn-speak.recording {
+      background: #dc2626; border-color: #dc2626; color: #fff;
+      animation: pulse-red 1.4s infinite;
+    }
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+      50% { box-shadow: 0 0 0 10px rgba(220,38,38,0); }
+    }
+    .btn-save { border-color: var(--green-dark); background: var(--green-dark); color: #fff; margin-left: auto; }
+    .btn-save:hover { background: var(--green-darkest); }
+    .btn-save[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .btn-clear { border-color: var(--mid-gray); color: var(--mid-gray); padding: 8px 12px; font-size: 13px; }
+    .btn-clear:hover { background: var(--light-gray); color: var(--dark-text); }
+
+    .btn-speak svg, .btn-file svg, .btn-save svg { width: 18px; height: 18px; fill: currentColor; }
+
+    /* ============== TRANSCRIPT / TEXT ============== */
+    .q-live-transcript {
+      display: none; margin-top: 12px; padding: 12px 14px;
+      background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px;
+      font-size: 14px; color: #78350f; line-height: 1.6; min-height: 40px;
+    }
+    .q-live-transcript.active { display: block; }
+    .q-live-transcript.processing {
+      background: #dbeafe; border-color: #3b82f6; color: #1e3a8a;
+    }
+
+    .q-answer-area {
+      display: none; margin-top: 12px;
+    }
+    .q-answer-area.visible { display: block; }
+    .q-answer-area label {
+      display: block; font-size: 12px; color: var(--brown-light);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 500;
+    }
+    .q-answer-area textarea {
+      width: 100%; min-height: 70px; padding: 10px 14px;
+      border: 1px solid var(--light-gray); border-radius: 8px;
+      font-family: var(--font-body); font-size: 14px; resize: vertical; line-height: 1.5;
+    }
+    .q-answer-area textarea:focus { outline: none; border-color: var(--green-primary); }
+
+    /* ============== FILES ============== */
+    .q-files {
+      display: none; margin-top: 12px; padding: 10px 14px;
+      background: #f9fafb; border-radius: 8px; border: 1px dashed var(--light-gray);
+    }
+    .q-files.has-files { display: block; }
+    .q-file-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 10px; background: #fff; border-radius: 6px; margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .q-file-item .q-file-name { flex: 1; font-weight: 500; color: var(--green-dark); word-break: break-word; }
+    .q-file-item .q-file-size { color: var(--mid-gray); font-size: 11px; white-space: nowrap; }
+    .q-file-item .q-file-remove {
+      background: none; border: none; color: var(--mid-gray); font-size: 18px;
+      cursor: pointer; line-height: 1; padding: 0 4px;
+    }
+    .q-file-item .q-file-remove:hover { color: #dc2626; }
+
+    /* ============== SAVED FEEDBACK ============== */
+    .q-saved-msg {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #dcfce7; color: #166534; border: 1px solid #86efac;
+      border-radius: 8px; font-size: 13px;
+    }
+    .q-saved-msg.visible { display: block; }
+    .q-error-msg {
+      display: none; margin-top: 10px; padding: 10px 14px;
+      background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;
+      border-radius: 8px; font-size: 13px;
+    }
+    .q-error-msg.visible { display: block; }
+
+    .aq-final {
+      margin-top: 36px; padding: 24px; background: #ecfdf5;
+      border: 1px solid #86efac; border-radius: 12px; text-align: center;
+    }
+    .aq-final h3 { color: var(--green-dark); font-family: var(--font-heading); margin-bottom: 6px; }
+    .aq-final p { color: var(--green-dark); font-size: 14px; }
+
+    /* Not-supported warning */
+    .no-speech-warning {
+      display: none; background: #fef3c7; border: 1px solid #f59e0b;
+      padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;
+      color: #78350f; font-size: 14px;
+    }
+    .no-speech-warning.visible { display: block; }
+
+    @media (max-width: 640px) {
+      .aq-page { padding: 90px 14px 60px; }
+      .aq-header h1 { font-size: 26px; }
+      .resp-row { grid-template-columns: 1fr; }
+      .q-card { padding: 20px 16px 20px; }
+      .q-controls { gap: 8px; }
+      .btn-save { margin-left: 0; width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="images/logo.png" alt="Spice More Trading Company">
+      </a>
+      <button class="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <div class="nav-dropdown">
+          <a href="smtc-portal.html" class="dropdown-trigger">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
+          <div class="dropdown-menu">
+            <a href="credit-assessor.html">Credit Assessor</a>
+            <a href="reconciliation.html">Bank Reconciliation</a>
+            <a href="daily-sales-summary.html">Daily Sales Summary</a>
+            <a href="smtc-request-tool.html">Request New Functionality</a>
+            <a href="smtc-requests-view.html">View Requests</a>
+            <a href="auction-questionnaire.html" class="active">Auction Questionnaire</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="aq-page">
+    <div class="aq-header">
+      <h1>Auction Business Questionnaire</h1>
+      <div class="subtitle">Help us understand how our auction business really runs — every voice matters.</div>
+    </div>
+
+    <div class="aq-intro">
+      <h3>How to respond</h3>
+      <ul>
+        <li><strong>Pick any question</strong> you know something about. You don't have to answer all 39.</li>
+        <li><strong>Click "Speak"</strong> on the question and talk. Any language works — <em>English, Malayalam, Tamil, or Hindi</em>.</li>
+        <li><strong>Multiple answers welcome.</strong> Different people's perspectives on the same question are useful.</li>
+        <li><strong>Attach files</strong> — photos of lot tags, catalogues, invoices, Excel sheets, screenshots, whatever helps.</li>
+        <li><strong>Click "Save answer"</strong> when you're done with each question.</li>
+      </ul>
+      <div class="lang-row">
+        <span class="lang-pill">English</span>
+        <span class="lang-pill" style="font-family: 'Noto Sans Malayalam', sans-serif;">മലയാളം</span>
+        <span class="lang-pill" style="font-family: 'Noto Sans Tamil', sans-serif;">தமிழ்</span>
+        <span class="lang-pill">हिन्दी</span>
+      </div>
+    </div>
+
+    <div class="no-speech-warning" id="noSpeechWarning">
+      ⚠️ Your browser doesn't support voice input. Please use Chrome, Edge, or Safari — or type your answer in the text box that appears after clicking any "Speak" button.
+    </div>
+
+    <!-- Respondent info -->
+    <div class="respondent-box">
+      <h4>Who's answering? (optional but helpful)</h4>
+      <div class="resp-row">
+        <input type="text" id="respName" placeholder="Your name / பெயர் / പേര്" autocomplete="name">
+        <input type="tel" id="respPhone" placeholder="Phone (optional) / ഫോൺ / தொலைபேசி" autocomplete="tel">
+        <input type="text" id="respRole" placeholder="Your role (e.g. depot manager, accountant)">
+        <input type="text" id="respDepot" placeholder="Depot / location (e.g. Kumily, Puttady)">
+      </div>
+      <div class="resp-note">Filled in once — we remember it on this device while you answer more questions.</div>
+    </div>
+
+    <div id="questionsContainer"><!-- Questions rendered by JS --></div>
+
+    <div class="aq-final">
+      <h3>Thanks for taking the time!</h3>
+      <p>Every saved answer goes directly to Deepak. You can come back and add more anytime.</p>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+  <script>
+  // =========================================================================
+  // QUESTION DATA (39 questions, 3 languages, grouped into sections A-J)
+  // =========================================================================
+  const SECTIONS = [
+    {
+      title: { en: "A. Business basics", ml: "A. ബിസിനസ് അടിസ്ഥാനങ്ങൾ", ta: "A. வணிக அடிப்படைகள்" },
+      questions: [
+        { n: 1,
+          en: "<strong>Depots</strong> — list every depot / godown / office we operate, its address, what happens there (stock receipt / storage / auction / office only / cash-handling), and how many staff work there.",
+          ml: "<strong>ഡിപ്പോകൾ</strong> — നാം പ്രവർത്തിപ്പിക്കുന്ന ഓരോ ഡിപ്പോ / ഗോഡൗൺ / ഓഫീസിന്റെ പേര്, അഡ്രസ്, അവിടെ എന്ത് നടക്കുന്നു (സാധനം സ്വീകരിക്കൽ / സ്റ്റോറേജ് / ലേലം / ഓഫീസ് മാത്രം / കാശ് കൈകാര്യം), എത്ര ജീവനക്കാർ ജോലി ചെയ്യുന്നു എന്നിവ ലിസ്റ്റ് ചെയ്യുക.",
+          ta: "<strong>டிப்போக்கள்</strong> — நாம் இயக்கும் ஒவ்வொரு டிப்போ / கிடங்கு / அலுவலகத்தின் பெயர், முகவரி, அங்கே என்ன நடக்கிறது (சரக்கு வரவேற்பு / சேமிப்பு / ஏலம் / அலுவலகம் மட்டும் / பணம் கையாளுதல்), எத்தனை ஊழியர்கள் வேலை செய்கிறார்கள் என்பதை பட்டியலிடுங்க." },
+        { n: 2,
+          en: "<strong>Management hierarchy</strong> — who reports to whom, from partners/directors down to field staff (names + roles).",
+          ml: "<strong>മാനേജ്മെന്റ് ഹയറാർക്കി</strong> — പാർട്ണർമാർ / ഡയറക്ടർമാർ മുതൽ ഫീൽഡ് സ്റ്റാഫ് വരെ ആര് ആർക്ക് റിപ്പോർട്ട് ചെയ്യുന്നു (പേര് + റോൾ).",
+          ta: "<strong>நிர்வாக படிநிலை</strong> — பார்ட்னர்கள் / டைரக்டர்கள் முதல் களப் பணியாளர்கள் வரை யார் யாருக்கு ரிப்போர்ட் செய்கிறார்கள் (பெயர் + பொறுப்பு)." },
+        { n: 3,
+          en: "<strong>Peak months vs lean months</strong> — which months are busiest for auction? When is volume lowest?",
+          ml: "<strong>പീക്ക് മാസങ്ങൾ vs കുറവുള്ള മാസങ്ങൾ</strong> — ഏത് മാസങ്ങളിൽ ലേലം ഏറ്റവും തിരക്കുള്ളതാണ്? ഏത് മാസങ്ങളിൽ വോളിയം ഏറ്റവും കുറവാണ്?",
+          ta: "<strong>உச்ச மாதங்கள் vs குறைந்த மாதங்கள்</strong> — எந்த மாதங்களில் ஏலம் அதிகம்? எந்த மாதங்களில் குறைவு?" },
+        { n: 4,
+          en: "<strong>Average stock volume</strong> handled per month (in MT / kg) in the last 12 months — consignor stock + own-account stock separately if possible.",
+          ml: "<strong>ശരാശരി സ്റ്റോക്ക് വോളിയം</strong> — കഴിഞ്ഞ 12 മാസത്തിൽ ഒരു മാസം ശരാശരി എത്ര സാധനം (MT / കിലോ) കൈകാര്യം ചെയ്യുന്നു. സാധ്യമെങ്കിൽ കൺസൈനർ സാധനം + സ്വന്തം അക്കൗണ്ട് സാധനം വേറെവേറെ.",
+          ta: "<strong>சராசரி சரக்கு அளவு</strong> — கடந்த 12 மாதங்களில் ஒரு மாதத்திற்கு எவ்வளவு சரக்கு (டன் / கிலோ) கையாளப்படுகிறது. முடிந்தால் கான்சைனர் சரக்கு + சொந்த கணக்கு சரக்கு தனித்தனியாக." }
+      ]
+    },
+    {
+      title: { en: "B. Consignor / stock intake", ml: "B. കൺസൈനർ / സാധനം സ്വീകരിക്കൽ", ta: "B. கான்சைனர் / சரக்கு வரவேற்பு" },
+      questions: [
+        { n: 5,
+          en: "<strong>Who brings stock</strong> to our depots — planters directly, brokers/agents, our own purchases from mandi, or a mix? Rough percentage split if known.",
+          ml: "<strong>സാധനം ആര് കൊണ്ടുവരുന്നു</strong> — നേരിട്ട് കർഷകർ, ബ്രോക്കർമാർ / ഏജന്റുമാർ, മണ്ഡിയിൽ നിന്നുള്ള നമ്മുടെ സ്വന്തം വാങ്ങൽ, അതോ മിക്സാണോ? ഏകദേശ ശതമാനം അറിയാമെങ്കിൽ പറയുക.",
+          ta: "<strong>சரக்கு யார் கொண்டு வருகிறார்கள்</strong> — நேரடி விளைவிப்பாளர்கள், தரகர்கள் / ஏஜென்ட்கள், மண்டியிலிருந்து நமது வாங்குதல், அல்லது கலவையா? சுமார் சதவீதம் தெரிந்தால் சொல்லுங்க." },
+        { n: 6,
+          en: "<strong>Intake documents</strong> — when a lot arrives at the depot, what documents are collected (GST invoice, delivery challan, farmer ID), who signs the receipt, and what does the consignor walk away with?",
+          ml: "<strong>ഇൻടേക്ക് ഡോക്യുമെന്റ്സ്</strong> — ഒരു ലോട്ട് ഡിപ്പോയിൽ എത്തുമ്പോൾ, എന്തൊക്കെ ഡോക്യുമെന്റ്സ് ശേഖരിക്കുന്നു (GST ഇൻവോയ്സ്, ഡെലിവറി ചലാൻ, കർഷകന്റെ ID), രസീതിൽ ആര് ഒപ്പിടുന്നു, കൺസൈനർ എന്താണ് തിരികെ കൊണ്ടുപോകുന്നത്?",
+          ta: "<strong>வரவேற்பு ஆவணங்கள்</strong> — ஒரு லாட் டிப்போவிற்கு வரும்போது, என்ன ஆவணங்கள் சேகரிக்கப்படுகின்றன (GST இன்வாய்ஸ், டெலிவரி சலான், விவசாயி ஐடி), ரசீதில் யார் கையெழுத்திடுகிறார்கள், கான்சைனர் என்ன வாங்கிச் செல்கிறார்?" },
+        { n: 7,
+          en: "<strong>Weighbridge</strong> — whose weighbridge do we use (ours / rented / third-party)? Where is it located? Is it Legal Metrology certified? Who records the weight?",
+          ml: "<strong>വെയ്ബ്രിഡ്ജ്</strong> — നമ്മുടെ സ്വന്തമോ / വാടകയ്ക്കോ / മൂന്നാം കക്ഷിയോ? എവിടെയാണ്? Legal Metrology സർട്ടിഫൈഡ് ആണോ? ഭാരം ആര് രേഖപ്പെടുത്തുന്നു?",
+          ta: "<strong>எடை பாலம்</strong> — எங்கள் எடை பாலமா / வாடகையா / மூன்றாம் தரப்பா? எங்கே உள்ளது? Legal Metrology சான்றிதழ் உள்ளதா? எடையை யார் பதிவு செய்கிறார்கள்?" },
+        { n: 8,
+          en: "<strong>Sampling at intake</strong> — who draws the sample, how much sample is taken, and where is the sample retained for reference?",
+          ml: "<strong>ഇൻടേക്കിൽ സാംപ്ലിംഗ്</strong> — സാമ്പിൾ ആര് എടുക്കുന്നു, എത്ര സാമ്പിൾ എടുക്കുന്നു, സാമ്പിൾ റഫറൻസിനായി എവിടെ സൂക്ഷിക്കുന്നു?",
+          ta: "<strong>வரவேற்பில் மாதிரி எடுத்தல்</strong> — யார் மாதிரி எடுக்கிறார்கள், எவ்வளவு மாதிரி எடுக்கப்படுகிறது, மாதிரி எங்கே குறிப்பிற்காக வைக்கப்படுகிறது?" }
+      ]
+    },
+    {
+      title: { en: "C. Grading, storage, custody", ml: "C. ഗ്രേഡിംഗ്, സ്റ്റോറേജ്, കസ്റ്റഡി", ta: "C. தரம் (கிரேடிங்), சேமிப்பு, பாதுகாப்பு" },
+      questions: [
+        { n: 9,
+          en: "<strong>Grades handled</strong> — list all cardamom grades we buy / sell (e.g., AGEB 7 mm / 8 mm, Alleppey Green Extra Bold, bulk, seconds, rejects) with the typical price band for each.",
+          ml: "<strong>കൈകാര്യം ചെയ്യുന്ന ഗ്രേഡുകൾ</strong> — നാം വാങ്ങുന്ന / വിൽക്കുന്ന എല്ലാ ഏലം ഗ്രേഡുകളും ലിസ്റ്റ് ചെയ്യുക (ഉദാ. AGEB 7 mm / 8 mm, Alleppey Green Extra Bold, bulk, seconds, rejects) ഓരോന്നിന്റെയും സാധാരണ വില റേഞ്ചും.",
+          ta: "<strong>கையாளும் கிரேடுகள்</strong> — நாம் வாங்கும் / விற்கும் அனைத்து ஏலக்காய் கிரேடுகளையும் பட்டியலிடுங்க (எ.கா. AGEB 7 mm / 8 mm, Alleppey Green Extra Bold, bulk, seconds, rejects) மற்றும் ஒவ்வொன்றின் வழக்கமான விலை வரம்பு." },
+        { n: 10,
+          en: "<strong>Grading authority</strong> — who grades the stock (Spices Board inspector, our staff, buyer's nominee)? When is grading done — at intake, or before auction?",
+          ml: "<strong>ഗ്രേഡിംഗ് അതോറിറ്റി</strong> — സാധനം ആര് ഗ്രേഡ് ചെയ്യുന്നു (Spices Board inspector, നമ്മുടെ സ്റ്റാഫ്, ബയറുടെ പ്രതിനിധി)? ഗ്രേഡിംഗ് എപ്പോൾ ചെയ്യുന്നു — ഇൻടേക്കിൽ, അതോ ലേലത്തിന് മുമ്പോ?",
+          ta: "<strong>கிரேடிங் அதிகாரி</strong> — சரக்கை யார் கிரேட் செய்கிறார்கள் (Spices Board ஆய்வாளர், நமது ஊழியர், வாங்குபவரின் பிரதிநிதி)? கிரேடிங் எப்போது செய்யப்படுகிறது — வரவேற்பில், அல்லது ஏலத்திற்கு முன்?" },
+        { n: 11,
+          en: "<strong>Storage</strong> — how is stock physically stored in the depot (sacks / drums / silos)? How is each lot identified (lot number tag / colour code)? Is all stock covered by warehouse insurance?",
+          ml: "<strong>സ്റ്റോറേജ്</strong> — ഡിപ്പോയിൽ സാധനം എങ്ങനെ ഫിസിക്കലായി സൂക്ഷിക്കുന്നു (ചാക്കുകൾ / ഡ്രമ്മുകൾ / സൈലോകൾ)? ഓരോ ലോട്ടും എങ്ങനെ തിരിച്ചറിയുന്നു (ലോട്ട് നമ്പർ ടാഗ് / കളർ കോഡ്)? എല്ലാ സാധനത്തിനും warehouse ഇൻഷുറൻസ് കവറേജ് ഉണ്ടോ?",
+          ta: "<strong>சேமிப்பு</strong> — சரக்கு டிப்போவில் எவ்வாறு சேமிக்கப்படுகிறது (சாக்குகள் / டிரம்கள் / சைலோக்கள்)? ஒவ்வொரு லாட்டும் எவ்வாறு அடையாளம் காணப்படுகிறது (லாட் எண் டேக் / வண்ண குறியீடு)? அனைத்து சரக்கும் கிடங்கு காப்பீட்டில் உள்ளதா?" },
+        { n: 12,
+          en: "<strong>Stock register</strong> — who maintains it, in what format (Busy / Excel / physical book), and when is it updated (real-time / end-of-day / weekly)?",
+          ml: "<strong>സ്റ്റോക്ക് രജിസ്റ്റർ</strong> — ആര് സൂക്ഷിക്കുന്നു, ഏത് ഫോർമാറ്റിൽ (Busy / Excel / ബുക്ക്), എപ്പോൾ അപ്ഡേറ്റ് ചെയ്യുന്നു (തത്സമയം / ദിവസാവസാനം / ആഴ്ചയിൽ)?",
+          ta: "<strong>ஸ்டாக் ரெஜிஸ்டர்</strong> — யார் பராமரிக்கிறார்கள், என்ன வடிவத்தில் (Busy / Excel / புத்தகம்), எப்போது புதுப்பிக்கப்படுகிறது (நேரடி / நாள் இறுதி / வாராந்திர)?" }
+      ]
+    },
+    {
+      title: { en: "D. The auction event", ml: "D. ലേല ഇവന്റ്", ta: "D. ஏலம் நிகழ்வு" },
+      questions: [
+        { n: 13,
+          en: "<strong>Auction venue</strong> — where do our auctions happen? At our depot, or at Spices Board auction centres (Puttady, Vandanmedu, Bodinayakanur, Kumily)?",
+          ml: "<strong>ലേല വേദി</strong> — നമ്മുടെ ലേലങ്ങൾ എവിടെയാണ് നടക്കുന്നത്? നമ്മുടെ ഡിപ്പോയിലോ, അതോ Spices Board ലേല കേന്ദ്രങ്ങളിലോ (Puttady, Vandanmedu, Bodinayakanur, Kumily)?",
+          ta: "<strong>ஏல இடம்</strong> — நமது ஏலங்கள் எங்கே நடக்கின்றன? நமது டிப்போவிலா, அல்லது Spices Board ஏல மையங்களில் (Puttady, Vandanmedu, Bodinayakanur, Kumily)?" },
+        { n: 14,
+          en: "<strong>Frequency</strong> — how many auctions per week / month? Which day(s) of the week?",
+          ml: "<strong>ഫ്രീക്വൻസി</strong> — ആഴ്ചയിൽ / മാസത്തിൽ എത്ര ലേലങ്ങൾ? ആഴ്ചയിലെ ഏത് ദിവസം/ദിവസങ്ങൾ?",
+          ta: "<strong>அதிர்வெண்</strong> — வாரத்திற்கு / மாதத்திற்கு எத்தனை ஏலங்கள்? வாரத்தின் எந்த நாள்/நாட்கள்?" },
+        { n: 15,
+          en: "<strong>Format</strong> — physical (open outcry) auction or e-auction? If e-auction, which platform (IACAPL / Spices Board / our own)?",
+          ml: "<strong>ഫോർമാറ്റ്</strong> — ഫിസിക്കൽ (open outcry) ലേലമോ അതോ ഇ-ലേലമോ? ഇ-ലേലം ആണെങ്കിൽ, ഏത് പ്ലാറ്റ്ഫോം (IACAPL / Spices Board / നമ്മുടെ സ്വന്തം)?",
+          ta: "<strong>வடிவம்</strong> — உடல் ரீதியான (open outcry) ஏலமா அல்லது ஈ-ஏலமா? ஈ-ஏலம் என்றால், எந்த தளம் (IACAPL / Spices Board / நமது சொந்தம்)?" },
+        { n: 16,
+          en: "<strong>Auctioneer</strong> — who conducts the auction? Is it a Spices Board-licensed auctioneer, our employee, or external?",
+          ml: "<strong>ലേലക്കാരൻ</strong> — ലേലം ആര് നടത്തുന്നു? Spices Board ലൈസൻസുള്ള ലേലക്കാരനോ, നമ്മുടെ ജീവനക്കാരനോ, അതോ പുറത്തുനിന്നുള്ളയാളോ?",
+          ta: "<strong>ஏலதாரர்</strong> — ஏலத்தை யார் நடத்துகிறார்கள்? Spices Board உரிமம் பெற்ற ஏலதாரரா, நமது ஊழியரா, அல்லது வெளிநபரா?" },
+        { n: 17,
+          en: "<strong>Scale</strong> — how many lots and how many buyers typically attend one auction?",
+          ml: "<strong>സ്കെയിൽ</strong> — ഒരു ലേലത്തിൽ സാധാരണ എത്ര ലോട്ടുകളും എത്ര ബയർമാരും പങ്കെടുക്കാറുണ്ട്?",
+          ta: "<strong>அளவு</strong> — ஒரு ஏலத்தில் வழக்கமாக எத்தனை லாட்டுகள் மற்றும் எத்தனை வாங்குபவர்கள் கலந்து கொள்கிறார்கள்?" }
+      ]
+    },
+    {
+      title: { en: "E. Buyers", ml: "E. ബയർമാർ", ta: "E. வாங்குபவர்கள்" },
+      questions: [
+        { n: 18,
+          en: "<strong>Buyer types</strong> — exporters, grinders/processors, retailers, traders, brokers? Rough percentage of each.",
+          ml: "<strong>ബയർ തരങ്ങൾ</strong> — എക്സ്പോർട്ടർമാർ, ഗ്രൈൻഡർമാർ / പ്രോസസർമാർ, റീട്ടെയിലർമാർ, ട്രേഡർമാർ, ബ്രോക്കർമാർ? ഓരോന്നിന്റെയും ഏകദേശ ശതമാനം.",
+          ta: "<strong>வாங்குபவர் வகைகள்</strong> — ஏற்றுமதியாளர்கள், அரைப்பவர்கள் / செயலாக்குபவர்கள், சில்லறை விற்பனையாளர்கள், வியாபாரிகள், தரகர்கள்? ஒவ்வொன்றின் சுமார் சதவீதம்." },
+        { n: 19,
+          en: "<strong>Onboarding</strong> — how does a new buyer register with us? What KYC / GST / credit documents do we collect?",
+          ml: "<strong>ഓൺബോർഡിംഗ്</strong> — ഒരു പുതിയ ബയർ നമ്മളോടൊപ്പം എങ്ങനെ രജിസ്റ്റർ ചെയ്യുന്നു? എന്ത് KYC / GST / ക്രെഡിറ്റ് ഡോക്യുമെന്റ്സ് ശേഖരിക്കുന്നു?",
+          ta: "<strong>ஒன்போர்டிங்</strong> — ஒரு புதிய வாங்குபவர் எங்களிடம் எவ்வாறு பதிவு செய்கிறார்? என்ன KYC / GST / கிரெடிட் ஆவணங்கள் சேகரிக்கிறோம்?" },
+        { n: 20,
+          en: "<strong>Buyer ID</strong> — do we use paddle numbers / bidder cards / login IDs? How is the system managed?",
+          ml: "<strong>ബയർ ID</strong> — നാം പാഡിൽ നമ്പറുകൾ / ബിഡ്ഡർ കാർഡുകൾ / ലോഗിൻ IDകൾ ഉപയോഗിക്കുന്നുണ്ടോ? സിസ്റ്റം എങ്ങനെ മാനേജ് ചെയ്യുന്നു?",
+          ta: "<strong>வாங்குபவர் ஐடி</strong> — நாங்கள் பாடில் எண்கள் / பிட்டர் கார்டுகள் / லாகின் ஐடிகள் பயன்படுத்துகிறோமா? அமைப்பு எவ்வாறு நிர்வகிக்கப்படுகிறது?" },
+        { n: 21,
+          en: "<strong>Active buyer count</strong> — how many buyers actively participated in auctions over the last 12 months?",
+          ml: "<strong>ആക്ടീവ് ബയർ എണ്ണം</strong> — കഴിഞ്ഞ 12 മാസത്തിൽ എത്ര ബയർമാർ ലേലങ്ങളിൽ സജീവമായി പങ്കെടുത്തു?",
+          ta: "<strong>செயலில் உள்ள வாங்குபவர் எண்ணிக்கை</strong> — கடந்த 12 மாதங்களில் ஏலத்தில் எத்தனை வாங்குபவர்கள் செயலில் பங்கேற்றனர்?" }
+      ]
+    },
+    {
+      title: { en: "F. Bidding & sale", ml: "F. ബിഡ്ഡിംഗും വിൽപ്പനയും", ta: "F. ஏலம் மற்றும் விற்பனை" },
+      questions: [
+        { n: 22,
+          en: "<strong>Bid mechanics</strong> — how does bidding actually happen (open shouting, hand signal, written bid, screen click)?",
+          ml: "<strong>ബിഡ് മെക്കാനിക്സ്</strong> — ബിഡ്ഡിംഗ് യഥാർത്ഥത്തിൽ എങ്ങനെ നടക്കുന്നു (ഓപ്പൺ ഷൗട്ടിംഗ്, കൈ ആംഗ്യം, എഴുത്ത് ബിഡ്, സ്ക്രീൻ ക്ലിക്ക്)?",
+          ta: "<strong>ஏல இயக்கம்</strong> — ஏலம் உண்மையில் எவ்வாறு நடக்கிறது (வெளிப்படையான கூச்சல், கை சைகை, எழுத்து ஏலம், திரை கிளிக்)?" },
+        { n: 23,
+          en: "<strong>Minimum increment</strong> — what's the smallest bid step allowed? Is there a reserve / floor price per lot?",
+          ml: "<strong>മിനിമം ഇൻക്രിമെന്റ്</strong> — അനുവദനീയമായ ഏറ്റവും ചെറിയ ബിഡ് സ്റ്റെപ്പ് എന്താണ്? ഒരു ലോട്ടിന് റിസർവ് / ഫ്ലോർ വില ഉണ്ടോ?",
+          ta: "<strong>குறைந்தபட்ச ஏற்றம்</strong> — அனுமதிக்கப்பட்ட மிகச்சிறிய ஏல படி என்ன? ஒரு லாட்டுக்கு ரிசர்வ் / குறைந்தபட்ச விலை உள்ளதா?" },
+        { n: 24,
+          en: "<strong>Knock-down</strong> — how is the sale confirmed (hammer fall, verbal \"sold\", auctioneer's screen)? What's recorded immediately?",
+          ml: "<strong>നോക്ക്-ഡൗൺ</strong> — വിൽപ്പന എങ്ങനെ സ്ഥിരീകരിക്കുന്നു (ഹാമർ വീഴൽ, വാക്കാൽ \"sold\", ലേലക്കാരന്റെ സ്ക്രീൻ)? ഉടൻ എന്താണ് രേഖപ്പെടുത്തുന്നത്?",
+          ta: "<strong>நாக்-டவுன்</strong> — விற்பனை எவ்வாறு உறுதிப்படுத்தப்படுகிறது (சுத்தியல் விழும், வாய்மொழி \"sold\", ஏலதாரரின் திரை)? உடனடியாக என்ன பதிவு செய்யப்படுகிறது?" },
+        { n: 25,
+          en: "<strong>Unsold lots</strong> — what happens if a lot doesn't meet reserve? Re-auctioned, returned to consignor, bought by us?",
+          ml: "<strong>വിറ്റുപോകാത്ത ലോട്ടുകൾ</strong> — ഒരു ലോട്ട് റിസർവ് വിലയിൽ എത്തിയില്ലെങ്കിൽ എന്ത് സംഭവിക്കുന്നു? വീണ്ടും ലേലം, കൺസൈനർക്ക് തിരികെ, അതോ നമ്മൾ വാങ്ങുന്നുവോ?",
+          ta: "<strong>விற்காத லாட்டுகள்</strong> — ஒரு லாட் ரிசர்வ் விலையை எட்டவில்லை என்றால் என்ன நடக்கும்? மீண்டும் ஏலம், கான்சைனருக்கு திரும்ப, அல்லது நாங்களே வாங்குகிறோமா?" }
+      ]
+    },
+    {
+      title: { en: "G. Settlement & money flow", ml: "G. സെറ്റിൽമെന്റും പണമൊഴുക്കും", ta: "G. செட்டில்மென்ட் மற்றும் பண ஓட்டம்" },
+      questions: [
+        { n: 26,
+          en: "<strong>Buyer payment</strong> — when does the buyer pay (same day / T+1 / T+7)? Which instruments accepted (cash, cheque, RTGS, NEFT, UPI, DD)?",
+          ml: "<strong>ബയർ പേയ്‌മെന്റ്</strong> — ബയർ എപ്പോൾ പണം അടയ്ക്കുന്നു (അതേ ദിവസം / T+1 / T+7)? ഏത് ഇൻസ്ട്രുമെന്റ്സ് സ്വീകരിക്കുന്നു (കാശ്, ചെക്ക്, RTGS, NEFT, UPI, DD)?",
+          ta: "<strong>வாங்குபவர் பணம்</strong> — வாங்குபவர் எப்போது பணம் செலுத்துகிறார் (அதே நாள் / T+1 / T+7)? எந்த கருவிகள் ஏற்கப்படுகின்றன (பணம், காசோலை, RTGS, NEFT, UPI, DD)?" },
+        { n: 27,
+          en: "<strong>Consignor payment</strong> — when do we pay the consignor? What deductions come off the gross (commission, GST, holding charge if SEPL advance was taken, storage, handling, Spices Board cess)?",
+          ml: "<strong>കൺസൈനർ പേയ്‌മെന്റ്</strong> — കൺസൈനർക്ക് നാം എപ്പോൾ പണം നൽകുന്നു? മൊത്തത്തിൽ നിന്ന് എന്തൊക്കെ കഴിക്കുന്നു (കമ്മീഷൻ, GST, SEPL advance എടുത്തിട്ടുണ്ടെങ്കിൽ ഹോൾഡിംഗ് ചാർജ്, സ്റ്റോറേജ്, ഹാൻഡ്ലിംഗ്, Spices Board cess)?",
+          ta: "<strong>கான்சைனர் பணம்</strong> — கான்சைனருக்கு நாங்கள் எப்போது பணம் செலுத்துகிறோம்? மொத்தத்திலிருந்து என்ன கழிக்கப்படுகிறது (கமிஷன், GST, SEPL அட்வான்ஸ் எடுத்திருந்தால் ஹோல்டிங் சார்ஜ், சேமிப்பு, கையாளுதல், Spices Board cess)?" },
+        { n: 28,
+          en: "<strong>Commission</strong> — exact rate(s) we charge. Who pays — buyer, consignor, or split?",
+          ml: "<strong>കമ്മീഷൻ</strong> — നാം ഈടാക്കുന്ന കൃത്യമായ നിരക്ക്(കൾ). ആര് അടയ്ക്കുന്നു — ബയർ, കൺസൈനർ, അതോ രണ്ടും?",
+          ta: "<strong>கமிஷன்</strong> — சரியான விகிதம்(கள்). யார் செலுத்துகிறார்கள் — வாங்குபவர், கான்சைனர், அல்லது இருவரும்?" },
+        { n: 29,
+          en: "<strong>Invoicing</strong> — after each auction, who bills whom? (Consignor → Buyer via us? Or we bill the buyer and separately pay the consignor?) What GST rate on commission?",
+          ml: "<strong>ഇൻവോയ്സിംഗ്</strong> — ഓരോ ലേലത്തിനു ശേഷം, ആര് ആർക്ക് ബിൽ ചെയ്യുന്നു? (കൺസൈനർ → ബയർ നമ്മൾ വഴി? അതോ നാം ബയർക്ക് ബിൽ ചെയ്ത് കൺസൈനർക്ക് വേറെ അടയ്ക്കുന്നോ?) കമ്മീഷനിൽ എന്ത് GST നിരക്ക്?",
+          ta: "<strong>இன்வாய்சிங்</strong> — ஒவ்வொரு ஏலத்திற்கும் பிறகு, யார் யாருக்கு பில் செய்கிறார்கள்? (கான்சைனர் → வாங்குபவர் நம் மூலமாக? அல்லது நாங்கள் வாங்குபவருக்கு பில் செய்து தனியாக கான்சைனருக்கு செலுத்துகிறோமா?) கமிஷனில் என்ன GST விகிதம்?" }
+      ]
+    },
+    {
+      title: { en: "H. Compliance & regulators", ml: "H. കംപ്ലയൻസും റെഗുലേറ്റർമാരും", ta: "H. இணக்கம் மற்றும் கட்டுப்பாட்டாளர்கள்" },
+      questions: [
+        { n: 30,
+          en: "<strong>Spices Board license</strong> — which licenses do we hold (auctioneer, dealer, exporter, warehousing)? License numbers and renewal dates. What cess / fees do we pay to Spices Board?",
+          ml: "<strong>Spices Board ലൈസൻസ്</strong> — ഏത് ലൈസൻസുകൾ നാം വഹിക്കുന്നു (auctioneer, dealer, exporter, warehousing)? ലൈസൻസ് നമ്പറുകളും പുതുക്കൽ തീയതികളും. Spices Board-ന് എന്ത് cess / ഫീസ് അടയ്ക്കുന്നു?",
+          ta: "<strong>Spices Board உரிமம்</strong> — எந்த உரிமங்களை நாங்கள் வைத்திருக்கிறோம் (auctioneer, dealer, exporter, warehousing)? உரிம எண்கள் மற்றும் புதுப்பித்தல் தேதிகள். Spices Board-க்கு என்ன cess / கட்டணங்கள் செலுத்துகிறோம்?" },
+        { n: 31,
+          en: "<strong>GST treatment</strong> — are we a pure-agent commission agent for auction sales, or do we take title briefly (principal)? What HSN/SAC codes and GST rates are used on sale invoice vs commission invoice?",
+          ml: "<strong>GST ട്രീറ്റ്മെന്റ്</strong> — ലേല വിൽപ്പനകൾക്കായി നാം pure-agent കമ്മീഷൻ ഏജന്റാണോ, അതോ തൽക്കാലത്തേക്ക് ഉടമസ്ഥാവകാശം എടുക്കുന്നുവോ (principal)? വിൽപ്പന ഇൻവോയ്സിലും കമ്മീഷൻ ഇൻവോയ്സിലും ഏത് HSN/SAC കോഡുകളും GST നിരക്കുകളും ഉപയോഗിക്കുന്നു?",
+          ta: "<strong>GST கையாளுதல்</strong> — நாங்கள் ஏல விற்பனைக்கு pure-agent கமிஷன் ஏஜெண்டா, அல்லது சுருக்கமாக உரிமையை எடுக்கிறோமா (principal)? விற்பனை பில் மற்றும் கமிஷன் பில்லில் என்ன HSN/SAC குறியீடுகள் மற்றும் GST விகிதங்கள் பயன்படுத்தப்படுகின்றன?" },
+        { n: 32,
+          en: "<strong>E-way bill</strong> — who generates the e-way bill for each lot movement (consignor → depot, depot → buyer)? Is it automated or manual?",
+          ml: "<strong>ഇ-വേ ബിൽ</strong> — ഓരോ ലോട്ട് നീക്കത്തിനും (കൺസൈനർ → ഡിപ്പോ, ഡിപ്പോ → ബയർ) ഇ-വേ ബിൽ ആര് ജനറേറ്റ് ചെയ്യുന്നു? ഓട്ടോമേറ്റഡ് ആണോ മാനുവൽ ആണോ?",
+          ta: "<strong>ஈ-வே பில்</strong> — ஒவ்வொரு லாட் நகர்வுக்கும் (கான்சைனர் → டிப்போ, டிப்போ → வாங்குபவர்) ஈ-வே பில்லை யார் உருவாக்குகிறார்கள்? தானியங்கியா அல்லது கைமுறையா?" },
+        { n: 33,
+          en: "<strong>TDS / TCS</strong> — do we deduct TDS u/s 194Q when we buy? Do we collect TCS u/s 206C(1H) when we sell? What about TDS on commission received (194H)?",
+          ml: "<strong>TDS / TCS</strong> — വാങ്ങുമ്പോൾ സെക്ഷൻ 194Q പ്രകാരം TDS പിടിക്കുന്നുണ്ടോ? വിൽക്കുമ്പോൾ സെക്ഷൻ 206C(1H) പ്രകാരം TCS പിരിക്കുന്നുണ്ടോ? ലഭിക്കുന്ന കമ്മീഷനിൽ TDS (194H) കാര്യമോ?",
+          ta: "<strong>TDS / TCS</strong> — வாங்கும்போது பிரிவு 194Q-ன் கீழ் TDS பிடிக்கிறோமா? விற்கும்போது பிரிவு 206C(1H)-ன் கீழ் TCS வசூலிக்கிறோமா? பெறப்பட்ட கமிஷனில் TDS (194H) பற்றி என்ன?" }
+      ]
+    },
+    {
+      title: { en: "I. Current tools & pain points", ml: "I. നിലവിലെ ടൂളുകളും പ്രശ്നങ്ങളും", ta: "I. தற்போதைய கருவிகள் மற்றும் சிரமங்கள்" },
+      questions: [
+        { n: 34,
+          en: "<strong>Software used today</strong> — Busy, Excel templates, WhatsApp groups, Spices Board portal, e-invoice portal, any auction software? List everything, even small tools.",
+          ml: "<strong>ഇന്ന് ഉപയോഗിക്കുന്ന സോഫ്റ്റ്‌വെയർ</strong> — Busy, Excel templates, WhatsApp ഗ്രൂപ്പുകൾ, Spices Board portal, e-invoice portal, എന്തെങ്കിലും ലേല സോഫ്റ്റ്‌വെയർ? ചെറിയ ടൂളുകൾ ഉൾപ്പെടെ എല്ലാം ലിസ്റ്റ് ചെയ്യുക.",
+          ta: "<strong>இன்று பயன்படுத்தப்படும் மென்பொருள்</strong> — Busy, Excel templates, WhatsApp குழுக்கள், Spices Board portal, e-invoice portal, ஏதேனும் ஏல மென்பொருள்? சிறிய கருவிகளையும் சேர்த்து அனைத்தையும் பட்டியலிடுங்க." },
+        { n: 35,
+          en: "<strong>Biggest daily pain</strong> — what takes the longest time, what causes the most errors, what part of the process do people hate?",
+          ml: "<strong>ഏറ്റവും വലിയ ദൈനംദിന പ്രശ്നം</strong> — എന്താണ് ഏറ്റവും കൂടുതൽ സമയം എടുക്കുന്നത്, എന്താണ് ഏറ്റവും കൂടുതൽ തെറ്റുകൾ ഉണ്ടാക്കുന്നത്, പ്രോസസ്സിന്റെ ഏത് ഭാഗമാണ് ആളുകൾ വെറുക്കുന്നത്?",
+          ta: "<strong>மிகப்பெரிய தினசரி சிரமம்</strong> — என்ன அதிக நேரம் எடுக்கிறது, என்ன அதிக பிழைகளை ஏற்படுத்துகிறது, செயல்முறையின் எந்த பகுதியை மக்கள் வெறுக்கிறார்கள்?" },
+        { n: 36,
+          en: "<strong>Reports you wish you had</strong> — what information do you need every day / week that you currently don't get, or that takes too long to prepare?",
+          ml: "<strong>നിങ്ങൾ ആഗ്രഹിക്കുന്ന റിപ്പോർട്ടുകൾ</strong> — നിലവിൽ ലഭിക്കാത്തതോ തയ്യാറാക്കാൻ വളരെ സമയമെടുക്കുന്നതോ ആയ എന്ത് വിവരങ്ങളാണ് നിങ്ങൾക്ക് എല്ലാ ദിവസവും / ആഴ്ചയും ആവശ്യമുള്ളത്?",
+          ta: "<strong>உங்களுக்கு வேண்டிய ரிப்போர்ட்கள்</strong> — தற்போது கிடைக்காத அல்லது தயாரிக்க அதிக நேரம் எடுக்கும் என்ன தகவல் உங்களுக்கு தினமும் / வாராந்திரம் தேவை?" }
+      ]
+    },
+    {
+      title: { en: "J. Edge cases & disputes", ml: "J. എഡ്ജ് കേസുകളും തർക്കങ്ങളും", ta: "J. விதிவிலக்கான நிகழ்வுகள் மற்றும் தகராறுகள்" },
+      questions: [
+        { n: 37,
+          en: "<strong>Quality / moisture disputes</strong> — if a buyer rejects a lot after delivery claiming quality or weight is different, how is it resolved? Who decides?",
+          ml: "<strong>ഗുണമേന്മ / ഈർപ്പം തർക്കങ്ങൾ</strong> — ഡെലിവറിക്ക് ശേഷം ഒരു ബയർ ഗുണമേന്മയോ ഭാരമോ വ്യത്യസ്തമാണെന്ന് അവകാശപ്പെട്ട് ഒരു ലോട്ട് നിരസിച്ചാൽ, അത് എങ്ങനെ പരിഹരിക്കുന്നു? ആര് തീരുമാനിക്കുന്നു?",
+          ta: "<strong>தரம் / ஈரப்பதம் தகராறுகள்</strong> — டெலிவரிக்கு பிறகு ஒரு வாங்குபவர் தரம் அல்லது எடை வேறுபட்டது என்று கூறி லாட்டை நிராகரித்தால், எவ்வாறு தீர்க்கப்படுகிறது? யார் முடிவு செய்கிறார்கள்?" },
+        { n: 38,
+          en: "<strong>Default</strong> — if a buyer doesn't pay, or a consignor doesn't deliver what was agreed, what do we do today?",
+          ml: "<strong>ഡിഫോൾട്ട്</strong> — ഒരു ബയർ പണം അടയ്ക്കാതിരുന്നാൽ, അല്ലെങ്കിൽ ഒരു കൺസൈനർ സമ്മതിച്ചത് ഡെലിവർ ചെയ്യാതിരുന്നാൽ, ഇന്ന് നാം എന്തു ചെയ്യുന്നു?",
+          ta: "<strong>தவறுதல்</strong> — வாங்குபவர் பணம் செலுத்தவில்லை என்றால், அல்லது கான்சைனர் ஒப்புக்கொண்டதை வழங்கவில்லை என்றால், இன்று நாங்கள் என்ன செய்கிறோம்?" },
+        { n: 39,
+          en: "<strong>Stock loss / damage / theft</strong> — has it happened? How is it booked in accounts, and how is insurance claimed?",
+          ml: "<strong>സാധനം നഷ്ടം / കേടുപാടുകൾ / മോഷണം</strong> — സംഭവിച്ചിട്ടുണ്ടോ? അക്കൗണ്ടുകളിൽ എങ്ങനെ ബുക്ക് ചെയ്യുന്നു, ഇൻഷുറൻസ് എങ്ങനെ ക്ലെയിം ചെയ്യുന്നു?",
+          ta: "<strong>சரக்கு இழப்பு / சேதம் / திருட்டு</strong> — நடந்திருக்கிறதா? கணக்குகளில் எவ்வாறு பதிவு செய்யப்படுகிறது, மற்றும் காப்பீடு எவ்வாறு கோரப்படுகிறது?" }
+      ]
+    }
+  ];
+
+  // =========================================================================
+  // STATE & HELPERS
+  // =========================================================================
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const speechSupported = !!SpeechRecognitionCtor;
+
+  // Per-question state: transcript + files stored in memory keyed by question number
+  const qState = {}; // { [n]: { transcript, lang, files: [], recognition, isRecording, saved } }
+
+  // Session ID (per browser, reused across answers so they group together)
+  let sessionId = localStorage.getItem('aq_sessionId');
+  if (!sessionId) {
+    sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('aq_sessionId', sessionId);
+  }
+
+  // Restore respondent info
+  ['Name', 'Phone', 'Role', 'Depot'].forEach(k => {
+    const el = document.getElementById('resp' + k);
+    const stored = localStorage.getItem('aq_resp' + k);
+    if (stored) el.value = stored;
+    el.addEventListener('input', () => localStorage.setItem('aq_resp' + k, el.value));
+  });
+
+  if (!speechSupported) {
+    document.getElementById('noSpeechWarning').classList.add('visible');
+  }
+
+  // =========================================================================
+  // RENDER QUESTIONS
+  // =========================================================================
+  const container = document.getElementById('questionsContainer');
+  SECTIONS.forEach(section => {
+    const header = document.createElement('div');
+    header.className = 'aq-section-header';
+    header.innerHTML = `
+      <div class="en">${escapeHtml(section.title.en)}</div>
+      <div class="ml">${escapeHtml(section.title.ml)}</div>
+      <div class="ta">${escapeHtml(section.title.ta)}</div>
+    `;
+    container.appendChild(header);
+
+    section.questions.forEach(q => {
+      qState[q.n] = { transcript: '', lang: 'ml-IN', files: [], recognition: null, isRecording: false, saved: false };
+      const card = document.createElement('div');
+      card.className = 'q-card';
+      card.id = 'q-card-' + q.n;
+      card.innerHTML = `
+        <div class="q-num-badge">Question ${q.n}</div>
+        <div class="q-text">
+          <div class="en">${q.en}</div>
+          <div class="ml">${q.ml}</div>
+          <div class="ta">${q.ta}</div>
+        </div>
+        <div class="q-controls">
+          <select class="lang-select" data-q="${q.n}" aria-label="Speech language">
+            <option value="ml-IN">🗣️ Malayalam</option>
+            <option value="ta-IN">🗣️ Tamil</option>
+            <option value="en-IN">🗣️ English</option>
+            <option value="hi-IN">🗣️ Hindi</option>
+          </select>
+          <button class="btn-speak" data-q="${q.n}" ${speechSupported ? '' : 'disabled'}>
+            <svg viewBox="0 0 24 24"><path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 15 6.7 12H5c0 3.41 2.72 6.23 6 6.72V22h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+            <span class="btn-speak-text">Speak</span>
+          </button>
+          <label class="btn-file" for="file-${q.n}">
+            <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 015 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 005 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
+            <span>Attach file</span>
+          </label>
+          <input type="file" id="file-${q.n}" data-q="${q.n}" multiple accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx,.txt" style="display:none">
+          <button class="btn-save" data-q="${q.n}" disabled>
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            <span>Save answer</span>
+          </button>
+        </div>
+        <div class="q-live-transcript" id="live-${q.n}"></div>
+        <div class="q-answer-area" id="answer-${q.n}">
+          <label>Your answer (edit if needed, or type here directly)</label>
+          <textarea data-q="${q.n}" placeholder="You can type or edit your answer here..."></textarea>
+        </div>
+        <div class="q-files" id="files-${q.n}"></div>
+        <div class="q-saved-msg" id="saved-msg-${q.n}">✓ Answer saved. Thank you! You can add another answer or attach more files — just click "Save answer" again.</div>
+        <div class="q-error-msg" id="error-msg-${q.n}"></div>
+      `;
+      container.appendChild(card);
+    });
+  });
+
+  // =========================================================================
+  // SPEECH RECOGNITION (per question)
+  // =========================================================================
+  function attachRecognition(qn) {
+    if (!speechSupported || qState[qn].recognition) return qState[qn].recognition;
+    const rec = new SpeechRecognitionCtor();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = qState[qn].lang;
+
+    let interim = '';
+    rec.onresult = function(event) {
+      interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          qState[qn].transcript += t + ' ';
+        } else {
+          interim += t;
+        }
+      }
+      const live = document.getElementById('live-' + qn);
+      live.textContent = qState[qn].transcript + interim;
+      live.classList.add('active');
+      updateSaveButton(qn);
+    };
+
+    rec.onerror = function(event) {
+      if (event.error === 'no-speech') return;
+      console.error('Speech error for Q' + qn, event.error);
+      if (event.error === 'not-allowed') {
+        showError(qn, 'Microphone access denied. Please allow mic access and try again.');
+        stopSpeech(qn);
+      }
+    };
+
+    rec.onend = function() {
+      if (qState[qn].isRecording) {
+        try { rec.start(); } catch(e) {}
+      }
+    };
+
+    qState[qn].recognition = rec;
+    return rec;
+  }
+
+  function startSpeech(qn) {
+    if (!speechSupported) return;
+    // Stop any other recording first (only one at a time)
+    Object.keys(qState).forEach(k => {
+      if (parseInt(k) !== qn && qState[k].isRecording) stopSpeech(parseInt(k));
+    });
+    const rec = attachRecognition(qn);
+    rec.lang = qState[qn].lang;
+    qState[qn].isRecording = true;
+    const btn = document.querySelector('.btn-speak[data-q="' + qn + '"]');
+    btn.classList.add('recording');
+    btn.querySelector('.btn-speak-text').textContent = 'Stop';
+    const live = document.getElementById('live-' + qn);
+    live.textContent = qState[qn].transcript || 'Listening... speak now.';
+    live.classList.add('active');
+    live.classList.remove('processing');
+    try { rec.start(); } catch(e) { /* already started */ }
+    // Auto-show answer area so user can see/edit
+    document.getElementById('answer-' + qn).classList.add('visible');
+  }
+
+  function stopSpeech(qn) {
+    qState[qn].isRecording = false;
+    const btn = document.querySelector('.btn-speak[data-q="' + qn + '"]');
+    if (btn) {
+      btn.classList.remove('recording');
+      btn.querySelector('.btn-speak-text').textContent = 'Speak';
+    }
+    const rec = qState[qn].recognition;
+    if (rec) { try { rec.stop(); } catch(e) {} }
+
+    const text = qState[qn].transcript.trim();
+    if (text) {
+      // Put the raw transcript into the editable textarea
+      const ta = document.querySelector('textarea[data-q="' + qn + '"]');
+      if (ta && !ta.value.trim()) ta.value = text;
+      const live = document.getElementById('live-' + qn);
+      live.textContent = '✓ Captured. Review/edit below, then Save answer.';
+      live.classList.add('processing');
+    }
+    updateSaveButton(qn);
+  }
+
+  // =========================================================================
+  // FILE HANDLING
+  // =========================================================================
+  function handleFileSelect(qn, fileList) {
+    const files = Array.from(fileList);
+    for (const f of files) {
+      if (f.size > 15 * 1024 * 1024) { // 15 MB guard per file
+        showError(qn, `"${f.name}" is too large (max 15 MB per file).`);
+        continue;
+      }
+      qState[qn].files.push(f);
+    }
+    renderFiles(qn);
+    updateSaveButton(qn);
+  }
+
+  function renderFiles(qn) {
+    const box = document.getElementById('files-' + qn);
+    if (!qState[qn].files.length) {
+      box.classList.remove('has-files');
+      box.innerHTML = '';
+      return;
+    }
+    box.classList.add('has-files');
+    box.innerHTML = qState[qn].files.map((f, i) => `
+      <div class="q-file-item">
+        <span>📎</span>
+        <span class="q-file-name">${escapeHtml(f.name)}</span>
+        <span class="q-file-size">${formatSize(f.size)}</span>
+        <button class="q-file-remove" data-q="${qn}" data-idx="${i}" title="Remove">×</button>
+      </div>
+    `).join('');
+    box.querySelectorAll('.q-file-remove').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const q = parseInt(this.dataset.q);
+        const idx = parseInt(this.dataset.idx);
+        qState[q].files.splice(idx, 1);
+        renderFiles(q);
+        updateSaveButton(q);
+      });
+    });
+  }
+
+  // =========================================================================
+  // SAVE ANSWER
+  // =========================================================================
+  function hasAnswerContent(qn) {
+    const ta = document.querySelector('textarea[data-q="' + qn + '"]');
+    const typed = ta ? ta.value.trim() : '';
+    return qState[qn].transcript.trim() || typed || qState[qn].files.length > 0;
+  }
+
+  function updateSaveButton(qn) {
+    const btn = document.querySelector('.btn-save[data-q="' + qn + '"]');
+    if (!btn) return;
+    btn.disabled = !hasAnswerContent(qn);
+  }
+
+  async function saveAnswer(qn) {
+    const btn = document.querySelector('.btn-save[data-q="' + qn + '"]');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    const originalLabel = btn.querySelector('span').textContent;
+    btn.querySelector('span').textContent = 'Saving...';
+
+    const ta = document.querySelector('textarea[data-q="' + qn + '"]');
+    const typed = ta ? ta.value.trim() : '';
+
+    // Encode files as base64
+    const filesPayload = [];
+    for (const f of qState[qn].files) {
+      try {
+        const b64 = await fileToBase64(f);
+        filesPayload.push({ name: f.name, type: f.type, size: f.size, data: b64 });
+      } catch (e) {
+        console.error('File read failed', f.name, e);
+      }
+    }
+
+    const body = {
+      sessionId,
+      questionId: qn,
+      respondent: {
+        name:  document.getElementById('respName').value.trim(),
+        phone: document.getElementById('respPhone').value.trim(),
+        role:  document.getElementById('respRole').value.trim(),
+        depot: document.getElementById('respDepot').value.trim()
+      },
+      rawTranscript: qState[qn].transcript.trim(),
+      typedNotes: typed,
+      lang: qState[qn].lang,
+      files: filesPayload
+    };
+
+    try {
+      const resp = await fetch('/api/auction-response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || ('HTTP ' + resp.status));
+      }
+      // Success
+      const card = document.getElementById('q-card-' + qn);
+      card.classList.add('saved');
+      document.getElementById('saved-msg-' + qn).classList.add('visible');
+      hideError(qn);
+      // Clear transient state so they can optionally add another answer
+      qState[qn].transcript = '';
+      qState[qn].files = [];
+      if (ta) ta.value = '';
+      renderFiles(qn);
+      const live = document.getElementById('live-' + qn);
+      live.textContent = '';
+      live.classList.remove('active', 'processing');
+      setTimeout(() => document.getElementById('saved-msg-' + qn).classList.remove('visible'), 6000);
+    } catch (e) {
+      showError(qn, 'Could not save: ' + (e.message || 'network error') + '. Try again.');
+      btn.disabled = false;
+    } finally {
+      btn.querySelector('span').textContent = originalLabel;
+      updateSaveButton(qn);
+    }
+  }
+
+  // =========================================================================
+  // EVENT WIRING
+  // =========================================================================
+  document.addEventListener('click', function(e) {
+    const speakBtn = e.target.closest('.btn-speak');
+    if (speakBtn) {
+      const qn = parseInt(speakBtn.dataset.q);
+      if (qState[qn].isRecording) stopSpeech(qn);
+      else startSpeech(qn);
+      return;
+    }
+    const saveBtn = e.target.closest('.btn-save');
+    if (saveBtn) {
+      const qn = parseInt(saveBtn.dataset.q);
+      saveAnswer(qn);
+      return;
+    }
+  });
+
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('.lang-select')) {
+      const qn = parseInt(e.target.dataset.q);
+      qState[qn].lang = e.target.value;
+      if (qState[qn].recognition) qState[qn].recognition.lang = e.target.value;
+    }
+    if (e.target.matches('input[type=file][data-q]')) {
+      const qn = parseInt(e.target.dataset.q);
+      handleFileSelect(qn, e.target.files);
+      e.target.value = ''; // reset so same file can be reselected
+    }
+  });
+
+  document.addEventListener('input', function(e) {
+    if (e.target.matches('textarea[data-q]')) {
+      updateSaveButton(parseInt(e.target.dataset.q));
+    }
+  });
+
+  // =========================================================================
+  // UTILITIES
+  // =========================================================================
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  }
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  function showError(qn, msg) {
+    const el = document.getElementById('error-msg-' + qn);
+    el.textContent = '⚠️ ' + msg;
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), 7000);
+  }
+  function hideError(qn) {
+    const el = document.getElementById('error-msg-' + qn);
+    if (el) el.classList.remove('visible');
+  }
+  </script>
+</body>
+</html>
