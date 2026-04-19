@@ -185,15 +185,91 @@
     }
     .no-speech-warning.visible { display: block; }
 
+    /* ============== JUMP-TO-QUESTION (mobile FAB + slide-up panel) ============== */
+    .jump-fab {
+      display: none;
+      position: fixed; bottom: 18px; right: 14px; z-index: 50;
+      background: var(--green-dark); color: #fff;
+      border: none; border-radius: 99px;
+      padding: 12px 18px;
+      font-family: var(--font-body); font-size: 14px; font-weight: 600;
+      box-shadow: 0 6px 18px rgba(26,48,9,0.3);
+      cursor: pointer; align-items: center; gap: 8px;
+    }
+    .jump-fab.visible { display: inline-flex; }
+    .jump-fab svg { width: 18px; height: 18px; fill: currentColor; }
+    .jump-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99;
+    }
+    .jump-backdrop.open { display: block; }
+    .jump-panel {
+      display: none;
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+      background: #fff;
+      border-top-left-radius: 20px; border-top-right-radius: 20px;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.25);
+      max-height: 78vh; overflow-y: auto;
+      padding: 14px 18px 28px;
+    }
+    .jump-panel.open { display: block; }
+    .jump-panel-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--light-gray);
+      position: sticky; top: -14px; background: #fff; padding-top: 6px;
+    }
+    .jump-panel-header h4 {
+      font-family: var(--font-heading); color: var(--green-dark);
+      font-size: 17px; margin: 0;
+    }
+    .jump-panel-close {
+      background: none; border: none; font-size: 28px; cursor: pointer;
+      color: var(--mid-gray); line-height: 1; padding: 0 4px;
+    }
+    .jump-section-title {
+      color: var(--green-dark); font-family: var(--font-heading);
+      font-size: 13px; font-weight: 600; margin: 12px 0 6px;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .jump-section-title:first-child { margin-top: 0; }
+    .jump-q-list {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    }
+    .jump-q {
+      padding: 11px 4px; border: 1px solid var(--light-gray);
+      border-radius: 8px; text-align: center; font-weight: 600;
+      color: var(--green-dark); font-size: 14px;
+      text-decoration: none; background: #f9fafb;
+      transition: all 0.15s;
+    }
+    .jump-q:active, .jump-q:hover { background: var(--green-primary); color: #fff; border-color: var(--green-primary); }
+    .jump-q.saved { background: #16a34a; color: #fff; border-color: #16a34a; }
+
     @media (max-width: 640px) {
-      .aq-page { padding: 90px 14px 60px; }
+      .aq-page { padding: 90px 14px 80px; }
       .aq-header h1 { font-size: 26px; }
       .resp-row { grid-template-columns: 1fr; }
       .q-card { padding: 20px 16px 20px; }
-      .q-controls { gap: 8px; }
-      .btn-save { margin-left: 0; width: 100%; justify-content: center; }
+
+      /* Compact control grid: Speak | Attach on row 1, Lang full-width row 2, Save full-width row 3 */
+      .q-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .q-controls .lang-select {
+        grid-column: 1 / -1; order: 3;
+        padding: 9px 12px; font-size: 14px;
+      }
+      .btn-speak { order: 1; justify-content: center; padding: 11px 8px; }
+      .btn-file { order: 2; justify-content: center; padding: 11px 8px; }
+      .btn-save {
+        order: 4; grid-column: 1 / -1;
+        margin-left: 0; width: 100%; justify-content: center;
+      }
     }
   </style>
+
 </head>
 <body>
 
@@ -258,10 +334,10 @@
     <div class="respondent-box">
       <h4>Who's answering? (optional but helpful)</h4>
       <div class="resp-row">
-        <input type="text" id="respName" placeholder="Your name / பெயர் / പേര്" autocomplete="name">
-        <input type="tel" id="respPhone" placeholder="Phone (optional) / ഫോൺ / தொலைபேசி" autocomplete="tel">
-        <input type="text" id="respRole" placeholder="Your role (e.g. depot manager, accountant)">
-        <input type="text" id="respDepot" placeholder="Depot / location (e.g. Kumily, Puttady)">
+        <input type="text" id="respName" placeholder="Your name" autocomplete="name">
+        <input type="tel" id="respPhone" placeholder="Phone (optional)" autocomplete="tel">
+        <input type="text" id="respRole" placeholder="Your role (e.g. depot manager)">
+        <input type="text" id="respDepot" placeholder="Depot / location">
       </div>
       <div class="resp-note">Filled in once — we remember it on this device while you answer more questions.</div>
     </div>
@@ -273,6 +349,20 @@
       <p>Every saved answer goes directly to Deepak. You can come back and add more anytime.</p>
     </div>
   </main>
+
+  <!-- Jump-to-question FAB (mobile) -->
+  <button class="jump-fab" id="jumpFab" type="button" aria-label="Jump to question">
+    <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"/></svg>
+    <span>Jump to question</span>
+  </button>
+  <div class="jump-backdrop" id="jumpBackdrop"></div>
+  <div class="jump-panel" id="jumpPanel" role="dialog" aria-labelledby="jumpPanelTitle">
+    <div class="jump-panel-header">
+      <h4 id="jumpPanelTitle">Jump to a question</h4>
+      <button class="jump-panel-close" id="jumpPanelClose" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div id="jumpPanelBody"></div>
+  </div>
 
   <script src="js/main.js"></script>
   <script>
@@ -578,6 +668,67 @@
   });
 
   // =========================================================================
+  // JUMP-TO-QUESTION panel (mobile-friendly nav)
+  // =========================================================================
+  (function buildJumpPanel() {
+    const body = document.getElementById('jumpPanelBody');
+    if (!body) return;
+    SECTIONS.forEach(section => {
+      const title = document.createElement('div');
+      title.className = 'jump-section-title';
+      title.textContent = section.title.en;
+      body.appendChild(title);
+      const list = document.createElement('div');
+      list.className = 'jump-q-list';
+      section.questions.forEach(q => {
+        const a = document.createElement('a');
+        a.className = 'jump-q';
+        a.href = '#q-card-' + q.n;
+        a.textContent = q.n;
+        a.id = 'jump-q-' + q.n;
+        a.addEventListener('click', () => {
+          closeJumpPanel();
+          // Let the anchor jump happen, then nudge up so the fixed navbar doesn't cover the card
+          setTimeout(() => {
+            const card = document.getElementById('q-card-' + q.n);
+            if (card) {
+              const top = card.getBoundingClientRect().top + window.scrollY - 80;
+              window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            }
+          }, 20);
+        });
+        list.appendChild(a);
+      });
+      body.appendChild(list);
+    });
+  })();
+
+  function openJumpPanel() {
+    document.getElementById('jumpPanel').classList.add('open');
+    document.getElementById('jumpBackdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeJumpPanel() {
+    document.getElementById('jumpPanel').classList.remove('open');
+    document.getElementById('jumpBackdrop').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('jumpFab').addEventListener('click', openJumpPanel);
+  document.getElementById('jumpPanelClose').addEventListener('click', closeJumpPanel);
+  document.getElementById('jumpBackdrop').addEventListener('click', closeJumpPanel);
+
+  // Show FAB once the user has scrolled past the intro
+  const jumpFab = document.getElementById('jumpFab');
+  function updateFabVisibility() {
+    if (window.innerWidth > 640) { jumpFab.classList.remove('visible'); return; }
+    if (window.scrollY > 400) jumpFab.classList.add('visible');
+    else jumpFab.classList.remove('visible');
+  }
+  window.addEventListener('scroll', updateFabVisibility, { passive: true });
+  window.addEventListener('resize', updateFabVisibility);
+  updateFabVisibility();
+
+  // =========================================================================
   // SPEECH RECOGNITION (per question)
   // =========================================================================
   // Map UI language choice to an actual BCP-47 tag for Web Speech.
@@ -820,6 +971,8 @@
       // Success
       const card = document.getElementById('q-card-' + qn);
       card.classList.add('saved');
+      const jumpTile = document.getElementById('jump-q-' + qn);
+      if (jumpTile) jumpTile.classList.add('saved');
       document.getElementById('saved-msg-' + qn).classList.add('visible');
       hideError(qn);
       // Clear transient state so they can optionally add another answer
