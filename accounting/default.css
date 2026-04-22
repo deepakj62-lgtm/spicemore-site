@@ -1,0 +1,149 @@
+/* Default (traditional Busy-style) view + view switch */
+
+/* ---- View switch (floats top-right) ---- */
+.view-switch {
+  position: fixed; top: 8px; right: 12px; z-index: 200;
+  display: inline-flex; background: #e8e8e8; border: 1px solid #9a9a9a;
+  border-radius: 4px; padding: 2px; box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  font-family: "Segoe UI", Tahoma, sans-serif; font-size: 12px;
+}
+.view-switch .vs-btn {
+  background: transparent; border: 0; padding: 4px 10px; cursor: pointer;
+  border-radius: 3px; color: #333;
+}
+.view-switch .vs-btn.active { background: #fff; border: 1px solid #b5b5b5; box-shadow: inset 0 0 0 1px #fff; font-weight: 600; }
+.view-switch .vs-btn:hover:not(.active) { background: rgba(255,255,255,.6); }
+
+/* ---- Shell switching (overrides body.app grid) ---- */
+body.view-custom  #shell-default { display: none; }
+body.view-default #shell-custom  { display: none; }
+body.view-custom  #shell-custom  { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+body.view-default { display: block; background: #c0c0c0; }
+body.view-default #shell-default { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Make app-wide body grid only matter in custom view */
+body.app { display: block; }
+
+.hidden { display: none !important; }
+
+/* ---- Busy-style chrome ---- */
+#shell-default {
+  font-family: "Tahoma", "MS Sans Serif", "Segoe UI", sans-serif;
+  font-size: 12px;
+  color: #000;
+  background: #c0c0c0;
+  display: flex; flex-direction: column; height: 100vh;
+}
+
+.bd-titlebar {
+  background: linear-gradient(to bottom, #0054e3 0%, #0a5ce6 50%, #083bc1 100%);
+  color: #fff; padding: 4px 10px; display: flex; justify-content: space-between;
+  align-items: center; font-weight: 600; font-size: 12px;
+  border-bottom: 1px solid #002;
+}
+.bd-titlebar-right { display: flex; gap: 10px; align-items: center; font-weight: 400; }
+.bd-select {
+  background: #fff; color: #000; border: 1px solid #555; padding: 1px 4px; font: inherit;
+}
+
+.bd-menubar {
+  background: #ece9d8; border-bottom: 1px solid #a0a0a0; display: flex; padding: 0;
+  font-size: 12px;
+}
+.bd-menu {
+  padding: 5px 12px; cursor: pointer; user-select: none; border: 1px solid transparent;
+}
+.bd-menu u { text-decoration: underline; }
+.bd-menu:hover, .bd-menu.open { background: #3170e4; color: #fff; border-color: #003ecb; }
+
+.bd-dropdown {
+  position: absolute; z-index: 50; background: #fff; border: 1px solid #555;
+  box-shadow: 2px 2px 6px rgba(0,0,0,.28); min-width: 220px; padding: 2px 0;
+  font-size: 12px;
+}
+.bd-dropdown .bd-item {
+  padding: 5px 22px 5px 26px; cursor: pointer; display: flex; justify-content: space-between;
+}
+.bd-dropdown .bd-item:hover { background: #3170e4; color: #fff; }
+.bd-dropdown .bd-sep { height: 1px; background: #bbb; margin: 2px 4px; }
+.bd-dropdown .bd-hk { color: #666; font-size: 11px; margin-left: 20px; }
+.bd-dropdown .bd-item:hover .bd-hk { color: #dde; }
+
+.bd-workarea { display: grid; grid-template-columns: 200px 1fr; flex: 1; min-height: 0; }
+
+.bd-sidebar {
+  background: #ece9d8; border-right: 1px solid #a0a0a0; overflow-y: auto;
+  font-size: 11.5px;
+}
+.bd-sb-title { padding: 6px 10px; background: #d7d4c5; border-bottom: 1px solid #a0a0a0; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.bd-sb-group { padding: 4px 0; }
+.bd-sb-head { padding: 4px 10px; font-weight: 700; color: #333; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; border-bottom: 1px dotted #aaa; }
+.bd-sidebar a {
+  display: block; padding: 4px 10px 4px 22px; cursor: pointer; color: #003; text-decoration: none;
+}
+.bd-sidebar a:hover { background: #3170e4; color: #fff; }
+.bd-sidebar a.active { background: #d9e3ef; color: #003; font-weight: 600; }
+
+.bd-main {
+  background: #fff; overflow: auto; padding: 10px; position: relative;
+}
+
+.bd-welcome { padding: 40px 60px; }
+.bd-welcome h1 { margin: 0 0 6px 0; font-size: 22px; color: #003; }
+.bd-sub { color: #555; margin-bottom: 24px; }
+.bd-shortcuts { border-collapse: collapse; background: #f4f2e8; border: 1px solid #a0a0a0; font-size: 12px; }
+.bd-shortcuts td { padding: 4px 14px; border: 1px solid #cfcfcf; }
+kbd { display: inline-block; font-family: "Consolas", "Monaco", monospace; font-size: 11px;
+      padding: 1px 6px; border: 1px solid #777; border-bottom-width: 2px; border-radius: 3px;
+      background: #fafafa; color: #222; }
+
+.bd-statusbar {
+  background: #ece9d8; border-top: 1px solid #7a7a7a; padding: 4px 10px;
+  display: flex; justify-content: space-between; font-size: 11px; color: #333;
+}
+
+/* ---- Grids ---- */
+.bd-toolbar { display: flex; gap: 6px; padding: 6px 4px; border-bottom: 1px solid #d0d0d0; background: #f4f2e8; position: sticky; top: 0; z-index: 1; }
+.bd-toolbar input, .bd-toolbar select {
+  border: 1px solid #777; background: #fff; padding: 2px 6px; font: inherit;
+}
+.bd-btn {
+  border: 1px solid #707070; background: linear-gradient(#fefefe, #ddd); padding: 3px 10px;
+  cursor: pointer; font: inherit; border-radius: 2px;
+}
+.bd-btn:hover { background: linear-gradient(#fff, #cfe0ff); border-color: #3170e4; }
+.bd-btn.primary { background: linear-gradient(#cfe0ff, #8ab3ee); border-color: #2d5fb4; color: #002; font-weight: 600; }
+
+.bd-crumb { padding: 4px 10px; background: #ece9d8; border-bottom: 1px solid #cfcfcf; font-size: 11px; color: #333; }
+.bd-crumb b { color: #000; }
+
+.bd-grid { border-collapse: collapse; width: 100%; font-size: 12px; }
+.bd-grid th {
+  background: linear-gradient(#ece9d8, #d6d3c4); padding: 4px 8px; text-align: left;
+  border: 1px solid #b0b0b0; font-weight: 600; position: sticky; top: 36px; z-index: 1;
+}
+.bd-grid td { padding: 3px 8px; border: 1px solid #dedcd0; white-space: nowrap; }
+.bd-grid tr:nth-child(even) td { background: #fafaf6; }
+.bd-grid tr:hover td { background: #cfe0ff; cursor: pointer; }
+.bd-grid .num { text-align: right; font-family: "Consolas", monospace; }
+.bd-grid .dim { color: #777; }
+
+.bd-totals { background: #e6f0d0; font-weight: 700; }
+.bd-totals td { border-top: 2px solid #666; }
+
+.bd-empty { padding: 40px; text-align: center; color: #666; }
+.bd-loading { padding: 30px; text-align: center; color: #335; font-style: italic; }
+
+/* ---- Modal / Voucher Entry ---- */
+.bd-modal { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 300; display: flex; justify-content: center; align-items: flex-start; padding-top: 60px; }
+.bd-modal.hidden { display: none; }
+.bd-modal-box { background: #ece9d8; border: 2px solid #555; min-width: 560px; max-width: 90vw; max-height: 80vh; overflow: auto; box-shadow: 4px 4px 14px rgba(0,0,0,.35); }
+.bd-modal-head { background: linear-gradient(to bottom, #0054e3, #083bc1); color: #fff; padding: 5px 10px; display: flex; justify-content: space-between; font-weight: 600; }
+.bd-modal-head .bd-x { cursor: pointer; padding: 0 6px; }
+.bd-modal-body { padding: 14px; background: #ece9d8; }
+.bd-form-row { display: grid; grid-template-columns: 140px 1fr; gap: 6px 10px; margin-bottom: 6px; align-items: center; }
+.bd-form-row label { text-align: right; color: #222; }
+.bd-form-row input, .bd-form-row select, .bd-form-row textarea {
+  border: 1px solid #707070; background: #fff; padding: 3px 6px; font: inherit;
+}
+.bd-modal-foot { padding: 8px 10px; background: #ece9d8; border-top: 1px solid #aaa; text-align: right; }

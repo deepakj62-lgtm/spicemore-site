@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spicemore OS — Accounting</title>
+<link rel="stylesheet" href="/accounting/app.css" />
+<link rel="stylesheet" href="/accounting/default.css" />
+<style>
+  /* Basic mode — per Edwin 2026-04-18: surface only ledger-entry basics + auction */
+  body.sm-basic #shell-custom .nav-link:not([data-basic="1"]) { display: none; }
+  body.sm-basic #shell-custom details.nav-sec:not([data-has-basic="1"]) { display: none; }
+  .mode-toggle { display: flex; gap: 10px; margin-top: 8px; font-size: 12px; opacity: 0.85; }
+  .mode-toggle label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+</style>
+</head>
+<body class="app view-custom">
+
+<div id="viewSwitch" class="view-switch">
+  <button type="button" class="vs-btn" data-shell="default" title="Traditional accounting view">📒 Default</button>
+  <button type="button" class="vs-btn active" data-shell="custom" title="Spicemore OS (evolving custom layer)">🌶 Spicemore OS</button>
+</div>
+
+<div id="shell-custom" class="shell">
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">SM</div>
+    <div>
+      <div class="brand-name">Spicemore OS</div>
+      <div class="brand-sub">Accounting</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <a href="#dashboard" data-view="dashboard" data-basic="1" class="nav-link active">🏠 Dashboard</a>
+    <a href="#auction" data-view="auction" data-basic="1" class="nav-link nav-feature">🪴 Auction House</a>
+
+    <details class="nav-sec" data-has-basic="1">
+      <summary>Daily Entry</summary>
+      <a href="#sales" data-view="sales" data-basic="1" class="nav-link"><span class="hk">F2</span> Sales</a>
+      <a href="#purchase" data-view="purchase" data-basic="1" class="nav-link"><span class="hk">F3</span> Purchase</a>
+      <a href="#receipt" data-view="receipt" data-basic="1" class="nav-link"><span class="hk">F4</span> Receipt</a>
+      <a href="#payment" data-view="payment" data-basic="1" class="nav-link"><span class="hk">F5</span> Payment</a>
+      <a href="#contra" data-view="contra" class="nav-link"><span class="hk">F6</span> Contra</a>
+      <a href="#journal" data-view="journal" data-basic="1" class="nav-link"><span class="hk">F7</span> Journal</a>
+      <a href="#credit-note" data-view="credit-note" class="nav-link">Credit Note</a>
+      <a href="#debit-note" data-view="debit-note" class="nav-link">Debit Note</a>
+      <a href="#sales-return" data-view="sales-return" class="nav-link">Sales Return</a>
+      <a href="#purchase-return" data-view="purchase-return" class="nav-link">Purchase Return</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Procurement</summary>
+      <a href="#procurement" data-view="procurement" class="nav-link">Field Procurement</a>
+      <a href="#farmer-advance" data-view="farmer-advance" class="nav-link">Farmer Advances</a>
+      <a href="#procurement-register" data-view="procurement-register" class="nav-link">Procurement Register</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Stock</summary>
+      <a href="#stock" data-view="stock" class="nav-link">Stock Balance</a>
+      <a href="#stock-entry" data-view="stock-entry" class="nav-link">Stock Entry</a>
+      <a href="#stock-aging" data-view="stock-aging" class="nav-link">Stock Aging</a>
+      <a href="#batch-tracker" data-view="batch-tracker" class="nav-link">Batch Tracker</a>
+      <a href="#warehouses" data-view="warehouses" class="nav-link">Warehouses</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Finance</summary>
+      <a href="#loans" data-view="loans" class="nav-link">Loan Book</a>
+      <a href="#drawdown" data-view="drawdown" class="nav-link">New Drawdown</a>
+      <a href="#repayment" data-view="repayment" class="nav-link">Loan Repayment</a>
+      <a href="#whr" data-view="whr" class="nav-link">WHR Pledges</a>
+      <a href="#interest-accrual" data-view="interest-accrual" class="nav-link">Interest Accrual</a>
+      <a href="#pdc-register" data-view="pdc-register" class="nav-link">Post-dated Cheques</a>
+      <a href="#fundraise" data-view="fundraise" class="nav-link">Fundraising</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Export (SEPL)</summary>
+      <a href="#shipping-bills" data-view="shipping-bills" class="nav-link">Shipping Bills</a>
+      <a href="#lc-tracker" data-view="lc-tracker" class="nav-link">LC Tracker</a>
+      <a href="#forex-receivables" data-view="forex-receivables" class="nav-link">Forex Receivables</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Reports</summary>
+      <a href="#daybook" data-view="daybook" data-basic="1" class="nav-link"><span class="hk">F8</span> Day Book</a>
+      <a href="#ledger" data-view="ledger" data-basic="1" class="nav-link">Ledger</a>
+      <a href="#trial" data-view="trial" class="nav-link">Trial Balance</a>
+      <a href="#balance" data-view="balance" class="nav-link">Balance Sheet</a>
+      <a href="#pnl" data-view="pnl" class="nav-link">Profit &amp; Loss</a>
+      <a href="#ageing" data-view="ageing" class="nav-link">Receivables Ageing</a>
+      <a href="#payables" data-view="payables" class="nav-link">Payables Ageing</a>
+      <a href="#cashflow" data-view="cashflow" class="nav-link">Cash Flow (30d)</a>
+      <a href="#budget" data-view="budget" class="nav-link">Budget vs Actual</a>
+      <a href="#gst" data-view="gst" class="nav-link">GST Reports</a>
+      <a href="#hsn-summary" data-view="hsn-summary" class="nav-link">HSN Summary</a>
+      <a href="#tds-register" data-view="tds-register" class="nav-link">TDS Register</a>
+      <a href="#bank-recon" data-view="bank-recon" class="nav-link">Bank Reconciliation</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Compliance</summary>
+      <a href="#einvoice" data-view="einvoice" class="nav-link">e-Invoice</a>
+      <a href="#eway-bill" data-view="eway-bill" class="nav-link">e-Way Bill</a>
+      <a href="#gst-returns" data-view="gst-returns" class="nav-link">GST Returns Filing</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Payroll</summary>
+      <a href="#employees" data-view="employees" class="nav-link">Employees</a>
+      <a href="#salary" data-view="salary" class="nav-link">Salary Entry</a>
+      <a href="#attendance" data-view="attendance" class="nav-link">Attendance</a>
+    </details>
+
+    <details class="nav-sec" data-has-basic="1">
+      <summary>Masters</summary>
+      <a href="#parties" data-view="parties" data-basic="1" class="nav-link">Parties</a>
+      <a href="#items" data-view="items" class="nav-link">Items</a>
+      <a href="#accounts" data-view="accounts" class="nav-link">Chart of Accounts</a>
+      <a href="#cost-centers" data-view="cost-centers" class="nav-link">Cost Centers</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Spicemore Tools</summary>
+      <a href="/smtc-portal" class="nav-link" target="_blank">SMTC Portal ↗</a>
+      <a href="/smtc-request-tool" class="nav-link" target="_blank">Request Tool ↗</a>
+      <a href="/smtc-requests-view" class="nav-link" target="_blank">Requests Review ↗</a>
+      <a href="/credit-assessor" class="nav-link" target="_blank">Credit Assessor ↗</a>
+      <a href="/daily-sales-summary" class="nav-link" target="_blank">Daily Sales Summary ↗</a>
+      <a href="/reconciliation" class="nav-link" target="_blank">Bank Reconciliation Tool ↗</a>
+      <a href="/auction-questionnaire" class="nav-link" target="_blank">Auction Questionnaire ↗</a>
+      <a href="/auction-responses-view" class="nav-link" target="_blank">Auction Responses ↗</a>
+    </details>
+
+    <details class="nav-sec">
+      <summary>Operations</summary>
+      <a href="#approvals" data-view="approvals" class="nav-link">Bank Approvals</a>
+      <a href="#suggestions" data-view="suggestions" class="nav-link">Suggestions Inbox</a>
+      <a href="#audit-log" data-view="audit-log" class="nav-link">Audit Log</a>
+      <a href="#user-settings" data-view="user-settings" class="nav-link">Users &amp; Roles</a>
+    </details>
+  </nav>
+  <div class="sidebar-foot">
+    <select id="company-select">
+      <option value="Spice More Trading Company">SMTC</option>
+      <option value="Spice More Export Import Pvt Ltd">SEPL</option>
+    </select>
+    <div class="mode-toggle" title="Basic mode shows only core ledger + auction (per Edwin, 2026-04-18). Full mode shows everything.">
+      <label><input type="radio" name="sm-mode" value="basic" id="mode-basic"> Basic</label>
+      <label><input type="radio" name="sm-mode" value="full" id="mode-full"> Full</label>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div id="crumb" class="crumb">Dashboard</div>
+    <div class="top-actions">
+      <input id="global-search" placeholder="Quick find: customer, supplier, item, invoice…  (⌘K)" autocomplete="off" />
+      <div id="global-search-results" class="search-results" hidden></div>
+    </div>
+  </header>
+
+  <section id="view" class="view">
+    <div class="loading">Loading…</div>
+  </section>
+
+  <div id="suggest-bar" class="suggest-bar">
+    <span class="suggest-label">💡 Suggestion / Change</span>
+    <select id="suggest-lang" title="Language">
+      <option value="en-IN">English</option>
+      <option value="ta-IN">தமிழ்</option>
+      <option value="hi-IN">हिन्दी</option>
+      <option value="ml-IN">മലയാളം</option>
+    </select>
+    <input id="suggest-text" placeholder="Describe what you need — a new page, a button, a fix… paste links too" />
+    <input id="suggest-files" type="file" multiple accept="image/*,application/pdf,.txt,.csv,.doc,.docx,.xls,.xlsx" style="display:none" />
+    <button id="suggest-attach" class="btn" type="button" title="Attach files / screenshots">📎</button>
+    <button id="suggest-mic" class="btn" type="button" title="Voice input">🎙</button>
+    <button id="suggest-send" class="btn-primary" type="button">Send</button>
+  </div>
+  <div id="suggest-chips" class="suggest-chips"></div>
+</main>
+
+</div><!-- /shell-custom -->
+
+<div id="shell-default" class="shell">
+  <div class="bd-titlebar">
+    <span class="bd-title">Spicemore Books — <span id="bdCompany">Spice More Trading Company</span> — FY 2025-2026</span>
+    <span class="bd-titlebar-right">
+      <select id="bdCompanySel" class="bd-select">
+        <option value="Spice More Trading Company">SMTC</option>
+        <option value="Spice More Export Import Pvt Ltd">SEPL</option>
+      </select>
+      <span>Admin</span>
+    </span>
+  </div>
+  <div class="bd-menubar">
+    <div class="bd-menu" data-menu="company"><u>C</u>ompany</div>
+    <div class="bd-menu" data-menu="accounts"><u>A</u>ccounts</div>
+    <div class="bd-menu" data-menu="inventory"><u>I</u>nventory</div>
+    <div class="bd-menu" data-menu="sales"><u>S</u>ales</div>
+    <div class="bd-menu" data-menu="purchase"><u>P</u>urchase</div>
+    <div class="bd-menu" data-menu="reports"><u>R</u>eports</div>
+    <div class="bd-menu" data-menu="gst"><u>G</u>ST</div>
+    <div class="bd-menu" data-menu="utilities"><u>U</u>tilities</div>
+    <div class="bd-menu" data-menu="window"><u>W</u>indow</div>
+    <div class="bd-menu" data-menu="help"><u>H</u>elp</div>
+  </div>
+  <div id="bdDropdown" class="bd-dropdown hidden"></div>
+  <div class="bd-workarea">
+    <div class="bd-sidebar">
+      <div class="bd-sb-title">Quick Nav</div>
+      <div class="bd-sb-group">
+        <div class="bd-sb-head">Masters</div>
+        <a data-bd-view="customers">Customers</a>
+        <a data-bd-view="suppliers">Suppliers</a>
+        <a data-bd-view="items">Items</a>
+        <a data-bd-view="accounts">Chart of Accounts</a>
+      </div>
+      <div class="bd-sb-group">
+        <div class="bd-sb-head">Transactions</div>
+        <a data-bd-view="sales-list">Sales Invoices</a>
+        <a data-bd-view="purchase-list">Purchase Invoices</a>
+        <a data-bd-view="receipt-list">Receipts</a>
+        <a data-bd-view="payment-list">Payments</a>
+        <a data-bd-view="journal-list">Journals</a>
+      </div>
+      <div class="bd-sb-group">
+        <div class="bd-sb-head">Reports</div>
+        <a data-bd-view="daybook">Day Book</a>
+        <a data-bd-view="partyledger">Party Ledger</a>
+        <a data-bd-view="ledger">Account Ledger</a>
+        <a data-bd-view="trialbalance">Trial Balance</a>
+        <a data-bd-view="pnl">Profit &amp; Loss</a>
+        <a data-bd-view="balancesheet">Balance Sheet</a>
+        <a data-bd-view="gstr1">GSTR-1 Summary</a>
+        <a data-bd-view="gstr3b">GSTR-3B Summary</a>
+        <a data-bd-view="stock">Stock Summary</a>
+      </div>
+    </div>
+    <div class="bd-main" id="bdMain">
+      <div class="bd-welcome">
+        <h1>Spicemore Books</h1>
+        <p class="bd-sub">Traditional accounting view.  Keyboard-first.  Menu: <b>Alt + underlined letter</b></p>
+        <table class="bd-shortcuts">
+          <tr><td><kbd>F2</kbd></td><td>Change Date</td><td><kbd>F4</kbd></td><td>Select Party</td></tr>
+          <tr><td><kbd>F5</kbd></td><td>Refresh</td><td><kbd>F6</kbd></td><td>Sales Voucher</td></tr>
+          <tr><td><kbd>F7</kbd></td><td>Purchase Voucher</td><td><kbd>F8</kbd></td><td>Journal Voucher</td></tr>
+          <tr><td><kbd>F9</kbd></td><td>Receipt</td><td><kbd>F10</kbd></td><td>Payment</td></tr>
+          <tr><td><kbd>F11</kbd></td><td>Company Info</td><td><kbd>F12</kbd></td><td>Configuration</td></tr>
+          <tr><td><kbd>Ctrl+D</kbd></td><td>Day Book</td><td><kbd>Ctrl+L</kbd></td><td>Party Ledger</td></tr>
+          <tr><td><kbd>Ctrl+T</kbd></td><td>Trial Balance</td><td><kbd>Esc</kbd></td><td>Close Window</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="bd-statusbar">
+    <span id="bdStatus">Ready.</span>
+    <span class="bd-sb-right">
+      <span id="bdDate"></span> &nbsp;|&nbsp;
+      <span id="bdCount"></span>
+    </span>
+  </div>
+</div><!-- /shell-default -->
+
+<div id="bdModal" class="bd-modal hidden"><div class="bd-modal-box" id="bdModalBox"></div></div>
+
+<script src="/accounting/app.js"></script>
+<script src="/accounting/app-extra.js"></script>
+<script src="/accounting/default.js"></script>
+<script>
+  (function(){
+    var KEY = 'sm-nav-mode';
+    var saved = localStorage.getItem(KEY) || 'basic';
+    function apply(mode){
+      document.body.classList.toggle('sm-basic', mode === 'basic');
+      var basicEl = document.getElementById('mode-basic');
+      var fullEl = document.getElementById('mode-full');
+      if (basicEl) basicEl.checked = (mode === 'basic');
+      if (fullEl) fullEl.checked = (mode === 'full');
+      localStorage.setItem(KEY, mode);
+    }
+    apply(saved);
+    document.addEventListener('change', function(e){
+      if (e.target && e.target.name === 'sm-mode') apply(e.target.value);
+    });
+  })();
+</script>
+</body>
+</html>
