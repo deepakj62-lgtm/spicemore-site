@@ -287,6 +287,57 @@
       if (e.target && e.target.name === 'sm-mode') apply(e.target.value);
     });
   })();
+
+  // Busy-style keyboard shortcuts (Edwin, 2026-04-22)
+  (function(){
+    var map = {
+      'Ctrl+L':  'a[data-view="ledger"]',
+      'Ctrl+D':  'a[data-view="daybook"]',
+      'Ctrl+T':  'a[data-view="trial"]',
+      'Ctrl+B':  'a[data-view="balance"]',
+      'Ctrl+M':  'a[data-view="pnl"]',
+      'Ctrl+J':  'a[data-view="journal"]',
+      'Ctrl+S':  'a[data-view="sales"]',
+      'Ctrl+U':  'a[data-view="purchase"]',
+      'Ctrl+R':  'a[data-view="receipt"]',
+      'Ctrl+Y':  'a[data-view="payment"]',
+      'Ctrl+P':  'a[data-view="parties"]',
+      'F2':      'a[data-view="sales"]',
+      'F3':      'a[data-view="purchase"]',
+      'F4':      'a[data-view="receipt"]',
+      'F5':      'a[data-view="payment"]',
+      'F6':      'a[data-view="contra"]',
+      'F7':      'a[data-view="journal"]',
+      'F8':      'a[data-view="daybook"]',
+      'F9':      'a[data-view="parties"]'
+    };
+    function describe(e){
+      if (e.key === 'Escape') return 'Esc';
+      if (/^F\d+$/.test(e.key)) return e.key;
+      if ((e.ctrlKey || e.metaKey) && e.key.length === 1) return 'Ctrl+' + e.key.toUpperCase();
+      return '';
+    }
+    document.addEventListener('keydown', function(e){
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      var key = describe(e);
+      if (!key) return;
+      if (key === 'Esc') {
+        var opens = document.querySelectorAll('details[open]');
+        if (opens.length) { opens.forEach(function(d){ d.open = false; }); e.preventDefault(); }
+        return;
+      }
+      var sel = map[key];
+      if (!sel) return;
+      var el = document.querySelector(sel);
+      if (el) { e.preventDefault(); el.click(); }
+    });
+    // Unobtrusive hint on first visit
+    if (!localStorage.getItem('sm-kb-hinted')) {
+      console.info('[Spicemore] Busy-style shortcuts active — Ctrl+L ledger, Ctrl+D daybook, F2–F9 voucher keys. Press ? for full list (coming).');
+      localStorage.setItem('sm-kb-hinted', '1');
+    }
+  })();
 </script>
 </body>
 </html>
