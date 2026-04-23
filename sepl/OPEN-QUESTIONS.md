@@ -1,4 +1,11 @@
-# SEPL Phase 1 — Open Questions
+# SEPL — Open Questions
+
+## Phase status
+- **Phase 1 (staff intake + consignor OTP login):** SHIPPED
+- **Phase 2 (consignor dashboard + price calculator):** SHIPPED — live at `/sepl/consignor/dashboard.html`
+- **Phase 3 (portfolio + margin / LTV dashboard):** OPEN
+- **Phase 4 (admin settings UI — editable `_settings.js` via blob):** OPEN (see Q6)
+
 
 ## Q1: WhatsApp channel — SOLVED-FOR-TESTING
 Tunneled local bridge active. Meta Cloud API migration pending account approval — see `META-WABA-SETUP.md`.
