@@ -1,0 +1,10 @@
+# Local-only, not yet ready for production deploy.
+# These were in-progress adds that push us over the Hobby 12-function limit.
+# Remove from this list once they've each been reviewed + tested.
+api/bank-file.js
+api/bank-payout.js
+api/erp.js
+api/suggestions.js
+api/transcribe-clean.js
+api/sepl/_whatsapp-meta-draft.js
+books/

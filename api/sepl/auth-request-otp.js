@@ -1,15 +1,38 @@
-const { put } = require('@vercel/blob');
-const { sendWhatsAppText } = require('./_whatsapp');
+const { put, list } = require('@vercel/blob');
+const { sendWhatsAppText, testBridge } = require('./_whatsapp');
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
 module.exports = async function handler(req, res) {
   cors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Diagnostic: GET /api/sepl/auth-request-otp?diag=whatsapp
+  // (Consolidated here to stay under the Vercel Hobby 12-function limit.)
+  if (req.method === 'GET' && req.query && req.query.diag === 'whatsapp') {
+    let bridge = { ok: false, reason: 'not checked' };
+    try { bridge = await testBridge(); } catch (e) { bridge = { ok: false, reason: e.message }; }
+    let outboxCount = null;
+    try {
+      const { blobs } = await list({ prefix: 'whatsapp-outbox/', limit: 1000 });
+      outboxCount = blobs.length;
+    } catch (e) { outboxCount = { error: e.message }; }
+    return res.status(200).json({
+      bridgeReachable: !!bridge.ok,
+      bridgeStatus: bridge.status || null,
+      latencyMs: bridge.latencyMs ?? null,
+      bridgeBody: bridge.body || null,
+      bridgeUrlSet: Boolean(process.env.WHATSAPP_BRIDGE_URL),
+      bridgeSecretSet: Boolean(process.env.WHATSAPP_BRIDGE_SECRET),
+      outboxCount,
+      at: new Date().toISOString()
+    });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {

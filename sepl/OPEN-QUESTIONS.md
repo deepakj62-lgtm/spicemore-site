@@ -1,10 +1,18 @@
 # SEPL Phase 1 — Open Questions
 
-## Q1: WhatsApp channel
-**File to edit:** `api/sepl/_whatsapp.js` lines 1–40
-**Stub behavior:** logs payload to console + saves to `whatsapp-outbox/` blob (including PDF bytes under `whatsapp-outbox/docs/`)
-**Options:** Meta Cloud API / Twilio / Tunneled local bridge (`whatsapp-mcp` at `localhost:8080` — Deepak already runs this as a LaunchAgent, easiest to prototype via tunnel)
-**Blocks:** OTP delivery, PDF delivery to consignors
+## Q1: WhatsApp channel — SOLVED-FOR-TESTING
+Tunneled local bridge active. Meta Cloud API migration pending account approval — see `META-WABA-SETUP.md`.
+
+**Live path:** Vercel → `cloudflared` Try-Cloudflare tunnel → `whatsapp-mcp` bridge at `localhost:8080` on Deepak's Mac → Deepak's own WhatsApp account.
+- Env vars: `WHATSAPP_BRIDGE_URL`, `WHATSAPP_BRIDGE_SECRET` (production + development set)
+- Bridge auth: `X-Bridge-Secret` header; secret also at `/Users/claude/whatsapp-mcp/.bridge-secret` (chmod 600)
+- LaunchAgents: `com.whatsapp.bridge` (bridge) + `com.sepl.whatsapp-tunnel` (cloudflared)
+- Tunnel URL file: `/Users/claude/whatsapp-mcp/tunnel-url.txt` (ephemeral trycloudflare — rotates on tunnel restart)
+- Rotate + push-to-vercel: `VERCEL_AUTO_UPDATE=1 /Users/claude/whatsapp-mcp/refresh-tunnel.sh`
+- Diagnostic: `GET https://spicemore.com/api/sepl/auth-request-otp?diag=whatsapp`
+- Fallback: if `WHATSAPP_BRIDGE_URL` is unset or the POST fails, `_whatsapp.js` still writes to the `whatsapp-outbox/` blob and returns `{ok:true, stubbed:true}` so the app never crashes.
+
+**Caveats:** depends on Deepak's laptop being online; trycloudflare URL is ephemeral (re-register in Vercel env on rotation, or move to a named tunnel under a Cloudflare-controlled domain).
 
 ## Q2: Subdomain DNS
 **File to edit:** `vercel.json` + DNS record at registrar
