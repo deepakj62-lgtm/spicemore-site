@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily price | SEPL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    .wrap { max-width:600px; margin:0 auto; padding:90px 16px 40px; }
+    .card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:20px; margin-bottom:14px; }
+    .h1 { font-family:var(--font-heading); font-weight:700; font-size:22px; color:var(--green-dark); margin-bottom:12px; }
+    label { font-size:13px; color:var(--brown); }
+    input, select { width:100%; padding:10px; border:1px solid var(--light-gray); border-radius:8px; font-family:var(--font-body); margin-bottom:10px; }
+    button { padding:12px 18px; background:var(--green-primary); color:var(--white); border:none; border-radius:8px; cursor:pointer; font-family:var(--font-body); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { text-align:left; padding:8px; border-bottom:1px solid var(--light-gray); }
+    .nav-sub { display:flex; gap:10px; margin-bottom:14px; font-size:13px; flex-wrap:wrap; }
+    .nav-sub a { color:var(--green-dark); text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><div class="nav-container">
+    <a href="../../index.html" class="nav-logo"><img src="../../images/logo.png" alt="Spice More"></a>
+  </div></nav>
+  <div class="wrap">
+    <div class="nav-sub">
+      <a href="intake.html">Intake</a> · <a href="consignors.html">Consignors</a> ·
+      <a href="transactions.html">Transactions</a> · <a href="daily-price.html">Daily price</a>
+    </div>
+    <div class="card">
+      <div class="h1">Today's Spices Board price</div>
+      <label>Date</label><input id="date" type="date" readonly>
+      <label>Grade</label>
+      <select id="grade"><option>AGEB</option><option>AGB</option><option>8mm Bold</option><option>7mm</option><option>6mm</option><option>Mixed</option></select>
+      <label>Price (₹/kg)</label><input id="price" type="number" step="0.01">
+      <label>Source</label><input id="source" value="Spices Board e-auction">
+      <button id="save">Save</button>
+      <span id="msg" style="margin-left:10px; font-size:13px;"></span>
+    </div>
+    <div class="card">
+      <div class="h1">Recent entries</div>
+      <table><thead><tr><th>Date</th><th>Grade</th><th>Price</th><th>Source</th><th>By</th></tr></thead><tbody id="tbody"></tbody></table>
+    </div>
+  </div>
+<script>
+  const token = sessionStorage.sepl_token;
+  if (!token || sessionStorage.sepl_role!=='staff') location.href='login.html';
+  const hdr = { 'Content-Type':'application/json', 'Authorization':'Bearer '+token };
+  const $ = id => document.getElementById(id);
+  $('date').value = new Date().toISOString().slice(0,10);
+  async function load() {
+    const r = await fetch('/api/sepl/daily-price', { headers: hdr });
+    const d = await r.json();
+    $('tbody').innerHTML = (d.history||[]).map(p =>
+      `<tr><td>${p.date}</td><td>${p.grade}</td><td>₹${p.pricePerKg}</td><td>${p.source}</td><td>${p.enteredBy?.name||''}</td></tr>`
+    ).join('') || '<tr><td colspan="5" style="color:var(--tan)">No entries yet.</td></tr>';
+  }
+  load();
+  $('save').onclick = async () => {
+    const body = { grade:$('grade').value, pricePerKg:Number($('price').value), source:$('source').value };
+    const r = await fetch('/api/sepl/daily-price', { method:'POST', headers: hdr, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!r.ok) { $('msg').textContent = d.error; return; }
+    $('msg').textContent = 'Saved'; load();
+  };
+</script>
+</body>
+</html>

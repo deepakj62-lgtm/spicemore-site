@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Consignments | SEPL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    .wrap { max-width:720px; margin:0 auto; padding:90px 16px 40px; }
+    .card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:20px; margin-bottom:14px; }
+    .h1 { font-family:var(--font-heading); font-weight:700; font-size:22px; color:var(--green-dark); margin-bottom:10px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--light-gray); }
+    th { color:var(--tan); font-size:11px; text-transform:uppercase; }
+    .note { background:var(--cream); padding:14px; border-radius:8px; color:var(--brown); font-size:14px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><div class="nav-container">
+    <a href="../../index.html" class="nav-logo"><img src="../../images/logo.png" alt="Spice More"></a>
+  </div></nav>
+  <div class="wrap">
+    <div class="card">
+      <div class="h1">My consignments</div>
+      <div id="who" style="font-size:13px; color:var(--tan); margin-bottom:10px;"></div>
+      <div style="overflow-x:auto;">
+      <table><thead><tr><th>Txn</th><th>Depot</th><th>Weight</th><th>Advance</th><th>Daily</th><th>Intake</th><th>Exit</th><th>Status</th></tr></thead>
+      <tbody id="tbody"></tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="h1">Price calculator</div>
+      <div class="note">Coming soon — Phase 2. Will let you simulate payoff scenarios against the current Spices Board price.</div>
+    </div>
+  </div>
+<script>
+  const token = sessionStorage.sepl_token;
+  if (!token || sessionStorage.sepl_role!=='consignor') location.href='login.html';
+  document.getElementById('who').textContent = 'Signed in as '+(sessionStorage.sepl_name||'')+' ('+(sessionStorage.sepl_phone||'')+')';
+  const inr = n => '₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:2});
+  (async ()=>{
+    const r = await fetch('/api/sepl/transactions?consignorPhone=me', { headers:{ 'Authorization':'Bearer '+token } });
+    const d = await r.json();
+    document.getElementById('tbody').innerHTML = (d.transactions||[]).map(t =>
+      `<tr><td><b>${t.txnId}</b></td><td>${t.depot}</td><td>${t.netWeightKg} kg</td><td>${inr(t.advanceAmount)}</td>`+
+      `<td>${inr(t.dailyHoldingCharge)}</td><td>${t.intakeDate}</td><td>${t.expectedExitDate}</td><td>${t.status}</td></tr>`
+    ).join('') || '<tr><td colspan="8" style="color:var(--tan)">No active consignments yet.</td></tr>';
+  })();
+</script>
+</body>
+</html>

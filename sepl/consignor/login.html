@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consignor Login | SEPL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    .sepl-wrap { max-width:440px; margin:0 auto; padding:90px 20px 40px; }
+    .sepl-card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:28px; }
+    .sepl-h1 { font-family:var(--font-heading); font-weight:700; font-size:24px; color:var(--green-dark); margin-bottom:4px; }
+    .sepl-sub { color:var(--tan); margin-bottom:20px; font-size:14px; }
+    label { display:block; font-size:13px; margin-bottom:6px; }
+    input { width:100%; padding:12px; border:1px solid var(--light-gray); border-radius:8px; font-size:15px; margin-bottom:14px; font-family:var(--font-body); }
+    button { width:100%; padding:14px; background:var(--green-primary); color:var(--white); border:none; border-radius:8px; font-size:15px; cursor:pointer; font-family:var(--font-body); }
+    .err { color:#b33; font-size:13px; } .ok { color:var(--green-dark); font-size:13px; } .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><div class="nav-container">
+    <a href="../../index.html" class="nav-logo"><img src="../../images/logo.png" alt="Spice More"></a>
+  </div></nav>
+  <div class="sepl-wrap">
+    <div class="sepl-card">
+      <div class="sepl-h1">Consignor login</div>
+      <div class="sepl-sub">Phone + WhatsApp OTP</div>
+      <div id="step1">
+        <label>Phone</label>
+        <input id="phone" type="tel" placeholder="+91…">
+        <button id="req">Send OTP</button>
+      </div>
+      <div id="step2" class="hidden">
+        <label>OTP</label>
+        <input id="otp" inputmode="numeric" maxlength="6">
+        <button id="ver">Verify</button>
+      </div>
+      <div id="msg"></div>
+    </div>
+  </div>
+  <script>
+    const $ = id => document.getElementById(id); let phone='';
+    $('req').onclick = async () => {
+      phone = $('phone').value.trim(); if (!phone) return;
+      const r = await fetch('/api/sepl/auth-request-otp', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,role:'consignor'})});
+      const d = await r.json();
+      if (!r.ok) { $('msg').innerHTML='<div class="err">'+d.error+'</div>'; return; }
+      $('step1').classList.add('hidden'); $('step2').classList.remove('hidden');
+      $('msg').innerHTML='<div class="ok">OTP sent.'+(d.devOtp?' DEV OTP: <b>'+d.devOtp+'</b>':'')+'</div>';
+    };
+    $('ver').onclick = async () => {
+      const otp = $('otp').value.trim();
+      const r = await fetch('/api/sepl/auth-verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,otp,role:'consignor'})});
+      const d = await r.json();
+      if (!r.ok) { $('msg').innerHTML='<div class="err">'+d.error+'</div>'; return; }
+      sessionStorage.sepl_token=d.token; sessionStorage.sepl_role=d.role; sessionStorage.sepl_name=d.name; sessionStorage.sepl_phone=d.phone;
+      location.href='dashboard.html';
+    };
+  </script>
+</body>
+</html>

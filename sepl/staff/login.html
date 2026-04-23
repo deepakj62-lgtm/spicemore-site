@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Login | SEPL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    .sepl-wrap { max-width:440px; margin:0 auto; padding:90px 20px 40px; }
+    .sepl-card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:28px; }
+    .sepl-h1 { font-family:var(--font-heading); font-weight:700; font-size:24px; color:var(--green-dark); margin-bottom:4px; }
+    .sepl-sub { color:var(--tan); margin-bottom:20px; font-size:14px; }
+    label { display:block; font-size:13px; margin-bottom:6px; color:var(--dark-text); }
+    input { width:100%; padding:12px; border:1px solid var(--light-gray); border-radius:8px; font-family:var(--font-body); font-size:15px; margin-bottom:14px; }
+    button { width:100%; padding:14px; background:var(--green-primary); color:var(--white); border:none; border-radius:8px; font-size:15px; font-weight:500; cursor:pointer; font-family:var(--font-body); }
+    button[disabled] { opacity:.5; cursor:not-allowed; }
+    .err { color:#b33; font-size:13px; margin:6px 0; }
+    .ok { color:var(--green-dark); font-size:13px; margin:6px 0; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><div class="nav-container">
+    <a href="../../index.html" class="nav-logo"><img src="../../images/logo.png" alt="Spice More"></a>
+  </div></nav>
+  <div class="sepl-wrap">
+    <div class="sepl-card">
+      <div class="sepl-h1">Staff login</div>
+      <div class="sepl-sub">Phone + WhatsApp OTP</div>
+      <div id="step1">
+        <label>Phone number</label>
+        <input id="phone" type="tel" placeholder="+91…">
+        <button id="req">Send OTP</button>
+      </div>
+      <div id="step2" class="hidden">
+        <label>6-digit OTP</label>
+        <input id="otp" type="text" maxlength="6" inputmode="numeric">
+        <button id="ver">Verify & enter</button>
+      </div>
+      <div id="msg"></div>
+    </div>
+  </div>
+  <script>
+    const $ = id => document.getElementById(id);
+    let phone = '';
+    $('req').onclick = async () => {
+      phone = $('phone').value.trim();
+      if (!phone) return;
+      $('msg').innerHTML = '';
+      $('req').disabled = true;
+      try {
+        const r = await fetch('/api/sepl/auth-request-otp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone, role:'staff' }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'failed');
+        $('step1').classList.add('hidden');
+        $('step2').classList.remove('hidden');
+        let m = 'OTP sent via WhatsApp (stubbed).';
+        if (d.devOtp) m += ` <b>DEV OTP: ${d.devOtp}</b>`;
+        $('msg').innerHTML = '<div class="ok">'+m+'</div>';
+      } catch(e) { $('msg').innerHTML = '<div class="err">'+e.message+'</div>'; $('req').disabled = false; }
+    };
+    $('ver').onclick = async () => {
+      const otp = $('otp').value.trim();
+      $('ver').disabled = true;
+      try {
+        const r = await fetch('/api/sepl/auth-verify-otp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone, otp, role:'staff' }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'failed');
+        sessionStorage.sepl_token = d.token;
+        sessionStorage.sepl_role = d.role;
+        sessionStorage.sepl_name = d.name;
+        sessionStorage.sepl_phone = d.phone;
+        location.href = 'intake.html';
+      } catch(e) { $('msg').innerHTML = '<div class="err">'+e.message+'</div>'; $('ver').disabled = false; }
+    };
+  </script>
+</body>
+</html>
