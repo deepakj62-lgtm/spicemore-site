@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Request Form | SMTC Corporate</title>
+  <meta name="description" content="Submit a request for new custom functionality for Spice More Trading Company.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Voice & redesigned request page styles */
+    .file-list-big { margin-top: 16px; }
+
+    .file-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: var(--white);
+      border: 2px solid var(--green-primary);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      animation: fadeSlideIn 0.3s ease;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .file-card-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .file-card-name {
+      flex: 1;
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--green-dark);
+      word-break: break-word;
+    }
+
+    .file-card-size {
+      font-size: 12px;
+      color: var(--mid-gray);
+      white-space: nowrap;
+    }
+
+    .file-card-remove {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--mid-gray);
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .file-card-remove:hover { color: #dc2626; }
+
+    .file-ref-hint {
+      background: rgba(107,149,72,0.08);
+      border-left: 3px solid var(--green-primary);
+      padding: 10px 14px;
+      margin-top: 12px;
+      margin-bottom: 8px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: var(--green-dark);
+      line-height: 1.5;
+    }
+
+    .file-ref-hint strong { font-weight: 600; }
+
+    /* Voice recording */
+    .desc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .voice-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border: 2px solid var(--green-primary);
+      border-radius: 24px;
+      background: var(--white);
+      color: var(--green-dark);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .voice-btn:hover {
+      background: var(--green-primary);
+      color: var(--white);
+    }
+
+    .voice-btn.recording {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: var(--white);
+      animation: pulse-red 1.5s infinite;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+    }
+
+    .voice-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .voice-status {
+      display: none;
+      margin-top: 8px;
+      padding: 12px 16px;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #92400e;
+    }
+
+    .voice-status.active { display: block; }
+
+    .voice-status.processing {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+
+    .voice-lang-select {
+      display: inline-flex;
+      gap: 6px;
+      margin-left: 8px;
+    }
+
+    .lang-chip {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid var(--light-gray);
+      background: var(--cream);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-chip.active {
+      background: var(--green-primary);
+      color: var(--white);
+      border-color: var(--green-primary);
+    }
+
+    /* Raw transcript review */
+    .transcript-review {
+      display: none;
+      margin-top: 12px;
+      padding: 16px;
+      background: var(--cream);
+      border: 1px solid var(--light-gray);
+      border-radius: 10px;
+    }
+
+    .transcript-review.visible { display: block; }
+
+    .transcript-review h4 {
+      font-family: var(--font-heading);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--green-dark);
+      margin-bottom: 8px;
+    }
+
+    .transcript-raw {
+      font-size: 13px;
+      color: var(--mid-gray);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+    }
+
+    .transcript-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .transcript-actions button {
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-use-transcript {
+      background: var(--green-primary);
+      color: var(--white);
+    }
+
+    .btn-use-transcript:hover { background: var(--green-dark); }
+
+    .btn-discard-transcript {
+      background: var(--cream);
+      color: var(--mid-gray);
+      border: 1px solid var(--light-gray) !important;
+    }
+
+    .btn-discard-transcript:hover { color: #dc2626; }
+
+    /* Confirmation step */
+    .confirm-overlay {
+      display: none;
+      margin-top: 16px;
+      padding: 20px;
+      background: #f0fdf4;
+      border: 2px solid var(--green-primary);
+      border-radius: 12px;
+    }
+
+    .confirm-overlay.visible { display: block; }
+
+    .confirm-overlay h3 {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--green-dark);
+      margin-bottom: 8px;
+    }
+
+    .confirm-instructions {
+      font-size: 14px;
+      color: var(--dark-text);
+      line-height: 1.7;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--white);
+      border-radius: 8px;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .confirm-actions button {
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-confirm-yes {
+      background: var(--green-primary);
+      color: var(--white);
+    }
+
+    .btn-confirm-yes:hover { background: var(--green-dark); }
+
+    .btn-confirm-edit {
+      background: var(--cream);
+      color: var(--dark-text);
+      border: 1px solid var(--light-gray) !important;
+    }
+
+    .voice-not-supported {
+      display: none;
+      padding: 10px 14px;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #991b1b;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="images/logo.png" alt="Spice More Trading Company">
+      </a>
+      <button class="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <div class="nav-dropdown">
+          <a href="smtc-portal.html" class="dropdown-trigger active">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
+          <div class="dropdown-menu">
+            <a href="credit-assessor.html">Credit Assessor</a>
+            <a href="reconciliation.html">Bank Reconciliation</a>
+            <a href="daily-sales-summary.html">Daily Sales Summary</a>
+            <a href="smtc-request-tool.html" class="active">Request New Functionality</a>
+            <a href="smtc-requests-view.html">View Requests</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- AUTH CHECK -->
+  <div id="authRedirect" class="portal-gate" style="display:none">
+    <div class="gate-card">
+      <div class="gate-icon">&#128274;</div>
+      <h2>Authentication Required</h2>
+      <p>Please sign in through the SMTC Corporate portal first.</p>
+      <a href="smtc-portal.html" class="btn-submit" style="display:inline-block;text-align:center;margin-top:16px;text-decoration:none">Go to Portal</a>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="requestContent" style="display:none">
+    <section class="page-hero">
+      <h1>Request New Functionality &mdash; Advanced</h1>
+      <p class="hero-subtitle">Upload your files, describe what you need &mdash; or just speak. We'll build it.</p>
+      <p style="margin-top:12px"><a href="smtc-request-tool.html" style="color:var(--green-primary);font-weight:500">&larr; Back to simple form</a></p>
+    </section>
+
+    <section class="section request-section">
+      <div class="section-container">
+
+        <!-- How it works -->
+        <div class="request-how">
+          <h2 class="section-title">How It Works</h2>
+          <div class="how-steps">
+            <div class="how-step">
+              <div class="step-num">1</div>
+              <h4>Upload Files</h4>
+              <p>Drop any files &mdash; input samples, output examples, templates, screenshots. Any format, any number.</p>
+            </div>
+            <div class="how-step">
+              <div class="step-num">2</div>
+              <h4>Describe or Speak</h4>
+              <p>Type what you need, or click the mic and explain in Malayalam, Tamil, Hindi, or English. We'll convert it to clear instructions.</p>
+            </div>
+            <div class="how-step">
+              <div class="step-num">3</div>
+              <h4>We Build It</h4>
+              <p>Review, confirm, and submit. We pick it up, build it, and notify you when it's ready to test.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Request Form -->
+        <form id="requestForm" class="request-form">
+
+          <!-- File Upload - Single Zone -->
+          <div class="file-upload-group">
+            <label>Upload Files</label>
+            <span class="label-hint">Drop all your files here &mdash; input data, expected output, templates, screenshots, anything relevant. You can reference them by name in the description below.</span>
+            <div class="file-drop" id="fileDrop">
+              <input type="file" id="fileInput" accept="*/*" multiple>
+              <div class="drop-content">
+                <span class="drop-icon">&#128206;</span>
+                <p class="drop-text">Drag &amp; drop your files here, or click to browse</p>
+                <p class="drop-hint">Any file type &mdash; Excel, PDF, images, screenshots, documents</p>
+              </div>
+            </div>
+            <div class="file-list-big" id="fileList"></div>
+            <div class="file-ref-hint" id="fileRefHint" style="display:none">
+              <strong>Tip:</strong> In the description below, refer to files by name. For example: <em>"<span id="fileRefExample"></span> is the input file, and the output should..."</em>
+            </div>
+          </div>
+
+          <!-- Description with Voice -->
+          <div class="form-group">
+            <div class="desc-header">
+              <div>
+                <label for="description" style="margin-bottom:0">What do you need? <span class="req">*</span></label>
+                <span class="label-hint" style="margin-top:2px">Describe what the files are, what the output should look like, and any rules or steps. You can speak in any language.</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+                <button type="button" class="voice-btn" id="voiceBtn" title="Click to speak your instructions">
+                  <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                  <span id="voiceBtnText">Speak</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="voice-status" id="voiceStatus"></div>
+            <div class="voice-not-supported" id="voiceNotSupported">Voice input is not supported in this browser. Please use Google Chrome for voice features.</div>
+
+            <!-- Transcript review -->
+            <div class="transcript-review" id="transcriptReview">
+              <h4>Raw Transcript</h4>
+              <div class="transcript-raw" id="transcriptRaw"></div>
+              <div class="transcript-actions">
+                <button type="button" class="btn-use-transcript" id="btnUseTranscript">Use as Instructions</button>
+                <button type="button" class="btn-discard-transcript" id="btnDiscardTranscript">Discard</button>
+              </div>
+            </div>
+
+            <textarea id="description" rows="10" placeholder="Example: 'File1.xlsx is the daily sales report from Busy. File2.xlsx is the expected output format. Take columns A-D from File1, match dealer names, calculate totals per dealer, and format like File2. Group by region and sort by amount descending.'" required></textarea>
+          </div>
+
+          <!-- Priority -->
+          <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority">
+              <option value="normal">Normal</option>
+              <option value="high">High &mdash; Needed soon</option>
+              <option value="low">Low &mdash; Whenever possible</option>
+            </select>
+          </div>
+
+          <!-- Requester -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="requesterName">Your Name <span class="req">*</span></label>
+              <input type="text" id="requesterName" required>
+            </div>
+            <div class="form-group">
+              <label for="requesterEmail">Your Email <span class="req">*</span></label>
+              <span class="label-hint">We'll notify you when it's ready for testing.</span>
+              <input type="email" id="requesterEmail" placeholder="your@email.com" required>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-submit btn-large" id="submitBtn">Submit Request</button>
+          </div>
+
+          <!-- Submission progress -->
+          <div id="submitProgress" style="display:none;margin-top:20px;text-align:center">
+            <p style="color:var(--mid-gray)">Uploading files and submitting request...</p>
+          </div>
+
+          <!-- Success -->
+          <div id="requestSuccess" class="request-success" style="display:none">
+            <div class="success-icon">&#9989;</div>
+            <h3>Request Submitted Successfully!</h3>
+            <p>Your request has been saved. You'll receive an email at <strong id="successEmail"></strong> when it's ready for testing.</p>
+            <div class="success-actions">
+              <a href="smtc-requests-view.html" class="btn-submit">View All Requests</a>
+              <button type="button" id="newRequestBtn" class="btn-submit btn-outline-dark">Submit Another</button>
+            </div>
+          </div>
+        </form>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Billing Address</h4>
+        <p>SPICE MORE TRADING COMPANY</p>
+        <p>KPXIV 11, 12, 13, 14</p>
+        <p>VATTATHARA BUILDINGS</p>
+        <p>KUMILY MUNNAR ROAD</p>
+        <p>KUMILY, Idukki, Kerala, 685509</p>
+        <p>GSTIN 32ABYFS2267G1ZS</p>
+      </div>
+      <div class="footer-col">
+        <h4>Bank Information</h4>
+        <p>Axis Bank, Bodinayakanur Branch</p>
+        <p>Account Number: 918020093385758</p>
+        <p>IFSC: UTIB0002671</p>
+      </div>
+      <div class="footer-col">
+        <h4>Licenses</h4>
+        <p>Auctioneer: MKT Auc/CS/S2069/0013/2018</p>
+        <p>Exporter: ML/REG/S2069/2017</p>
+        <p>Dealer: C.S./S2069/136/2017</p>
+        <p style="margin-top:12px"><a href="https://drive.google.com/file/d/1f55b2SeUfF0G3m8NOM3nBvcl_BXpgJSD/view" target="_blank" style="color:var(--green-primary)">View ISO Certificate</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 Spice More Trading Company. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function() {
+    // Auth check
+    if (sessionStorage.getItem('smtc_auth') !== 'true') {
+      document.getElementById('authRedirect').style.display = 'flex';
+      return;
+    }
+    document.getElementById('requestContent').style.display = 'block';
+
+    // ========== FILE UPLOAD ==========
+    const fileStore = [];
+    const drop = document.getElementById('fileDrop');
+    const fileInput = document.getElementById('fileInput');
+    const listEl = document.getElementById('fileList');
+    const refHint = document.getElementById('fileRefHint');
+    const refExample = document.getElementById('fileRefExample');
+
+    ['dragenter', 'dragover'].forEach(evt => {
+      drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+      drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.remove('dragover'); });
+    });
+
+    drop.addEventListener('drop', e => {
+      if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) addFiles(fileInput.files);
+      fileInput.value = '';
+    });
+
+    function addFiles(files) {
+      for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          fileStore.push({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            data: e.target.result.split(',')[1]
+          });
+          renderFileList();
+        };
+        reader.readAsDataURL(file);
+      }
+      drop.classList.add('loaded');
+    }
+
+    function getFileIcon(name) {
+      const ext = name.split('.').pop().toLowerCase();
+      if (['xlsx','xls','csv'].includes(ext)) return '\uD83D\uDCCA';
+      if (['pdf'].includes(ext)) return '\uD83D\uDCC4';
+      if (['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) return '\uD83D\uDDBC\uFE0F';
+      if (['doc','docx','txt'].includes(ext)) return '\uD83D\uDDD2\uFE0F';
+      return '\uD83D\uDCC1';
+    }
+
+    function renderFileList() {
+      if (!fileStore.length) {
+        listEl.innerHTML = '';
+        refHint.style.display = 'none';
+        drop.classList.remove('loaded');
+        return;
+      }
+
+      listEl.innerHTML = fileStore.map((f, i) => `
+        <div class="file-card">
+          <span class="file-card-icon">${getFileIcon(f.name)}</span>
+          <span class="file-card-name">${escHtml(f.name)}</span>
+          <span class="file-card-size">${formatSize(f.size)}</span>
+          <button type="button" class="file-card-remove" data-idx="${i}" title="Remove">&times;</button>
+        </div>
+      `).join('');
+
+      // Show reference hint with first file name
+      refHint.style.display = 'block';
+      refExample.textContent = fileStore[0].name;
+
+      listEl.querySelectorAll('.file-card-remove').forEach(btn => {
+        btn.addEventListener('click', function() {
+          fileStore.splice(parseInt(this.dataset.idx), 1);
+          renderFileList();
+        });
+      });
+    }
+
+    // ========== VOICE TRANSCRIPTION ==========
+    const voiceBtn = document.getElementById('voiceBtn');
+    const voiceBtnText = document.getElementById('voiceBtnText');
+    const voiceStatus = document.getElementById('voiceStatus');
+    const voiceNotSupported = document.getElementById('voiceNotSupported');
+    const transcriptReview = document.getElementById('transcriptReview');
+    const transcriptRaw = document.getElementById('transcriptRaw');
+    const descriptionField = document.getElementById('description');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isRecording = false;
+    let fullTranscript = '';
+    let interimTranscript = '';
+
+    if (!SpeechRecognition) {
+      voiceBtn.style.display = 'none';
+      voiceNotSupported.style.display = 'block';
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      // Default to Malayalam - auto-detects English mixed in
+      recognition.lang = 'ml-IN';
+
+      recognition.onresult = function(event) {
+        interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            fullTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        voiceStatus.textContent = fullTranscript + interimTranscript;
+        voiceStatus.classList.add('active');
+      };
+
+      recognition.onerror = function(event) {
+        if (event.error === 'no-speech') return; // Ignore silence
+        console.error('Speech error:', event.error);
+        if (event.error === 'not-allowed') {
+          voiceStatus.textContent = 'Microphone access denied. Please allow microphone access in your browser settings.';
+          voiceStatus.classList.add('active');
+          stopRecording();
+        }
+      };
+
+      recognition.onend = function() {
+        if (isRecording) {
+          // Restart if still in recording mode (browser auto-stops after silence)
+          try { recognition.start(); } catch(e) {}
+        }
+      };
+    }
+
+    // Language switching
+    const languages = {
+      'ml-IN': 'Malayalam',
+      'ta-IN': 'Tamil',
+      'hi-IN': 'Hindi',
+      'en-IN': 'English'
+    };
+
+    voiceBtn.addEventListener('click', function() {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    });
+
+    function startRecording() {
+      fullTranscript = '';
+      interimTranscript = '';
+      isRecording = true;
+      voiceBtn.classList.add('recording');
+      voiceBtnText.textContent = 'Stop';
+      voiceStatus.textContent = 'Listening... Speak in any language (Malayalam, Tamil, Hindi, English)';
+      voiceStatus.classList.add('active');
+      voiceStatus.classList.remove('processing');
+      transcriptReview.classList.remove('visible');
+
+      try {
+        recognition.start();
+      } catch(e) {
+        // Already started
+      }
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+      voiceBtnText.textContent = 'Speak';
+
+      try { recognition.stop(); } catch(e) {}
+
+      const finalText = (fullTranscript + interimTranscript).trim();
+      if (finalText) {
+        voiceStatus.textContent = 'Processing your speech...';
+        voiceStatus.classList.add('processing');
+        processTranscript(finalText);
+      } else {
+        voiceStatus.textContent = 'No speech detected. Try again.';
+        setTimeout(() => { voiceStatus.classList.remove('active'); }, 3000);
+      }
+    }
+
+    async function processTranscript(rawText) {
+      // Try to clean up via API (LLM endpoint)
+      try {
+        const resp = await fetch('/api/transcribe-clean', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            transcript: rawText,
+            fileNames: fileStore.map(f => f.name)
+          })
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.instructions) {
+            // Show cleaned instructions for review
+            voiceStatus.classList.remove('active');
+            showConfirmation(rawText, data.instructions);
+            return;
+          }
+        }
+      } catch(e) {
+        // LLM endpoint not available - fall through to raw transcript
+      }
+
+      // Fallback: show raw transcript for direct use
+      voiceStatus.classList.remove('active');
+      transcriptRaw.textContent = rawText;
+      transcriptReview.classList.add('visible');
+    }
+
+    // Use raw transcript
+    document.getElementById('btnUseTranscript').addEventListener('click', function() {
+      const existing = descriptionField.value.trim();
+      descriptionField.value = existing ? existing + '\n\n' + transcriptRaw.textContent : transcriptRaw.textContent;
+      transcriptReview.classList.remove('visible');
+      descriptionField.focus();
+    });
+
+    document.getElementById('btnDiscardTranscript').addEventListener('click', function() {
+      transcriptReview.classList.remove('visible');
+    });
+
+    // Confirmation for LLM-cleaned instructions
+    function showConfirmation(raw, cleaned) {
+      const confirmEl = document.getElementById('confirmOverlay') || createConfirmOverlay();
+      confirmEl.querySelector('.confirm-instructions').textContent = cleaned;
+      confirmEl.dataset.raw = raw;
+      confirmEl.classList.add('visible');
+    }
+
+    function createConfirmOverlay() {
+      const div = document.createElement('div');
+      div.id = 'confirmOverlay';
+      div.className = 'confirm-overlay';
+      div.innerHTML = `
+        <h3>Are these the instructions you intended?</h3>
+        <div class="confirm-instructions"></div>
+        <div class="confirm-actions">
+          <button type="button" class="btn-confirm-yes" id="btnConfirmYes">Yes, use these</button>
+          <button type="button" class="btn-confirm-edit" id="btnConfirmEdit">Let me edit</button>
+          <button type="button" class="btn-discard-transcript" id="btnConfirmDiscard">Discard</button>
+        </div>
+      `;
+      descriptionField.parentNode.insertBefore(div, descriptionField);
+
+      div.querySelector('#btnConfirmYes').addEventListener('click', function() {
+        const instructions = div.querySelector('.confirm-instructions').textContent;
+        const existing = descriptionField.value.trim();
+        descriptionField.value = existing ? existing + '\n\n' + instructions : instructions;
+        div.classList.remove('visible');
+        descriptionField.focus();
+      });
+
+      div.querySelector('#btnConfirmEdit').addEventListener('click', function() {
+        const instructions = div.querySelector('.confirm-instructions').textContent;
+        const existing = descriptionField.value.trim();
+        descriptionField.value = existing ? existing + '\n\n' + instructions : instructions;
+        div.classList.remove('visible');
+        descriptionField.focus();
+      });
+
+      div.querySelector('#btnConfirmDiscard').addEventListener('click', function() {
+        div.classList.remove('visible');
+      });
+
+      return div;
+    }
+
+    // ========== FORM SUBMISSION ==========
+    const form = document.getElementById('requestForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const progress = document.getElementById('submitProgress');
+    const success = document.getElementById('requestSuccess');
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const email = document.getElementById('requesterEmail').value;
+      const desc = document.getElementById('description').value;
+
+      // Build file list with generic category
+      const allFiles = fileStore.map(f => ({
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        category: 'file',
+        data: f.data
+      }));
+
+      const payload = {
+        toolName: 'Request: ' + desc.substring(0, 60).replace(/\n/g, ' ') + (desc.length > 60 ? '...' : ''),
+        processDesc: desc,
+        additionalOptions: '',
+        currentProcess: '',
+        additionalNotes: '',
+        priority: document.getElementById('priority').value,
+        requesterName: document.getElementById('requesterName').value,
+        requesterEmail: email,
+        files: allFiles
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      progress.style.display = 'block';
+
+      try {
+        const resp = await fetch('/api/requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) throw new Error('Failed to submit');
+
+        // Hide form, show success
+        Array.from(form.querySelectorAll('.form-group, .file-upload-group, .form-row, .form-actions, .request-how')).forEach(el => el.style.display = 'none');
+        progress.style.display = 'none';
+        document.getElementById('successEmail').textContent = email;
+        success.style.display = 'block';
+
+      } catch (err) {
+        console.error('API error:', err);
+        progress.innerHTML = '<p style="color:#ca8a04">Could not save to server. You can download the request and email it instead.</p>';
+
+        const summary = 'SMTC FUNCTIONALITY REQUEST\n==========================\n\n' +
+          'Requested By: ' + payload.requesterName + ' (' + email + ')\n' +
+          'Priority: ' + payload.priority + '\n' +
+          'Date: ' + new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) + '\n\n' +
+          'FILES: ' + (fileStore.length ? fileStore.map(f => f.name).join(', ') : 'None') + '\n\n' +
+          'DESCRIPTION:\n' + desc + '\n';
+
+        const blob = new Blob([summary], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'SMTC-Request-' + new Date().toISOString().slice(0,10) + '.txt';
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn-submit btn-outline-dark';
+        downloadBtn.textContent = 'Download Summary';
+        downloadBtn.style.marginTop = '12px';
+        downloadBtn.onclick = () => a.click();
+        progress.appendChild(downloadBtn);
+
+        const emailBtn = document.createElement('button');
+        emailBtn.className = 'btn-submit';
+        emailBtn.textContent = 'Send via Email';
+        emailBtn.style.marginTop = '12px';
+        emailBtn.style.marginLeft = '12px';
+        emailBtn.onclick = () => {
+          const subject = encodeURIComponent('SMTC Feature Request');
+          const body = encodeURIComponent(summary + '\n\nIMPORTANT: Please attach the files to this email.');
+          window.location.href = 'mailto:deepak@spicemore.com?subject=' + subject + '&body=' + body;
+        };
+        progress.appendChild(emailBtn);
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Request';
+      }
+    });
+
+    // New request button
+    document.getElementById('newRequestBtn').addEventListener('click', function() {
+      form.reset();
+      fileStore.length = 0;
+      renderFileList();
+      Array.from(form.querySelectorAll('.form-group, .file-upload-group, .form-row, .form-actions, .request-how')).forEach(el => el.style.display = '');
+      success.style.display = 'none';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Request';
+      const confirmOverlay = document.getElementById('confirmOverlay');
+      if (confirmOverlay) confirmOverlay.classList.remove('visible');
+      transcriptReview.classList.remove('visible');
+      voiceStatus.classList.remove('active');
+    });
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  })();
+  </script>
+</body>
+</html>

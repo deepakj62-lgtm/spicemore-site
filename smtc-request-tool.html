@@ -3,16 +3,287 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Request New Functionality | SMTC Corporate</title>
-  <meta name="description" content="Submit a request for new custom functionality for Spice More Trading Company.">
+  <title>Request a Change | SMTC Corporate</title>
+  <meta name="description" content="Tell us what to improve or build. Speak or type in Malayalam, Tamil, or English.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    .mode-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    @media (max-width: 640px) {
+      .mode-picker { grid-template-columns: 1fr; }
+    }
+    .mode-card {
+      padding: 32px 24px;
+      border: 2px solid var(--green-primary);
+      border-radius: 16px;
+      background: var(--white);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      font-family: var(--font-body);
+    }
+    .mode-card:hover {
+      background: var(--green-primary);
+      color: var(--white);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 28px rgba(107,149,72,0.25);
+    }
+    .mode-card:hover .mode-sub { color: rgba(255,255,255,0.9); }
+    .mode-icon { font-size: 42px; display:block; margin-bottom: 10px; }
+    .mode-title {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .mode-sub {
+      font-size: 14px;
+      color: var(--mid-gray);
+      line-height: 1.5;
+    }
+
+    .tool-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 16px 0 20px;
+    }
+    .tool-chip {
+      padding: 10px 18px;
+      border-radius: 22px;
+      border: 2px solid var(--light-gray);
+      background: var(--white);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--dark-text);
+      transition: all 0.2s;
+    }
+    .tool-chip:hover { border-color: var(--green-primary); }
+    .tool-chip.selected {
+      background: var(--green-primary);
+      color: var(--white);
+      border-color: var(--green-primary);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--green-primary);
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 16px;
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+      font-size: 14px;
+    }
+
+    .desc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .voice-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border: 2px solid var(--green-primary);
+      border-radius: 26px;
+      background: var(--white);
+      color: var(--green-dark);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .voice-btn:hover { background: var(--green-primary); color: var(--white); }
+    .voice-btn.recording {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: var(--white);
+      animation: pulse-red 1.4s infinite;
+    }
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.45); }
+      50% { box-shadow: 0 0 0 10px rgba(220,38,38,0); }
+    }
+    .voice-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+    .voice-status {
+      display: none;
+      margin-top: 10px;
+      padding: 12px 16px;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #92400e;
+    }
+    .voice-status.active { display: block; }
+    .voice-status.processing {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+    .rec-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .rec-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #dc2626;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.3; } }
+    .rec-timer {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      min-width: 54px;
+    }
+    .rec-level {
+      flex: 1;
+      height: 10px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .rec-level-bar {
+      height: 100%;
+      width: 20%;
+      background: var(--green-primary);
+      border-radius: 6px;
+      transition: width 0.12s ease;
+    }
+
+    .transcript-review {
+      display: none;
+      margin-top: 12px;
+      padding: 16px;
+      background: var(--cream);
+      border: 1px solid var(--light-gray);
+      border-radius: 10px;
+    }
+    .transcript-review.visible { display: block; }
+    .transcript-review h4 {
+      font-family: var(--font-heading);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--green-dark);
+      margin-bottom: 6px;
+    }
+    .transcript-raw {
+      font-size: 13px;
+      color: var(--mid-gray);
+      line-height: 1.55;
+      white-space: pre-wrap;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      background: var(--white);
+      border-radius: 6px;
+    }
+    .transcript-cleaned {
+      font-size: 14px;
+      color: var(--dark-text);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      max-height: 220px;
+      overflow-y: auto;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: var(--white);
+      border: 1px solid var(--green-primary);
+      border-radius: 8px;
+    }
+    .transcript-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .transcript-actions button {
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-use { background: var(--green-primary); color: var(--white); }
+    .btn-use:hover { background: var(--green-dark); }
+    .btn-discard {
+      background: var(--cream);
+      color: var(--mid-gray);
+      border: 1px solid var(--light-gray) !important;
+    }
+    .btn-discard:hover { color: #dc2626; }
+
+    .attach-toggle {
+      background: none;
+      border: none;
+      color: var(--green-primary);
+      font-family: var(--font-body);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 10px;
+    }
+    .attach-panel { display: none; margin-top: 12px; }
+    .attach-panel.visible { display: block; }
+    .file-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--white);
+      border: 1px solid var(--green-primary);
+      border-radius: 10px;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    .file-card-name { flex: 1; font-weight: 500; }
+    .file-card-remove {
+      background: none; border: none; font-size: 20px;
+      color: var(--mid-gray); cursor: pointer;
+    }
+
+    .hero-sub {
+      color: var(--mid-gray);
+      font-size: 15px;
+      line-height: 1.6;
+      max-width: 640px;
+      margin: 8px auto 0;
+    }
+    .footer-link-row {
+      text-align: center;
+      margin-top: 28px;
+      font-size: 13px;
+      color: var(--mid-gray);
+    }
+    .footer-link-row a { color: var(--green-primary); font-weight: 500; }
+  </style>
 </head>
 <body>
 
-  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="nav-container">
       <a href="index.html" class="nav-logo">
@@ -32,7 +303,7 @@
             <a href="credit-assessor.html">Credit Assessor</a>
             <a href="reconciliation.html">Bank Reconciliation</a>
             <a href="daily-sales-summary.html">Daily Sales Summary</a>
-            <a href="smtc-request-tool.html" class="active">Request New Functionality</a>
+            <a href="smtc-request-tool.html" class="active">Request a Change</a>
             <a href="smtc-requests-view.html">View Requests</a>
           </div>
         </div>
@@ -40,7 +311,6 @@
     </div>
   </nav>
 
-  <!-- AUTH CHECK -->
   <div id="authRedirect" class="portal-gate" style="display:none">
     <div class="gate-card">
       <div class="gate-icon">&#128274;</div>
@@ -50,187 +320,166 @@
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
   <div id="requestContent" style="display:none">
     <section class="page-hero">
-      <h1>Request New Functionality</h1>
-      <p class="hero-subtitle">Describe the process you want automated. We'll build it and deploy it as a tool.</p>
+      <h1>Tell us what to change</h1>
+      <p class="hero-sub">Speak or type in Malayalam, Tamil, or English. Pick one of the two options below &mdash; no forms to fill.</p>
     </section>
 
-    <section class="section request-section">
-      <div class="section-container">
+    <section class="section">
+      <div class="section-container" style="max-width:820px">
 
-        <!-- How it works -->
-        <div class="request-how">
-          <h2 class="section-title">How It Works</h2>
-          <div class="how-steps">
-            <div class="how-step">
-              <div class="step-num">1</div>
-              <h4>Describe &amp; Upload</h4>
-              <p>Name the functionality, upload sample input &amp; output files, and describe exactly how the transformation works. The more detail, the better.</p>
-            </div>
-            <div class="how-step">
-              <div class="step-num">2</div>
-              <h4>We Build It</h4>
-              <p>Our system picks up your request and builds a custom tool that replicates the process &mdash; replacing what you currently do manually in Busy or other software.</p>
-            </div>
-            <div class="how-step">
-              <div class="step-num">3</div>
-              <h4>Test &amp; Go Live</h4>
-              <p>You'll get an email when it's ready for testing. Try it, give feedback, and once approved it goes live on the portal for everyone.</p>
-            </div>
+        <!-- LANDING -->
+        <div id="landingView">
+          <div class="mode-picker">
+            <button type="button" class="mode-card" data-mode="improve">
+              <span class="mode-icon">&#9881;&#65039;</span>
+              <div class="mode-title">Improve an existing module</div>
+              <div class="mode-sub">Something in a live tool needs to change or work better.</div>
+            </button>
+            <button type="button" class="mode-card" data-mode="new">
+              <span class="mode-icon">&#10024;</span>
+              <div class="mode-title">New functionality / module</div>
+              <div class="mode-sub">A brand new tool or feature we don't have yet.</div>
+            </button>
           </div>
         </div>
 
-        <!-- Request Form -->
-        <form id="requestForm" class="request-form">
-
-          <!-- Tool Name -->
-          <div class="form-group">
-            <label for="toolName">Functionality Name <span class="req">*</span></label>
-            <span class="label-hint">Give it a clear, descriptive name so everyone knows what it does.</span>
-            <input type="text" id="toolName" placeholder="e.g., Daily Outstanding Report, Invoice Matcher, Dealer Ledger Summary" required>
+        <!-- IMPROVE FLOW -->
+        <div id="improveView" style="display:none">
+          <button type="button" class="back-link" data-back>&larr; Back</button>
+          <h2 class="section-title" style="margin-top:0">Which module needs improving?</h2>
+          <div class="tool-chips" id="toolChips">
+            <button type="button" class="tool-chip" data-tool="Credit Assessor">Credit Assessor</button>
+            <button type="button" class="tool-chip" data-tool="Bank Reconciliation">Bank Reconciliation</button>
+            <button type="button" class="tool-chip" data-tool="Daily Sales Summary">Daily Sales Summary</button>
+            <button type="button" class="tool-chip" data-tool="Accounting">Accounting</button>
+            <button type="button" class="tool-chip" data-tool="Auction Questionnaire">Auction Questionnaire</button>
           </div>
 
-          <!-- Input Files -->
-          <div class="file-upload-group">
-            <label>Sample Input Files <span class="req">*</span></label>
-            <span class="label-hint">Upload one or more sample files that serve as the starting data. These are the files you currently feed into Busy or your manual process. Upload as many as needed.</span>
-            <div class="file-drop" id="inputDrop">
-              <input type="file" id="inputFile" accept=".xlsx,.xls,.csv,.pdf,.txt,.doc,.docx,.json,.xml" multiple>
-              <div class="drop-content">
-                <span class="drop-icon">&#128229;</span>
-                <p class="drop-text">Drag &amp; drop your <strong>input files</strong> here, or click to browse</p>
-                <p class="drop-hint">Excel, CSV, PDF, Word, Text, JSON, XML &mdash; any file format</p>
-              </div>
-            </div>
-            <div class="multi-file-list" id="inputFileList"></div>
-            <div class="file-preview" id="inputPreview"></div>
-          </div>
-
-          <!-- Output Files -->
-          <div class="file-upload-group">
-            <label>Sample Output Files <span class="req">*</span></label>
-            <span class="label-hint">Upload the expected result &mdash; what the final output should look like after processing. This is the "after" to the input's "before."</span>
-            <div class="file-drop" id="outputDrop">
-              <input type="file" id="outputFile" accept=".xlsx,.xls,.csv,.pdf,.txt,.doc,.docx,.json,.xml" multiple>
-              <div class="drop-content">
-                <span class="drop-icon">&#128228;</span>
-                <p class="drop-text">Drag &amp; drop your <strong>output files</strong> here, or click to browse</p>
-                <p class="drop-hint">Excel, CSV, PDF, Word, Text, JSON, XML &mdash; any file format</p>
-              </div>
-            </div>
-            <div class="multi-file-list" id="outputFileList"></div>
-            <div class="file-preview" id="outputPreview"></div>
-          </div>
-
-          <!-- Supporting Files -->
-          <div class="file-upload-group">
-            <label>Supporting Files (Optional)</label>
-            <span class="label-hint">Any additional reference files &mdash; templates, lookup tables, configuration sheets, existing reports, screenshots of the Busy process, etc.</span>
-            <div class="file-drop" id="supportDrop">
-              <input type="file" id="supportFile" accept="*/*" multiple>
-              <div class="drop-content">
-                <span class="drop-icon">&#128206;</span>
-                <p class="drop-text">Drag &amp; drop any <strong>supporting files</strong> here, or click to browse</p>
-                <p class="drop-hint">Any file type &mdash; screenshots, templates, reference docs, etc.</p>
-              </div>
-            </div>
-            <div class="multi-file-list" id="supportFileList"></div>
-          </div>
-
-          <!-- Process Description -->
-          <div class="form-group">
-            <label for="processDesc">Detailed Process Description <span class="req">*</span></label>
-            <span class="label-hint">This is the most important field. An AI system will read this to build the tool, so be as detailed as possible. Describe every step, rule, formula, condition, and exception. Think of it as writing instructions for someone who has never used Busy.</span>
-            <textarea id="processDesc" rows="12" placeholder="Describe in full detail how the input files are transformed into the output files. Include:
-
-&bull; What each input file contains (column names, data types, structure)
-&bull; What each output file should contain
-&bull; Step-by-step transformation logic (what happens to each field/column)
-&bull; Any formulas, calculations, or lookups involved
-&bull; Grouping, filtering, sorting, or aggregation rules
-&bull; Conditional logic or business rules (e.g., 'if amount > X, then...')
-&bull; How this is currently done in Busy (which menu, which report, what settings)
-&bull; Any edge cases or exceptions to handle
-&bull; Rounding rules, date formats, currency handling
-&bull; What the user should be able to configure or select when running the tool" required></textarea>
-          </div>
-
-          <!-- Additional Options -->
-          <div class="form-group">
-            <label for="additionalOptions">Additional Options &amp; Controls</label>
-            <span class="label-hint">What settings or options should the user have when running this tool? For example: date range picker, company selector, output format choice, etc.</span>
-            <textarea id="additionalOptions" rows="5" placeholder="e.g.:
-&bull; Date range selector (from/to)
-&bull; Dropdown to select company (SMTC / SEPL)
-&bull; Option to filter by specific dealer
-&bull; Toggle for including zero-balance accounts
-&bull; Export format: Excel, PDF, or both"></textarea>
-          </div>
-
-          <!-- Current Process Notes -->
-          <div class="form-group">
-            <label for="currentProcess">How Is This Done Today?</label>
-            <span class="label-hint">Describe the current workflow &mdash; which software (Busy, Excel, Tally, etc.), which steps, and what takes the most time.</span>
-            <textarea id="currentProcess" rows="4" placeholder="e.g., Currently we export from Busy > Sales Register, then manually copy to Excel, apply VLOOKUP against the dealer master, filter by date range, and format for printing. Takes about 2 hours each time."></textarea>
-          </div>
-
-          <!-- Additional Notes -->
-          <div class="form-group">
-            <label for="additionalNotes">Any Other Notes</label>
-            <textarea id="additionalNotes" rows="3" placeholder="Anything else &mdash; frequency of use, who uses it, urgency, related tools, etc."></textarea>
-          </div>
-
-          <!-- Priority -->
-          <div class="form-group">
-            <label for="priority">Priority</label>
-            <select id="priority">
-              <option value="normal">Normal</option>
-              <option value="high">High &mdash; Needed soon</option>
-              <option value="low">Low &mdash; Whenever possible</option>
-            </select>
-          </div>
-
-          <!-- Requester -->
-          <div class="form-row">
+          <form class="request-form" data-form="improve" autocomplete="off">
             <div class="form-group">
-              <label for="requesterName">Your Name <span class="req">*</span></label>
-              <input type="text" id="requesterName" required>
+              <div class="desc-header">
+                <label style="margin-bottom:0">What should change? <span class="req">*</span></label>
+                <button type="button" class="voice-btn" data-voice>
+                  <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                  <span data-voice-text>Speak</span>
+                </button>
+              </div>
+              <div class="voice-status" data-voice-status></div>
+              <div class="transcript-review" data-review>
+                <h4>Raw transcript</h4>
+                <div class="transcript-raw" data-raw></div>
+                <h4>Cleaned instructions</h4>
+                <div class="transcript-cleaned" data-cleaned></div>
+                <div class="transcript-actions">
+                  <button type="button" class="btn-use" data-use>Use these</button>
+                  <button type="button" class="btn-discard" data-edit>Edit first</button>
+                  <button type="button" class="btn-discard" data-discard>Discard</button>
+                </div>
+              </div>
+              <textarea data-desc rows="8" placeholder="Example: In Credit Assessor, when a dealer has no GST, it currently rejects them. Instead, show a warning and allow manual approval." required></textarea>
+
+              <button type="button" class="attach-toggle" data-attach-toggle>+ Attach files (optional)</button>
+              <div class="attach-panel" data-attach-panel>
+                <input type="file" multiple data-file-input>
+                <div data-file-list></div>
+              </div>
             </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Your Name <span class="req">*</span></label>
+                <input type="text" data-name required>
+              </div>
+              <div class="form-group">
+                <label>Your Email <span class="req">*</span></label>
+                <input type="email" data-email placeholder="your@email.com" required>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-submit btn-large">Submit Request</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- NEW FLOW -->
+        <div id="newView" style="display:none">
+          <button type="button" class="back-link" data-back>&larr; Back</button>
+          <h2 class="section-title" style="margin-top:0">Describe the new functionality</h2>
+
+          <form class="request-form" data-form="new" autocomplete="off">
             <div class="form-group">
-              <label for="requesterEmail">Your Email <span class="req">*</span></label>
-              <span class="label-hint">We'll notify you when the tool is ready for testing.</span>
-              <input type="email" id="requesterEmail" placeholder="your@email.com" required>
+              <label>Short title <span class="req">*</span></label>
+              <input type="text" data-title placeholder="e.g. Stock Advance Programme tracker" required>
             </div>
-          </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn-submit btn-large" id="submitBtn">Submit Request</button>
-          </div>
+            <div class="form-group">
+              <div class="desc-header">
+                <label style="margin-bottom:0">What should it do? <span class="req">*</span></label>
+                <button type="button" class="voice-btn" data-voice>
+                  <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                  <span data-voice-text>Speak</span>
+                </button>
+              </div>
+              <div class="voice-status" data-voice-status></div>
+              <div class="transcript-review" data-review>
+                <h4>Raw transcript</h4>
+                <div class="transcript-raw" data-raw></div>
+                <h4>Cleaned instructions</h4>
+                <div class="transcript-cleaned" data-cleaned></div>
+                <div class="transcript-actions">
+                  <button type="button" class="btn-use" data-use>Use these</button>
+                  <button type="button" class="btn-discard" data-edit>Edit first</button>
+                  <button type="button" class="btn-discard" data-discard>Discard</button>
+                </div>
+              </div>
+              <textarea data-desc rows="8" placeholder="Example: A tool to track stock advances to farmers, with outstanding balances, repayment schedule, and alerts when overdue." required></textarea>
 
-          <!-- Submission progress -->
-          <div id="submitProgress" style="display:none;margin-top:20px;text-align:center">
-            <p style="color:var(--mid-gray)">Uploading files and submitting request...</p>
-          </div>
-
-          <!-- Success -->
-          <div id="requestSuccess" class="request-success" style="display:none">
-            <div class="success-icon">&#9989;</div>
-            <h3>Request Submitted Successfully!</h3>
-            <p>Your functionality request has been saved. You'll receive an email at <strong id="successEmail"></strong> when it's ready for testing.</p>
-            <div class="success-actions">
-              <a href="smtc-requests-view.html" class="btn-submit">View All Requests</a>
-              <button type="button" id="newRequestBtn" class="btn-submit btn-outline-dark">Submit Another</button>
+              <button type="button" class="attach-toggle" data-attach-toggle>+ Attach files (optional)</button>
+              <div class="attach-panel" data-attach-panel>
+                <input type="file" multiple data-file-input>
+                <div data-file-list></div>
+              </div>
             </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Your Name <span class="req">*</span></label>
+                <input type="text" data-name required>
+              </div>
+              <div class="form-group">
+                <label>Your Email <span class="req">*</span></label>
+                <input type="email" data-email placeholder="your@email.com" required>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-submit btn-large">Submit Request</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- SUCCESS -->
+        <div id="successView" class="request-success" style="display:none">
+          <div class="success-icon">&#9989;</div>
+          <h3>Request submitted!</h3>
+          <p>We'll follow up at <strong id="successEmail"></strong>.</p>
+          <div class="success-actions">
+            <a href="smtc-requests-view.html" class="btn-submit">View All Requests</a>
+            <button type="button" id="newRequestBtn" class="btn-submit btn-outline-dark">Submit Another</button>
           </div>
-        </form>
+        </div>
+
+        <div class="footer-link-row">
+          Need every field? <a href="smtc-request-tool-advanced.html">Open the advanced form &rarr;</a>
+        </div>
 
       </div>
     </section>
   </div>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <div class="footer-grid">
       <div class="footer-col">
@@ -253,7 +502,6 @@
         <p>Auctioneer: MKT Auc/CS/S2069/0013/2018</p>
         <p>Exporter: ML/REG/S2069/2017</p>
         <p>Dealer: C.S./S2069/136/2017</p>
-        <p style="margin-top:12px"><a href="https://drive.google.com/file/d/1f55b2SeUfF0G3m8NOM3nBvcl_BXpgJSD/view" target="_blank" style="color:var(--green-primary)">View ISO Certificate</a></p>
       </div>
     </div>
     <div class="footer-bottom">
@@ -264,122 +512,318 @@
   <script src="js/main.js"></script>
   <script>
   (function() {
-    // Auth check
     if (sessionStorage.getItem('smtc_auth') !== 'true') {
       document.getElementById('authRedirect').style.display = 'flex';
       return;
     }
     document.getElementById('requestContent').style.display = 'block';
 
-    // Multi-file storage
-    const fileStore = { input: [], output: [], support: [] };
+    const landing = document.getElementById('landingView');
+    const improveView = document.getElementById('improveView');
+    const newView = document.getElementById('newView');
+    const successView = document.getElementById('successView');
 
-    function setupMultiFileUpload(dropId, fileInputId, listId, key) {
-      const drop = document.getElementById(dropId);
-      const fileInput = document.getElementById(fileInputId);
-      const listEl = document.getElementById(listId);
+    function showLanding() {
+      landing.style.display = '';
+      improveView.style.display = 'none';
+      newView.style.display = 'none';
+      successView.style.display = 'none';
+    }
+    function showView(el) {
+      landing.style.display = 'none';
+      improveView.style.display = 'none';
+      newView.style.display = 'none';
+      successView.style.display = 'none';
+      el.style.display = 'block';
+    }
 
-      ['dragenter', 'dragover'].forEach(evt => {
-        drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.add('dragover'); });
+    document.querySelectorAll('.mode-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.mode === 'improve') showView(improveView);
+        else showView(newView);
       });
-      ['dragleave', 'drop'].forEach(evt => {
-        drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.remove('dragover'); });
-      });
+    });
+    document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', showLanding));
 
-      drop.addEventListener('drop', e => {
-        if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    // Tool chip selection
+    let selectedTool = null;
+    document.querySelectorAll('#toolChips .tool-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#toolChips .tool-chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedTool = chip.dataset.tool;
       });
+    });
+
+    // Prefill name/email
+    const savedName = sessionStorage.getItem('smtc_user_name') || '';
+    const savedEmail = sessionStorage.getItem('smtc_user_email') || '';
+    document.querySelectorAll('[data-name]').forEach(i => i.value = savedName);
+    document.querySelectorAll('[data-email]').forEach(i => i.value = savedEmail);
+
+    // Attach toggle + file handling per form
+    document.querySelectorAll('[data-form]').forEach(form => {
+      const store = [];
+      form._files = store;
+      const toggle = form.querySelector('[data-attach-toggle]');
+      const panel = form.querySelector('[data-attach-panel]');
+      const fileInput = form.querySelector('[data-file-input]');
+      const fileList = form.querySelector('[data-file-list]');
+
+      toggle.addEventListener('click', () => panel.classList.toggle('visible'));
 
       fileInput.addEventListener('change', () => {
-        if (fileInput.files.length) addFiles(fileInput.files);
-        fileInput.value = '';
-      });
-
-      function addFiles(files) {
-        for (const file of files) {
-          // Read file as base64
+        for (const file of fileInput.files) {
           const reader = new FileReader();
-          reader.onload = function(e) {
-            const base64 = e.target.result.split(',')[1];
-            fileStore[key].push({
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              category: key,
-              data: base64
+          reader.onload = e => {
+            store.push({
+              name: file.name, size: file.size, type: file.type,
+              category: 'file', data: e.target.result.split(',')[1]
             });
-            renderList();
+            renderFiles();
           };
           reader.readAsDataURL(file);
         }
-        drop.classList.add('loaded');
-      }
+        fileInput.value = '';
+      });
 
-      function renderList() {
-        if (!fileStore[key].length) {
-          listEl.innerHTML = '';
-          drop.classList.remove('loaded');
-          return;
-        }
-        listEl.innerHTML = fileStore[key].map((f, i) => `
-          <div class="multi-file-item">
-            <span class="loaded-icon">&#128196;</span>
-            <span class="file-info-text">${escHtml(f.name)}</span>
-            <span class="file-size">${formatSize(f.size)}</span>
-            <button type="button" class="file-remove" data-key="${key}" data-idx="${i}" title="Remove">&times;</button>
+      function renderFiles() {
+        fileList.innerHTML = store.map((f, i) => `
+          <div class="file-card">
+            <span class="file-card-name">${escHtml(f.name)}</span>
+            <button type="button" class="file-card-remove" data-idx="${i}">&times;</button>
           </div>
         `).join('');
-
-        // Remove handlers
-        listEl.querySelectorAll('.file-remove').forEach(btn => {
-          btn.addEventListener('click', function() {
-            const k = this.dataset.key;
-            const idx = parseInt(this.dataset.idx);
-            fileStore[k].splice(idx, 1);
-            renderList();
+        fileList.querySelectorAll('.file-card-remove').forEach(btn => {
+          btn.addEventListener('click', () => {
+            store.splice(parseInt(btn.dataset.idx), 1);
+            renderFiles();
           });
         });
       }
+    });
+
+    // ========== VOICE (MediaRecorder + Groq) ==========
+    function pickMime() {
+      const prefs = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+      if (typeof MediaRecorder === 'undefined') return null;
+      for (const m of prefs) {
+        if (MediaRecorder.isTypeSupported(m)) return m;
+      }
+      return '';
     }
 
-    setupMultiFileUpload('inputDrop', 'inputFile', 'inputFileList', 'input');
-    setupMultiFileUpload('outputDrop', 'outputFile', 'outputFileList', 'output');
-    setupMultiFileUpload('supportDrop', 'supportFile', 'supportFileList', 'support');
+    function attachVoice(scope) {
+      const btn = scope.querySelector('[data-voice]');
+      const btnText = scope.querySelector('[data-voice-text]');
+      const status = scope.querySelector('[data-voice-status]');
+      const review = scope.querySelector('[data-review]');
+      const rawEl = scope.querySelector('[data-raw]');
+      const cleanEl = scope.querySelector('[data-cleaned]');
+      const desc = scope.querySelector('[data-desc]');
 
-    // Form submission
-    const form = document.getElementById('requestForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const progress = document.getElementById('submitProgress');
-    const success = document.getElementById('requestSuccess');
+      let recorder = null, chunks = [], stream = null;
+      let audioCtx = null, analyser = null, rafId = null;
+      let timerId = null, startTs = 0;
+      let mime = '';
 
-    form.addEventListener('submit', async function(e) {
-      e.preventDefault();
+      if (!navigator.mediaDevices || typeof MediaRecorder === 'undefined') {
+        btn.style.display = 'none';
+        return;
+      }
 
-      const email = document.getElementById('requesterEmail').value;
+      btn.addEventListener('click', async () => {
+        if (recorder && recorder.state === 'recording') {
+          stop();
+        } else {
+          await start();
+        }
+      });
 
-      // Gather all files
-      const allFiles = [
-        ...fileStore.input,
-        ...fileStore.output,
-        ...fileStore.support
-      ];
+      async function start() {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (e) {
+          status.textContent = 'Microphone access denied.';
+          status.classList.add('active');
+          return;
+        }
+        mime = pickMime() || '';
+        try {
+          recorder = mime ? new MediaRecorder(stream, { mimeType: mime })
+                          : new MediaRecorder(stream);
+        } catch (e) {
+          recorder = new MediaRecorder(stream);
+        }
+        chunks = [];
+        recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+        recorder.onstop = handleStop;
+        recorder.start();
 
-      const payload = {
-        toolName: document.getElementById('toolName').value,
-        processDesc: document.getElementById('processDesc').value,
-        additionalOptions: document.getElementById('additionalOptions').value,
-        currentProcess: document.getElementById('currentProcess').value,
-        additionalNotes: document.getElementById('additionalNotes').value,
-        priority: document.getElementById('priority').value,
-        requesterName: document.getElementById('requesterName').value,
-        requesterEmail: email,
-        files: allFiles
-      };
+        btn.classList.add('recording');
+        btnText.textContent = 'Stop';
+        startTs = Date.now();
+        status.classList.remove('processing');
+        status.classList.add('active');
+        renderRecUI(0, 0);
+        timerId = setInterval(() => {
+          renderRecUI((Date.now() - startTs) / 1000, window._lastLevel || 0);
+        }, 200);
 
-      // Show progress, disable button
+        // Level meter
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const src = audioCtx.createMediaStreamSource(stream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 512;
+          src.connect(analyser);
+          const data = new Uint8Array(analyser.frequencyBinCount);
+          const tick = () => {
+            analyser.getByteTimeDomainData(data);
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) {
+              const v = (data[i] - 128) / 128;
+              sum += v * v;
+            }
+            window._lastLevel = Math.min(1, Math.sqrt(sum / data.length) * 3);
+            rafId = requestAnimationFrame(tick);
+          };
+          tick();
+        } catch (e) { /* level meter optional */ }
+      }
+
+      function renderRecUI(secs, level) {
+        const mm = Math.floor(secs / 60).toString().padStart(2, '0');
+        const ss = Math.floor(secs % 60).toString().padStart(2, '0');
+        const pct = Math.max(8, Math.round(level * 100));
+        status.innerHTML = `
+          <div class="rec-row">
+            <span class="rec-dot"></span>
+            <span class="rec-timer">${mm}:${ss}</span>
+            <span class="rec-level"><span class="rec-level-bar" style="width:${pct}%"></span></span>
+            <span style="font-size:12px">Speak in Malayalam, Tamil, or English</span>
+          </div>`;
+      }
+
+      function stop() {
+        try { recorder.stop(); } catch(e) {}
+        btn.classList.remove('recording');
+        btnText.textContent = 'Speak';
+        if (timerId) { clearInterval(timerId); timerId = null; }
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        if (audioCtx) { try { audioCtx.close(); } catch(e){} audioCtx = null; }
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+        status.textContent = 'Transcribing...';
+        status.classList.add('processing');
+      }
+
+      async function handleStop() {
+        const blob = new Blob(chunks, { type: mime || 'audio/webm' });
+        const base64 = await blobToBase64(blob);
+        try {
+          const resp = await fetch('/api/transcribe-audio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioBase64: base64, mimeType: blob.type })
+          });
+          const data = await resp.json();
+          const raw = (data && data.transcript || '').trim();
+          if (!raw) {
+            status.textContent = (data && data.note)
+              ? ('Could not transcribe: ' + data.note)
+              : 'No speech detected. Try again.';
+            setTimeout(() => status.classList.remove('active'), 4000);
+            return;
+          }
+          rawEl.textContent = raw;
+          cleanEl.textContent = 'Cleaning up...';
+          review.classList.add('visible');
+          status.classList.remove('active');
+
+          // Clean via LLM
+          try {
+            const cr = await fetch('/api/transcribe-clean', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ transcript: raw, fileNames: [] })
+            });
+            if (cr.ok) {
+              const cd = await cr.json();
+              cleanEl.textContent = (cd.instructions || raw).trim();
+            } else {
+              cleanEl.textContent = raw;
+            }
+          } catch(e) {
+            cleanEl.textContent = raw;
+          }
+        } catch (e) {
+          status.textContent = 'Transcription failed. Please type your request.';
+          setTimeout(() => status.classList.remove('active'), 4000);
+        }
+      }
+
+      scope.querySelector('[data-use]').addEventListener('click', () => {
+        const text = cleanEl.textContent.trim();
+        desc.value = desc.value.trim() ? (desc.value.trim() + '\n\n' + text) : text;
+        review.classList.remove('visible');
+        desc.focus();
+      });
+      scope.querySelector('[data-edit]').addEventListener('click', () => {
+        const text = cleanEl.textContent.trim();
+        desc.value = desc.value.trim() ? (desc.value.trim() + '\n\n' + text) : text;
+        review.classList.remove('visible');
+        desc.focus();
+        desc.setSelectionRange(desc.value.length, desc.value.length);
+      });
+      scope.querySelector('[data-discard]').addEventListener('click', () => {
+        review.classList.remove('visible');
+      });
+    }
+
+    attachVoice(improveView);
+    attachVoice(newView);
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result.split(',')[1]);
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+    }
+
+    // ========== SUBMIT ==========
+    async function submit(form, mode) {
+      const desc = form.querySelector('[data-desc]').value.trim();
+      const name = form.querySelector('[data-name]').value.trim();
+      const email = form.querySelector('[data-email]').value.trim();
+      const files = form._files || [];
+
+      let toolName;
+      if (mode === 'improve') {
+        if (!selectedTool) {
+          alert('Please pick which module to improve.');
+          return;
+        }
+        toolName = 'Improve: ' + selectedTool;
+      } else {
+        const title = form.querySelector('[data-title]').value.trim();
+        if (!title) return;
+        toolName = 'New: ' + title;
+      }
+
+      const submitBtn = form.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting...';
-      progress.style.display = 'block';
+
+      const payload = {
+        toolName,
+        processDesc: desc,
+        priority: 'normal',
+        requesterName: name,
+        requesterEmail: email,
+        files
+      };
 
       try {
         const resp = await fetch('/api/requests', {
@@ -387,88 +831,47 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        if (!resp.ok) throw new Error('Submit failed: ' + resp.status);
 
-        if (!resp.ok) throw new Error('Failed to submit');
+        sessionStorage.setItem('smtc_user_name', name);
+        sessionStorage.setItem('smtc_user_email', email);
 
-        const data = await resp.json();
-
-        // Hide form, show success
-        Array.from(form.querySelectorAll('.form-group, .file-upload-group, .form-row, .form-actions, .request-how')).forEach(el => el.style.display = 'none');
-        progress.style.display = 'none';
         document.getElementById('successEmail').textContent = email;
-        success.style.display = 'block';
-
-      } catch (err) {
-        // Fallback: save locally and offer email
-        console.error('API error:', err);
-        progress.innerHTML = '<p style="color:#ca8a04">Could not save to server. You can download the request and email it instead.</p>';
-
-        const summary = buildSummaryText(payload);
-        const blob = new Blob([summary], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'SMTC-Request-' + payload.toolName.replace(/\s+/g, '-') + '.txt';
-
-        const downloadBtn = document.createElement('button');
-        downloadBtn.className = 'btn-submit btn-outline-dark';
-        downloadBtn.textContent = 'Download Summary';
-        downloadBtn.style.marginTop = '12px';
-        downloadBtn.onclick = () => a.click();
-        progress.appendChild(downloadBtn);
-
-        const emailBtn = document.createElement('button');
-        emailBtn.className = 'btn-submit';
-        emailBtn.textContent = 'Send via Email';
-        emailBtn.style.marginTop = '12px';
-        emailBtn.style.marginLeft = '12px';
-        emailBtn.onclick = () => {
-          const subject = encodeURIComponent('SMTC Feature Request: ' + payload.toolName);
-          const body = encodeURIComponent(summary + '\n\nIMPORTANT: Please attach the sample input and output files to this email.');
-          window.location.href = 'mailto:deepak@spicemore.com?subject=' + subject + '&body=' + body;
-        };
-        progress.appendChild(emailBtn);
-
+        showView(successView);
+      } catch (e) {
+        alert('Could not submit: ' + e.message + '\n\nPlease try again.');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Request';
       }
-    });
-
-    // New request button
-    document.getElementById('newRequestBtn').addEventListener('click', function() {
-      form.reset();
-      fileStore.input = []; fileStore.output = []; fileStore.support = [];
-      document.querySelectorAll('.multi-file-list').forEach(el => el.innerHTML = '');
-      document.querySelectorAll('.file-drop').forEach(el => el.classList.remove('loaded'));
-      Array.from(form.querySelectorAll('.form-group, .file-upload-group, .form-row, .form-actions, .request-how')).forEach(el => el.style.display = '');
-      success.style.display = 'none';
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit Request';
-    });
-
-    function buildSummaryText(p) {
-      return 'SMTC FUNCTIONALITY REQUEST\n' +
-        '==========================\n\n' +
-        'Name: ' + p.toolName + '\n' +
-        'Requested By: ' + p.requesterName + ' (' + p.requesterEmail + ')\n' +
-        'Priority: ' + p.priority + '\n' +
-        'Date: ' + new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) + '\n\n' +
-        'INPUT FILES: ' + (fileStore.input.length ? fileStore.input.map(f => f.name).join(', ') : 'None') + '\n' +
-        'OUTPUT FILES: ' + (fileStore.output.length ? fileStore.output.map(f => f.name).join(', ') : 'None') + '\n' +
-        'SUPPORTING FILES: ' + (fileStore.support.length ? fileStore.support.map(f => f.name).join(', ') : 'None') + '\n\n' +
-        'DETAILED PROCESS DESCRIPTION:\n' + p.processDesc + '\n\n' +
-        (p.additionalOptions ? 'ADDITIONAL OPTIONS & CONTROLS:\n' + p.additionalOptions + '\n\n' : '') +
-        (p.currentProcess ? 'CURRENT PROCESS:\n' + p.currentProcess + '\n\n' : '') +
-        (p.additionalNotes ? 'OTHER NOTES:\n' + p.additionalNotes + '\n' : '');
     }
 
-    function formatSize(bytes) {
-      if (bytes < 1024) return bytes + ' B';
-      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-      return (bytes / 1048576).toFixed(1) + ' MB';
-    }
+    improveView.querySelector('[data-form="improve"]').addEventListener('submit', e => {
+      e.preventDefault();
+      submit(e.target, 'improve');
+    });
+    newView.querySelector('[data-form="new"]').addEventListener('submit', e => {
+      e.preventDefault();
+      submit(e.target, 'new');
+    });
+
+    document.getElementById('newRequestBtn').addEventListener('click', () => {
+      document.querySelectorAll('[data-form]').forEach(f => {
+        f.reset();
+        if (f._files) f._files.length = 0;
+        const fl = f.querySelector('[data-file-list]'); if (fl) fl.innerHTML = '';
+        f.querySelectorAll('button[type="submit"]').forEach(b => {
+          b.disabled = false; b.textContent = 'Submit Request';
+        });
+      });
+      selectedTool = null;
+      document.querySelectorAll('#toolChips .tool-chip').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('[data-name]').forEach(i => i.value = sessionStorage.getItem('smtc_user_name') || '');
+      document.querySelectorAll('[data-email]').forEach(i => i.value = sessionStorage.getItem('smtc_user_email') || '');
+      showLanding();
+    });
 
     function escHtml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
   })();
   </script>
