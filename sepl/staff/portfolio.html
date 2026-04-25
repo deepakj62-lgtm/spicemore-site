@@ -49,7 +49,6 @@
     <div class="nav-sub">
       <a href="intake.html">Intake</a> ·
       <a href="consignors.html">Clients</a> ·
-      <a href="transactions.html">Transactions</a> ·
       <a href="portfolio.html" class="active">Portfolio</a> ·
       <a href="daily-price.html">Daily price</a> ·
       <a href="settings.html">Settings</a>
@@ -67,7 +66,7 @@
     <div class="card">
       <div class="h1" style="font-size:18px;">Positions</div>
       <div class="filter-row">
-        <label><input type="checkbox" id="activeOnly" checked> Active only</label>
+        <label><input type="checkbox" id="activeOnly" checked> Active only (uncheck to show closed)</label>
         <label>LTV band:
           <select id="ltvFilter">
             <option value="">All</option>
@@ -96,7 +95,8 @@
         <th data-k="accruedHolding" class="num">Accrued charge</th>
         <th data-k="expectedExitDate">Exit by</th>
         <th data-k="daysToExit" class="num">Days left</th>
-      </tr></thead><tbody id="posBody"><tr><td colspan="11" style="color:var(--tan)">Loading…</td></tr></tbody></table>
+        <th data-k="status">Status</th>
+      </tr></thead><tbody id="posBody"><tr><td colspan="12" style="color:var(--tan)">Loading…</td></tr></tbody></table>
       </div>
     </div>
 
@@ -133,7 +133,7 @@
 
   async function load() {
     const [tRes, pRes] = await Promise.all([
-      fetch('/api/sepl/transactions?status=active', { headers: hdr }),
+      fetch('/api/sepl/transactions', { headers: hdr }),
       fetch('/api/sepl/daily-price', { headers: hdr })
     ]);
     const tData = await tRes.json();
@@ -222,8 +222,9 @@
         <td class="num">${inr(t.accruedHolding)}</td>
         <td>${t.expectedExitDate}</td>
         <td class="num" style="color:${t.daysToExit<0?'#c00':t.daysToExit<14?'#b26a00':''}">${t.daysToExit}</td>
+        <td>${t.status}</td>
       </tr>`;
-    }).join('') || `<tr><td colspan="11" style="color:var(--tan)">No positions.</td></tr>`;
+    }).join('') || `<tr><td colspan="12" style="color:var(--tan)">No positions.</td></tr>`;
   }
 
   function renderAccrual(enriched) {
