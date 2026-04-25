@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio | SEPL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    .wrap { max-width:1200px; margin:0 auto; padding:90px 16px 40px; }
+    .card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:20px; margin-bottom:16px; }
+    .h1 { font-family:var(--font-heading); font-weight:700; font-size:22px; color:var(--green-dark); margin-bottom:4px; }
+    .sub { color:var(--tan); font-size:13px; margin-bottom:14px; }
+    .nav-sub { display:flex; gap:10px; margin-bottom:14px; font-size:13px; flex-wrap:wrap; }
+    .nav-sub a { color:var(--green-dark); text-decoration:underline; }
+    .nav-sub a.active { font-weight:600; text-decoration:none; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+    .kpi { background:var(--cream); border-radius:10px; padding:14px; }
+    .kpi .lbl { font-size:11px; text-transform:uppercase; color:var(--tan); letter-spacing:.5px; }
+    .kpi .val { font-size:20px; font-weight:600; color:var(--green-dark); margin-top:4px; font-family:var(--font-heading); }
+    .kpi .sub2 { font-size:11px; color:var(--tan); margin-top:2px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--light-gray); }
+    th { color:var(--tan); font-weight:500; text-transform:uppercase; font-size:11px; cursor:pointer; user-select:none; }
+    th:hover { color:var(--green-dark); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .ltv { display:inline-block; padding:3px 9px; border-radius:10px; font-size:11px; font-weight:600; }
+    .ltv.green { background:#d7ecd9; color:#1b5e20; }
+    .ltv.yellow { background:#fff3cd; color:#856404; }
+    .ltv.orange { background:#ffe0b2; color:#b26a00; }
+    .ltv.red { background:#f8d7da; color:#721c24; }
+    .ltv.forced { background:#d00; color:#fff; }
+    .filter-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; font-size:13px; }
+    .filter-row input, .filter-row select { padding:6px 10px; border:1px solid var(--light-gray); border-radius:6px; font:inherit; }
+    .price-banner { display:flex; justify-content:space-between; align-items:center; background:var(--green-dark); color:#fff; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:13px; }
+    .price-banner b { font-size:16px; }
+    details { margin-top:4px; }
+    summary { cursor:pointer; color:var(--green-dark); font-size:11px; }
+    .accrual-tbl { font-size:11px; margin-top:8px; }
+    .accrual-tbl th,.accrual-tbl td { padding:4px 6px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><div class="nav-container">
+    <a href="../../index.html" class="nav-logo"><img src="../../images/logo.png" alt="Spice More"></a>
+  </div></nav>
+  <div class="wrap">
+    <div class="nav-sub">
+      <a href="intake.html">Intake</a> ·
+      <a href="consignors.html">Clients</a> ·
+      <a href="transactions.html">Transactions</a> ·
+      <a href="portfolio.html" class="active">Portfolio</a> ·
+      <a href="daily-price.html">Daily price</a> ·
+      <a href="settings.html">Settings</a>
+    </div>
+
+    <div class="card">
+      <div class="h1">Portfolio Dashboard</div>
+      <div class="sub">Live margin monitor across all active consignments. LTV uses today's Spices Board price.</div>
+      <div id="priceBanner" class="price-banner" style="display:none;"></div>
+      <div class="kpi-grid" id="kpis">
+        <div class="kpi"><div class="lbl">Loading…</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="h1" style="font-size:18px;">Positions</div>
+      <div class="filter-row">
+        <label><input type="checkbox" id="activeOnly" checked> Active only</label>
+        <label>LTV band:
+          <select id="ltvFilter">
+            <option value="">All</option>
+            <option value="green">Green (&lt;75%)</option>
+            <option value="yellow">Yellow (75–80%)</option>
+            <option value="orange">Orange (80–85%)</option>
+            <option value="red">Red (85–90%)</option>
+            <option value="forced">Forced (≥90%)</option>
+          </select>
+        </label>
+        <label>Depot:
+          <select id="depotFilter"><option value="">All</option></select>
+        </label>
+        <label>Search: <input type="text" id="search" placeholder="name or txn id" /></label>
+      </div>
+      <div style="overflow-x:auto;">
+      <table id="posTbl"><thead><tr>
+        <th data-k="txnId">Txn</th>
+        <th data-k="consignorName">Client</th>
+        <th data-k="depot">Depot</th>
+        <th data-k="netWeightKg" class="num">Weight</th>
+        <th data-k="advanceAmount" class="num">Advance</th>
+        <th data-k="currentStockValue" class="num">Stock value</th>
+        <th data-k="ltv" class="num">LTV</th>
+        <th data-k="daysHeld" class="num">Days held</th>
+        <th data-k="accruedHolding" class="num">Accrued charge</th>
+        <th data-k="expectedExitDate">Exit by</th>
+        <th data-k="daysToExit" class="num">Days left</th>
+      </tr></thead><tbody id="posBody"><tr><td colspan="11" style="color:var(--tan)">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="h1" style="font-size:18px;">Accrual schedule (next 30 days)</div>
+      <div class="sub">Projected daily holding-charge income across the book.</div>
+      <canvas id="accrualChart" width="1100" height="200" style="max-width:100%;"></canvas>
+    </div>
+  </div>
+
+<script>
+  const token = sessionStorage.sepl_token;
+  if (!token || sessionStorage.sepl_role !== 'staff') location.href = 'login.html';
+  const hdr = { 'Authorization': 'Bearer ' + token };
+  const inr = n => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+  const inr2 = n => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const pct = n => (n * 100).toFixed(1) + '%';
+  const today = () => new Date().toISOString().slice(0, 10);
+  const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+  const LTV = { yellow: 0.75, orange: 0.80, red: 0.85, forced: 0.90 };
+  function ltvBand(l) {
+    if (l >= LTV.forced) return 'forced';
+    if (l >= LTV.red) return 'red';
+    if (l >= LTV.orange) return 'orange';
+    if (l >= LTV.yellow) return 'yellow';
+    return 'green';
+  }
+  function ltvLabel(b) {
+    return ({ green:'GREEN', yellow:'MONITOR', orange:'MARGIN CALL', red:'SELL 48H', forced:'FORCED SALE' })[b];
+  }
+
+  let state = { txns: [], price: null, sortK: 'ltv', sortDir: -1 };
+
+  async function load() {
+    const [tRes, pRes] = await Promise.all([
+      fetch('/api/sepl/transactions?status=active', { headers: hdr }),
+      fetch('/api/sepl/daily-price', { headers: hdr })
+    ]);
+    const tData = await tRes.json();
+    const pData = await pRes.json();
+    state.txns = tData.transactions || [];
+    state.price = pData.latest;
+    render();
+  }
+
+  function enrich(t) {
+    const days = daysBetween(t.intakeDate, today());
+    const currentPx = state.price ? state.price.pricePerKg : t.benchmarkPricePerKg;
+    const currentStockValue = t.netWeightKg * currentPx;
+    const accruedHolding = t.dailyHoldingCharge * days;
+    const ltv = currentStockValue > 0 ? (t.advanceAmount + accruedHolding) / currentStockValue : 0;
+    const daysToExit = daysBetween(today(), t.expectedExitDate);
+    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx };
+  }
+
+  function render() {
+    const enriched = state.txns.map(enrich);
+
+    // KPIs
+    const totalAdvance = enriched.reduce((s, t) => s + t.advanceAmount, 0);
+    const totalStockValue = enriched.reduce((s, t) => s + t.currentStockValue, 0);
+    const totalAccrued = enriched.reduce((s, t) => s + t.accruedHolding, 0);
+    const dailyIncome = enriched.reduce((s, t) => s + t.dailyHoldingCharge, 0);
+    const bookLtv = totalStockValue > 0 ? (totalAdvance + totalAccrued) / totalStockValue : 0;
+    const alerts = enriched.filter(t => t.ltv >= LTV.yellow).length;
+
+    if (state.price) {
+      document.getElementById('priceBanner').style.display = 'flex';
+      document.getElementById('priceBanner').innerHTML =
+        `<div>Today's benchmark (${state.price.grade})</div><div><b>${inr2(state.price.pricePerKg)}/kg</b> · ${state.price.source} · ${state.price.date}</div>`;
+    }
+
+    document.getElementById('kpis').innerHTML = `
+      <div class="kpi"><div class="lbl">Active positions</div><div class="val">${enriched.length}</div></div>
+      <div class="kpi"><div class="lbl">Total advance out</div><div class="val">${inr(totalAdvance)}</div></div>
+      <div class="kpi"><div class="lbl">Stock value today</div><div class="val">${inr(totalStockValue)}</div><div class="sub2">@ ${state.price ? inr2(state.price.pricePerKg)+'/kg' : 'benchmark'}</div></div>
+      <div class="kpi"><div class="lbl">Accrued holding</div><div class="val">${inr(totalAccrued)}</div><div class="sub2">+${inr2(dailyIncome)}/day</div></div>
+      <div class="kpi"><div class="lbl">Book LTV</div><div class="val"><span class="ltv ${ltvBand(bookLtv)}">${pct(bookLtv)}</span></div><div class="sub2">${ltvLabel(ltvBand(bookLtv))}</div></div>
+      <div class="kpi"><div class="lbl">Alerts (LTV ≥75%)</div><div class="val" style="color:${alerts>0?'#c00':''}">${alerts}</div></div>
+    `;
+
+    // Depot filter options
+    const depots = [...new Set(enriched.map(t => t.depot))];
+    const df = document.getElementById('depotFilter');
+    if (df.options.length <= 1) {
+      depots.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; df.appendChild(o); });
+    }
+
+    renderTable(enriched);
+    renderAccrual(enriched);
+  }
+
+  function renderTable(enriched) {
+    const activeOnly = document.getElementById('activeOnly').checked;
+    const ltvF = document.getElementById('ltvFilter').value;
+    const depotF = document.getElementById('depotFilter').value;
+    const q = (document.getElementById('search').value || '').toLowerCase();
+
+    let rows = enriched;
+    if (activeOnly) rows = rows.filter(t => t.status === 'Active');
+    if (ltvF) rows = rows.filter(t => ltvBand(t.ltv) === ltvF);
+    if (depotF) rows = rows.filter(t => t.depot === depotF);
+    if (q) rows = rows.filter(t => (t.consignorName||'').toLowerCase().includes(q) || (t.txnId||'').toLowerCase().includes(q));
+
+    rows.sort((a, b) => {
+      const va = a[state.sortK], vb = b[state.sortK];
+      if (typeof va === 'number') return (va - vb) * state.sortDir;
+      return String(va||'').localeCompare(String(vb||'')) * state.sortDir;
+    });
+
+    document.getElementById('posBody').innerHTML = rows.map(t => {
+      const band = ltvBand(t.ltv);
+      return `<tr>
+        <td><b>${t.txnId}</b></td>
+        <td>${t.consignorName}</td>
+        <td>${t.depot}</td>
+        <td class="num">${t.netWeightKg.toLocaleString('en-IN')}</td>
+        <td class="num">${inr(t.advanceAmount)}</td>
+        <td class="num">${inr(t.currentStockValue)}</td>
+        <td class="num"><span class="ltv ${band}" title="${ltvLabel(band)}">${pct(t.ltv)}</span></td>
+        <td class="num">${t.daysHeld}</td>
+        <td class="num">${inr(t.accruedHolding)}</td>
+        <td>${t.expectedExitDate}</td>
+        <td class="num" style="color:${t.daysToExit<0?'#c00':t.daysToExit<14?'#b26a00':''}">${t.daysToExit}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="11" style="color:var(--tan)">No positions.</td></tr>`;
+  }
+
+  function renderAccrual(enriched) {
+    const canvas = document.getElementById('accrualChart');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const days = 30;
+    const now = new Date(today());
+    const series = [];
+    for (let d = 0; d < days; d++) {
+      const dt = new Date(now); dt.setDate(dt.getDate() + d);
+      const dtISO = dt.toISOString().slice(0, 10);
+      let total = 0;
+      for (const t of enriched) {
+        if (dtISO <= t.expectedExitDate) total += t.dailyHoldingCharge;
+      }
+      series.push({ date: dtISO, v: total });
+    }
+    const max = Math.max(1, ...series.map(s => s.v));
+    const pad = 40, chartW = W - pad * 2, chartH = H - pad * 1.5;
+
+    // axes
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad, pad/2); ctx.lineTo(pad, pad/2 + chartH); ctx.lineTo(pad + chartW, pad/2 + chartH); ctx.stroke();
+
+    // bars
+    const bw = chartW / days;
+    series.forEach((s, i) => {
+      const h = (s.v / max) * chartH;
+      const x = pad + i * bw + 1;
+      const y = pad/2 + chartH - h;
+      ctx.fillStyle = '#2d5a3d';
+      ctx.fillRect(x, y, bw - 2, h);
+    });
+
+    // labels
+    ctx.fillStyle = '#666'; ctx.font = '10px Poppins, sans-serif'; ctx.textAlign = 'center';
+    [0, 7, 14, 21, 29].forEach(i => {
+      ctx.fillText(series[i].date.slice(5), pad + i * bw + bw/2, pad/2 + chartH + 14);
+    });
+    ctx.textAlign = 'right';
+    ctx.fillText('₹' + Math.round(max).toLocaleString('en-IN'), pad - 4, pad/2 + 8);
+    ctx.fillText('0', pad - 4, pad/2 + chartH);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#333'; ctx.font = '11px Poppins, sans-serif';
+    const total30 = series.reduce((s, x) => s + x.v, 0);
+    ctx.fillText(`Projected 30-day income: ₹${Math.round(total30).toLocaleString('en-IN')}`, pad, H - 6);
+  }
+
+  // sorting
+  document.querySelectorAll('#posTbl th[data-k]').forEach(th => {
+    th.onclick = () => {
+      const k = th.dataset.k;
+      state.sortDir = state.sortK === k ? -state.sortDir : -1;
+      state.sortK = k;
+      render();
+    };
+  });
+  ['activeOnly','ltvFilter','depotFilter','search'].forEach(id => {
+    document.getElementById(id).addEventListener(id === 'search' ? 'input' : 'change', render);
+  });
+
+  load();
+</script>
+</body>
+</html>

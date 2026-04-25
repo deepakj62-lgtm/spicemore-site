@@ -35,44 +35,18 @@
   <div class="sepl-wrap">
     <div class="nav-sub">
       <a href="intake.html">Intake</a> ·
-      <a href="consignors.html">Consignors</a> ·
+      <a href="consignors.html">Clients</a> ·
       <a href="transactions.html">Transactions</a> ·
       <a href="daily-price.html">Daily price</a> ·
+      <a href="portfolio.html">Portfolio</a> ·
+      <a href="settings.html">Settings</a> ·
       <a href="#" id="logout">Logout</a>
     </div>
     <div class="sepl-card">
       <div class="sepl-h h1">New intake</div>
       <div id="who" style="font-size:13px; color:var(--tan); margin-bottom:10px;"></div>
 
-      <div class="sepl-h h2">1. Consignor</div>
-      <div class="row">
-        <div>
-          <label>Select consignor</label>
-          <select id="consignorId"><option value="">— choose —</option></select>
-        </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button class="small secondary" id="toggleNew" type="button">+ New consignor</button>
-        </div>
-      </div>
-
-      <div id="newForm" class="hidden" style="background:var(--cream); padding:14px; border-radius:8px; margin-bottom:12px;">
-        <div class="row">
-          <div><label>Name</label><input id="n_name"></div>
-          <div><label>Type</label><select id="n_type"><option>Planter</option><option>Dealer</option><option>Trader</option></select></div>
-          <div><label>PAN</label><input id="n_pan"></div>
-          <div><label>Spices Board Reg</label><input id="n_sb"></div>
-          <div><label>Bank A/C</label><input id="n_bank"></div>
-          <div><label>IFSC</label><input id="n_ifsc"></div>
-          <div><label>Phone</label><input id="n_phone" type="tel"></div>
-          <div><label>Depot</label><select id="n_depot"><option>Kumily</option><option>Kollaparachal</option></select></div>
-          <div><label>Max Exposure (₹)</label><input id="n_max" type="number"></div>
-          <div><label>Rate (decimal, default 0.21)</label><input id="n_rate" type="number" step="0.01" value="0.21"></div>
-        </div>
-        <button id="saveNew" type="button">Save consignor</button>
-        <span id="newMsg" style="margin-left:10px; font-size:13px;"></span>
-      </div>
-
-      <div class="sepl-h h2">2. Intake details</div>
+      <div class="sepl-h h2">1. Intake details</div>
       <div class="row">
         <div><label>Net weight (kg)</label><input id="netWeightKg" type="number" step="0.01"></div>
         <div><label>Benchmark price (₹/kg)</label><input id="benchmarkPricePerKg" type="number" step="0.01"></div>
@@ -91,6 +65,34 @@
         <div class="calc-row"><span>Max exit (120d)</span><b id="c_max">—</b></div>
       </div>
 
+      <div class="sepl-h h2">2. Client</div>
+      <div class="row">
+        <div>
+          <label>Select client</label>
+          <select id="consignorId"><option value="">— choose —</option></select>
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="small secondary" id="toggleNew" type="button">+ New client</button>
+        </div>
+      </div>
+
+      <div id="newForm" class="hidden" style="background:var(--cream); padding:14px; border-radius:8px; margin-bottom:12px;">
+        <div class="row">
+          <div><label>Name</label><input id="n_name"></div>
+          <div><label>Type</label><select id="n_type"><option>Planter</option><option>Dealer</option><option>Trader</option></select></div>
+          <div><label>PAN</label><input id="n_pan"></div>
+          <div><label>Spices Board Reg</label><input id="n_sb"></div>
+          <div><label>Bank A/C</label><input id="n_bank"></div>
+          <div><label>IFSC</label><input id="n_ifsc"></div>
+          <div><label>Phone</label><input id="n_phone" type="tel"></div>
+          <div><label>Depot</label><select id="n_depot"><option>Kumily</option><option>Kollaparachal</option></select></div>
+          <div><label>Max Exposure (₹)</label><input id="n_max" type="number"></div>
+          <div><label>Rate (decimal, default 0.21)</label><input id="n_rate" type="number" step="0.01" value="0.21"></div>
+        </div>
+        <button id="saveNew" type="button">Save client</button>
+        <span id="newMsg" style="margin-left:10px; font-size:13px;"></span>
+      </div>
+
       <div style="margin-top:14px;">
         <button id="submit">Create intake</button>
         <span id="subMsg" style="margin-left:10px; font-size:13px;"></span>
@@ -100,7 +102,7 @@
     <div id="confirm" class="sepl-card hidden">
       <div class="sepl-h h2">Intake created</div>
       <div id="confirmBody"></div>
-      <button id="sendAgreement" style="margin-top:10px;">Send agreement to consignor WhatsApp</button>
+      <button id="sendAgreement" style="margin-top:10px;">Send agreement to client WhatsApp</button>
       <span id="agreeMsg" style="margin-left:10px; font-size:13px;"></span>
     </div>
   </div>
@@ -170,7 +172,7 @@
       samplePct: Number($('samplePct').value)||0,
       depot: $('depot').value
     };
-    if (!body.consignorId) { $('subMsg').innerHTML='<span class="err">Pick a consignor</span>'; return; }
+    if (!body.consignorId) { $('subMsg').innerHTML='<span class="err">Pick a client</span>'; return; }
     const r = await fetch('/api/sepl/transactions', { method:'POST', headers:hdr, body:JSON.stringify(body) });
     const d = await r.json();
     if (!r.ok) { $('subMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }

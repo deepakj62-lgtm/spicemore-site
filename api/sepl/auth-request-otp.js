@@ -41,6 +41,11 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'phone and role (staff|consignor) required' });
     }
     const cleanPhone = String(phone).replace(/[^0-9+]/g, '');
+    // Demo bypass — fixed phones skip WhatsApp entirely; UI just uses 123456.
+    const DEMO = { '+911111111111': 'staff', '+912222222222': 'consignor' };
+    if (DEMO[cleanPhone] === role) {
+      return res.status(200).json({ ok: true, demo: true, hint: 'Use OTP 123456' });
+    }
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const record = {
       phone: cleanPhone,

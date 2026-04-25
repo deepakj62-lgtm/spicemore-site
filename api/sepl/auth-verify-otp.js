@@ -28,15 +28,22 @@ module.exports = async function handler(req, res) {
     }
     const cleanPhone = String(phone).replace(/[^0-9+]/g, '');
 
-    const otpRec = await readBlobJson('sepl-otp/', cleanPhone);
-    if (!otpRec) return res.status(401).json({ error: 'No OTP requested' });
-    const { data } = otpRec;
-    if (Date.now() > data.expiresAt) return res.status(401).json({ error: 'OTP expired' });
-    if (data.otp !== String(otp)) return res.status(401).json({ error: 'Wrong OTP' });
-    if (data.role !== role) return res.status(401).json({ error: 'Role mismatch' });
+    // Demo bypass — fixed phones + fixed OTP so Edwin can kick the tyres without WhatsApp.
+    const DEMO = {
+      '+911111111111': 'staff',
+      '+912222222222': 'consignor'
+    };
+    const isDemo = DEMO[cleanPhone] === role && String(otp) === '123456';
 
-    // delete OTP blob
-    try { await del(otpRec.url); } catch (_) {}
+    if (!isDemo) {
+      const otpRec = await readBlobJson('sepl-otp/', cleanPhone);
+      if (!otpRec) return res.status(401).json({ error: 'No OTP requested' });
+      const { data } = otpRec;
+      if (Date.now() > data.expiresAt) return res.status(401).json({ error: 'OTP expired' });
+      if (data.otp !== String(otp)) return res.status(401).json({ error: 'Wrong OTP' });
+      if (data.role !== role) return res.status(401).json({ error: 'Role mismatch' });
+      try { await del(otpRec.url); } catch (_) {}
+    }
 
     let name = '';
     if (role === 'staff') {

@@ -4,56 +4,77 @@ const { verifyToken } = require('./_session');
 const { sendWhatsAppDocument } = require('./_whatsapp');
 const SETTINGS = require('./_settings');
 
-// TODO: replace with verbatim text from the T&C sheet of
-// "Stock Advance Programme - 15 April 2026.xlsx". Placeholder summarises
-// the programme structure from Edwin's request description.
+// Verbatim from Edwin's "Stock Advance Programme - 15 April 2026" (Google Sheet, T&C-relevant tabs), v1.0 April 2026.
 const TNC_TEXT = `SEPL CARDAMOM CONSIGNMENT PROGRAMME — TERMS & CONDITIONS
+Spicemore Exim Private Limited (SEPL) | Version 1.0 | April 2026 | Confidential
 
-1. Programme. Spicemore Exim Pvt Ltd ("SEPL") accepts cardamom stock on
-   consignment from the Consignor and issues a cash advance against the
-   assessed value of such stock ("Stock Advance").
+A. DOCUMENTS REQUIRED FROM CONSIGNOR
+   1. PAN card + Aadhaar.
+   2. Bank account details (for NEFT/RTGS remittance).
+   3. Spices Board registration certificate (if any).
+   4. GST registration (if dealer).
 
-2. Advance. The standard Stock Advance is 65% of the Gross Stock Value at
-   the agreed benchmark price, subject to a hard maximum of 70%. The
-   Gross Stock Value is the net weight (kg) x the benchmark price (INR/kg)
-   recorded at intake.
+B. STOCK INTAKE & ADVANCE
+   1. Advance up to 70% of net stock value on date of intake.
+   2. Stock valuation based on previous day's Spices Board average auction
+      closing price for the relevant grade.
+   3. Disbursement via NEFT/RTGS only — within 24 hours of stock receipt
+      and documentation.
+   4. Minimum stock quantity per lot: 250 kg.
+   5. A free sample of 100 g will be collected for record keeping and
+      verification purpose.
 
-3. Holding Charges. The Consignor shall pay daily holding charges at
-   21% per annum (calculated on a 365-day basis) on the outstanding
-   Stock Advance until exit.
+C. TENURE
+   1. Standard tenure: maximum of 90 days from date of intake.
+   2. Extension up to 120 days by prior written approval from management.
+   3. Management reserves the right to call for exit at any time if margin
+      conditions are breached.
 
-4. Tenure. Standard tenure is 90 days from the intake date, extendable
-   to a maximum of 120 days at SEPL's discretion.
+D. HOLDING CHARGE
+   1. Interest equivalent to Rs60 per day per Rs1,00,000 advance (21.9% p.a.).
+   2. Calculated on a 365-day basis from date of advance disbursement.
+   3. Accrues every calendar day including Sundays and public holidays.
+   4. No holding charge is waived for any reason once accrued.
 
-5. Storage. Stock shall be held at SEPL-designated depots at Kumily or
-   Kollaparachal. Title remains with the Consignor until sale; risk of
-   loss insurance is Consignor's responsibility unless otherwise agreed.
+E. MARGIN & FORCED SALE
+   1. If advance plus accrued charges exceed 75% of current stock value —
+      consignor will be notified to monitor.
+   2. If advance plus accrued charges exceed 80% of current stock value —
+      formal margin call issued, consignor must top up or partially exit
+      within 7 days.
+   3. If advance plus accrued charges exceed 85% of current stock value —
+      Management reserves the right to sell stock with 48 hours notice.
+   4. If advance plus accrued charges exceed 90% of current stock value —
+      Management may sell stock immediately without further notice.
+   5. Stock value for margin purposes is assessed daily based on prevailing
+      Spices Board auction rates.
 
-6. Loan-to-Value Monitoring. SEPL will monitor the ratio of outstanding
-   Stock Advance + accrued charges to current market value of the stock
-   ("LTV"). Thresholds:
-     - Yellow (LTV > 75%): monitoring, informational notice.
-     - Orange (LTV > 80%): margin call; Consignor to top-up or reduce.
-     - Red    (LTV > 85%): SEPL may sell stock on 48 hours' notice.
-     - Forced (LTV > 90%): SEPL may sell stock immediately.
+F. STORAGE & CUSTODY
+   1. All stock physically deposited at Management designated depot —
+      Kumily or Kollaparachal.
+   2. Stock weighed on certified weighbridge and graded on intake — Goods
+      Receipt Note (GRN) issued.
+   3. Management not liable for natural quality deterioration of stock
+      beyond normal storage conditions.
+   4. Periodic physical stock verification may be conducted by Management
+      at any time.
 
-7. Exit. Stock may exit by (a) buyback by the Consignor at outstanding
-   principal + accrued charges + expenses, or (b) sale through Spice More
-   Trading Company ("SMTC") auction. Auction commission of 1% plus 18%
-   GST applies on the sale value.
+G. EXIT OPTIONS
+   1. Option A — Buyback: Consignor repays advance + all accrued charges.
+      Stock released same day upon clearance of funds.
+   2. Option B — Auction via SMTC: Stock auctioned on consignor's behalf at
+      next available auction. Sale proceeds applied against all dues.
+      Balance after the auction commission (1% + 18% GST) is remitted to
+      consignor as per the normal auction settlement terms.
 
-8. Settlement. Net sale proceeds (after commission, GST, outstanding
-   advance, accrued charges and any depot / handling costs) shall be
-   remitted to the Consignor's registered bank account within 7 working
-   days of realised sale.
-
-9. Representations. The Consignor warrants that the stock is
-   unencumbered, of the quality represented, and that all regulatory
-   registrations (PAN, Spices Board) are current and accurate.
-
-10. Governing Law. This agreement is governed by the laws of India.
-    Disputes shall be subject to the exclusive jurisdiction of courts at
-    Kumily, Idukki District, Kerala.
+H. GENERAL
+   1. All disputes subject to jurisdiction of Peerumedu Courts.
+   2. Management reserves the right to amend terms with 7 days notice to
+      active consignors.
+   3. These terms are subject to change. Current terms prevail over any
+      previously communicated terms.
+   4. For queries contact: Joshy Joseph — 62824 89418 |
+      joshy.joseph@spicemore.com
 `;
 
 function cors(res) {
@@ -93,7 +114,7 @@ async function buildPdf(txn, consignor) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const inr = n => '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const inr = n => 'Rs' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
 
   const addPage = () => pdf.addPage([595, 842]); // A4
   let page = addPage();

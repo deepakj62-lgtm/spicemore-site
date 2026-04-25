@@ -1,6 +1,34 @@
 const { put, list } = require('@vercel/blob');
 const { verifyToken } = require('./_session');
-const SETTINGS = require('./_settings');
+const DEFAULTS = require('./_settings');
+
+async function readOverridesStrong() {
+  const ecId = process.env.EDGE_CONFIG_ID;
+  const token = process.env.VERCEL_API_TOKEN;
+  const team = process.env.VERCEL_TEAM_ID;
+  if (!ecId || !token) return null;
+  const qs = team ? `?teamId=${team}` : '';
+  const r = await fetch(`https://api.vercel.com/v1/edge-config/${ecId}/item/overrides${qs}`, {
+    headers: { 'Authorization': 'Bearer ' + token }, cache: 'no-store'
+  });
+  if (!r.ok) return null;
+  const j = await r.json();
+  return j && j.value ? j.value : null;
+}
+
+async function effectiveSettings() {
+  try {
+    const ov = await readOverridesStrong();
+    if (!ov || typeof ov !== 'object') return DEFAULTS;
+    const out = { ...DEFAULTS };
+    for (const k of Object.keys(ov)) {
+      if (k.startsWith('_')) continue;
+      if (ov[k] && typeof ov[k] === 'object' && !Array.isArray(ov[k])) out[k] = { ...(DEFAULTS[k] || {}), ...ov[k] };
+      else if (ov[k] !== undefined && ov[k] !== null && ov[k] !== '') out[k] = ov[k];
+    }
+    return out;
+  } catch (_) { return DEFAULTS; }
+}
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -84,6 +112,7 @@ module.exports = async function handler(req, res) {
       const consignor = await loadConsignor(b.consignorId);
       if (!consignor) return res.status(404).json({ error: 'Consignor not found' });
 
+      const SETTINGS = await effectiveSettings();
       const netWeightKg = Number(b.netWeightKg);
       const benchmarkPricePerKg = Number(b.benchmarkPricePerKg);
       const grossStockValue = netWeightKg * benchmarkPricePerKg;

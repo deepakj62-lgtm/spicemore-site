@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings | SEPL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    .wrap { max-width:900px; margin:0 auto; padding:90px 16px 40px; }
+    .card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:20px; margin-bottom:16px; }
+    .h1 { font-family:var(--font-heading); font-weight:700; font-size:22px; color:var(--green-dark); margin-bottom:4px; }
+    .h2 { font-family:var(--font-heading); font-weight:600; font-size:16px; color:var(--green-dark); margin:14px 0 8px; }
+    .sub { color:var(--tan); font-size:13px; margin-bottom:14px; }
+    .nav-sub { display:flex; gap:10px; margin-bottom:14px; font-size:13px; flex-wrap:wrap; }
+    .nav-sub a { color:var(--green-dark); text-decoration:underline; }
+    .nav-sub a.active { font-weight:600; text-decoration:none; }
+    .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+    .field { display:flex; flex-direction:column; gap:4px; font-size:13px; }
+    .field label { color:var(--tan); font-size:11px; text-transform:uppercase; letter-spacing:.5px; }
+    .field input, .field textarea { padding:8px 10px; border:1px solid var(--light-gray); border-radius:6px; font:inherit; }
+    .field .dflt { font-size:10px; color:#999; }
+    .field .overridden input { border-color:#b26a00; background:#fffbf5; }
+    .row-actions { display:flex; gap:10px; margin-top:20px; align-items:center; }
+    button { background:var(--green-dark); color:#fff; border:0; padding:10px 20px; border-radius:8px; font:inherit; cursor:pointer; font-weight:500; }
+    button.ghost { background:#eee; color:#333; }
+    .msg { padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:13px; display:none; }
+    .msg.ok { background:#d7ecd9; color:#1b5e20; }
+    .msg.err { background:#f8d7da; color:#721c24; }
+    .meta { font-size:11px; color:var(--tan); margin-top:10px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><div class="nav-container">
+    <a href="../../index.html" class="nav-logo"><img src="../../images/logo.png" alt="Spice More"></a>
+  </div></nav>
+  <div class="wrap">
+    <div class="nav-sub">
+      <a href="intake.html">Intake</a> ·
+      <a href="consignors.html">Clients</a> ·
+      <a href="transactions.html">Transactions</a> ·
+      <a href="portfolio.html">Portfolio</a> ·
+      <a href="daily-price.html">Daily price</a> ·
+      <a href="settings.html" class="active">Settings</a>
+    </div>
+
+    <div class="card">
+      <div class="h1">Programme Settings</div>
+      <div class="sub">Edit the economic parameters of the SEPL Cardamom Consignment Programme. Fields highlighted in amber differ from the code defaults. Blank = use default.</div>
+      <div id="msg" class="msg"></div>
+
+      <div class="h2">Advance &amp; Finance</div>
+      <div class="grid2">
+        <div class="field" data-k="standardAdvanceRate" data-type="pct"><label>Standard advance rate</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+        <div class="field" data-k="maxAdvanceRate" data-type="pct"><label>Max advance rate (cap)</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+        <div class="field" data-k="annualHoldingRate" data-type="pct"><label>Annual holding rate</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+        <div class="field" data-k="daysBasis" data-type="num"><label>Days basis</label><input type="number" step="1"><div class="dflt"></div></div>
+      </div>
+
+      <div class="h2">Tenure</div>
+      <div class="grid2">
+        <div class="field" data-k="standardTenureDays" data-type="num"><label>Standard tenure (days)</label><input type="number" step="1"><div class="dflt"></div></div>
+        <div class="field" data-k="maxTenureDays" data-type="num"><label>Max tenure (days)</label><input type="number" step="1"><div class="dflt"></div></div>
+      </div>
+
+      <div class="h2">LTV thresholds</div>
+      <div class="grid2">
+        <div class="field" data-k="ltv.yellow" data-type="pct"><label>Yellow (monitor)</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+        <div class="field" data-k="ltv.orange" data-type="pct"><label>Orange (margin call)</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+        <div class="field" data-k="ltv.red" data-type="pct"><label>Red (sell 48h)</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+        <div class="field" data-k="ltv.forced" data-type="pct"><label>Forced sale</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+      </div>
+
+      <div class="h2">Exit / Auction</div>
+      <div class="grid2">
+        <div class="field" data-k="auctionCommission" data-type="pct"><label>Auction commission</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+        <div class="field" data-k="gstOnCommission" data-type="pct"><label>GST on commission</label><input type="number" step="0.01" min="0" max="1"><div class="dflt"></div></div>
+      </div>
+
+      <div class="h2">Lists (comma-separated)</div>
+      <div class="field" data-k="depots" data-type="list"><label>Depots</label><input type="text" placeholder="Kumily, Kollaparachal"><div class="dflt"></div></div>
+      <div class="field" data-k="consignorTypes" data-type="list" style="margin-top:10px;"><label>Client types</label><input type="text"><div class="dflt"></div></div>
+      <div class="field" data-k="grades" data-type="list" style="margin-top:10px;"><label>Grades</label><input type="text"><div class="dflt"></div></div>
+
+      <div class="row-actions">
+        <button id="saveBtn">Save changes</button>
+        <button id="resetBtn" class="ghost" type="button">Clear all overrides</button>
+      </div>
+      <div class="meta" id="meta"></div>
+    </div>
+  </div>
+
+<script>
+  const token = sessionStorage.sepl_token;
+  if (!token || sessionStorage.sepl_role !== 'staff') location.href = 'login.html';
+  const hdr = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+
+  const msg = (txt, kind) => {
+    const el = document.getElementById('msg');
+    el.textContent = txt; el.className = 'msg ' + kind; el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  };
+
+  function getPath(obj, path) {
+    return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+  }
+  function parseVal(raw, type) {
+    if (raw === '' || raw == null) return undefined;
+    if (type === 'pct' || type === 'num') { const n = Number(raw); return isNaN(n) ? undefined : n; }
+    if (type === 'list') return raw.split(',').map(s => s.trim()).filter(Boolean);
+    return raw;
+  }
+  function fmtDefault(val, type) {
+    if (Array.isArray(val)) return 'default: ' + val.join(', ');
+    return 'default: ' + val;
+  }
+
+  let state = { defaults: null, overrides: null };
+
+  async function load() {
+    const r = await fetch('/api/sepl/daily-price?resource=settings', { headers: hdr });
+    const d = await r.json();
+    state.defaults = d.defaults;
+    state.overrides = d.overrides || {};
+
+    document.querySelectorAll('.field').forEach(f => {
+      const k = f.dataset.k, type = f.dataset.type;
+      const defVal = getPath(state.defaults, k);
+      const ovVal = getPath(state.overrides, k);
+      const input = f.querySelector('input');
+      f.querySelector('.dflt').textContent = fmtDefault(defVal, type);
+      if (ovVal !== undefined && ovVal !== null && ovVal !== '') {
+        if (Array.isArray(ovVal)) input.value = ovVal.join(', ');
+        else input.value = ovVal;
+        f.classList.add('overridden');
+      } else {
+        input.value = '';
+        f.classList.remove('overridden');
+      }
+      input.oninput = () => {
+        f.classList.toggle('overridden', input.value.trim() !== '');
+      };
+    });
+
+    const meta = state.overrides._lastUpdatedAt
+      ? `Last edited by ${state.overrides._lastUpdatedBy?.name || '?'} at ${state.overrides._lastUpdatedAt}`
+      : 'No overrides saved yet — all values are defaults.';
+    document.getElementById('meta').textContent = meta;
+  }
+
+  async function save() {
+    const payload = {};
+    document.querySelectorAll('.field').forEach(f => {
+      const k = f.dataset.k, type = f.dataset.type;
+      const v = parseVal(f.querySelector('input').value.trim(), type);
+      if (v === undefined) return;
+      if (k.includes('.')) {
+        const [a, b] = k.split('.');
+        payload[a] = payload[a] || {};
+        payload[a][b] = v;
+      } else {
+        payload[k] = v;
+      }
+    });
+    const r = await fetch('/api/sepl/daily-price?resource=settings', { method: 'POST', headers: hdr, body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (r.ok && d.saved) { msg('Saved.', 'ok'); await load(); }
+    else msg(d.error || 'Save failed', 'err');
+  }
+
+  async function clearAll() {
+    if (!confirm('Clear all overrides and revert to defaults?')) return;
+    const r = await fetch('/api/sepl/daily-price?resource=settings', { method: 'POST', headers: hdr, body: JSON.stringify({}) });
+    if (r.ok) { msg('Cleared.', 'ok'); await load(); }
+    else msg('Clear failed', 'err');
+  }
+
+  document.getElementById('saveBtn').onclick = save;
+  document.getElementById('resetBtn').onclick = clearAll;
+  load();
+</script>
+</body>
+</html>
