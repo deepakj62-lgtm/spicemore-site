@@ -2,98 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Clients | SEPL</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../css/style.css">
-  <style>
-    .wrap { max-width:900px; margin:0 auto; padding:90px 16px 40px; }
-    .card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:20px; margin-bottom:14px; }
-    .h1 { font-family:var(--font-heading); font-weight:700; font-size:22px; color:var(--green-dark); margin-bottom:12px; }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    th,td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--light-gray); }
-    th { color:var(--tan); font-weight:500; font-size:12px; text-transform:uppercase; }
-    input, select { width:100%; padding:10px; border:1px solid var(--light-gray); border-radius:8px; font-family:var(--font-body); margin-bottom:10px; }
-    button { padding:12px 18px; background:var(--green-primary); color:var(--white); border:none; border-radius:8px; cursor:pointer; font-family:var(--font-body); }
-    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    label { font-size:13px; color:var(--brown); }
-    .nav-sub { display:flex; gap:10px; margin-bottom:14px; font-size:13px; flex-wrap:wrap; }
-    .nav-sub a { color:var(--green-dark); text-decoration:underline; }
-  </style>
+  <title>Redirecting…</title>
+  <meta http-equiv="refresh" content="0; url=intake.html#newClient">
+  <script>location.replace('intake.html#newClient');</script>
 </head>
 <body>
-  <nav class="navbar"><div class="nav-container">
-    <a href="../../index.html" class="nav-logo"><img src="../../images/logo.png" alt="Spice More"></a>
-  </div></nav>
-  <div class="wrap">
-    <div class="nav-sub">
-      <a href="intake.html">Intake</a> ·
-      <a href="portfolio.html">Portfolio</a> · <a href="daily-price.html">Daily price</a> ·
-      <a href="settings.html">Settings</a> ·
-      <a href="https://deepak-finance-tracker.vercel.app" target="_blank" rel="noopener">Finance Tracker</a>
-    </div>
-    <div class="card">
-      <div class="h1">Add client</div>
-      <div class="row">
-        <div><label>Name</label><input id="name"></div>
-        <div><label>Type</label><select id="type"><option>Planter</option><option>Trader</option></select></div>
-        <div><label>Phone</label><input id="phone"></div>
-        <div><label>PAN</label><input id="pan"></div>
-        <div><label>Aadhaar</label><input id="aadhaar" inputmode="numeric" maxlength="14"></div>
-        <div><label>Spices Board reg</label><input id="sb"></div>
-        <div><label>GST Reg (required for Trader)</label><input id="gst"></div>
-        <div><label>Depot</label><select id="depot"><option>Kumily</option><option>Kollaparachal</option></select></div>
-        <div><label>Bank A/C</label><input id="bank"></div>
-        <div><label>IFSC</label><input id="ifsc"></div>
-        <div><label>Holding rate (p.a.)</label>
-          <select id="rate">
-            <option value="0.18">18% — low risk</option>
-            <option value="0.21" selected>21% — standard</option>
-            <option value="0.24">24% — high risk</option>
-          </select>
-        </div>
-        <div><label>Max exposure (Rs)</label><input id="max" type="number"></div>
-      </div>
-      <button id="save">Save</button>
-      <span id="msg" style="margin-left:10px; font-size:13px;"></span>
-    </div>
-    <div class="card">
-      <div class="h1">Existing clients</div>
-      <table><thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Phone</th><th>Depot</th><th>Rate</th></tr></thead><tbody id="tbody"></tbody></table>
-    </div>
-  </div>
-<script>
-  const token = sessionStorage.sepl_token;
-  if (!token || sessionStorage.sepl_role!=='staff') location.href='login.html';
-  const hdr = { 'Content-Type':'application/json', 'Authorization':'Bearer '+token };
-  const $ = id => document.getElementById(id);
-  async function load() {
-    const r = await fetch('/api/sepl/consignors', { headers: hdr });
-    const d = await r.json();
-    $('tbody').innerHTML = (d.consignors||[]).map(c =>
-      `<tr><td>${c.consignorId}</td><td>${c.name}</td><td>${c.type}</td><td>${c.phone}</td><td>${c.depot}</td><td>${(c.rateAssigned*100).toFixed(1)}%</td></tr>`
-    ).join('');
-  }
-  load();
-  $('save').onclick = async () => {
-    if ($('type').value === 'Trader' && !$('gst').value.trim()) {
-      $('msg').textContent = 'GST registration is required for Trader type';
-      return;
-    }
-    const body = {
-      name:$('name').value, type:$('type').value, phone:$('phone').value,
-      pan:$('pan').value, aadhaar:$('aadhaar').value, gstReg:$('gst').value,
-      spicesBoardReg:$('sb').value, depot:$('depot').value,
-      bankAccount:$('bank').value, ifsc:$('ifsc').value,
-      rateAssigned:Number($('rate').value)||0.21, maxExposure:Number($('max').value)||0
-    };
-    const r = await fetch('/api/sepl/consignors', { method:'POST', headers:hdr, body:JSON.stringify(body) });
-    const d = await r.json();
-    if (!r.ok) { $('msg').textContent = d.error; return; }
-    $('msg').textContent = 'Saved '+d.consignor.consignorId;
-    load();
-  };
-</script>
+  <p>Client management has moved into Intake. <a href="intake.html#newClient">Continue →</a></p>
 </body>
 </html>
