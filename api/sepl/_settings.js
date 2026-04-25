@@ -29,7 +29,7 @@ module.exports = {
   gstOnCommission: 0.18,    // 18%
 
   // Consignor types
-  consignorTypes: ['Planter', 'Dealer', 'Trader'],
+  consignorTypes: ['Planter', 'Trader'],
 
   // Grades
   grades: ['AGEB', 'AGB', '8mm Bold', '7mm', '6mm', 'Mixed'],

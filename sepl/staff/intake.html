@@ -46,10 +46,10 @@
 
       <div class="sepl-h h2">1. Intake details</div>
       <div class="row">
-        <div><label>Net weight (kg)</label><input id="netWeightKg" type="number" step="0.01"></div>
-        <div><label>Benchmark price (₹/kg)</label><input id="benchmarkPricePerKg" type="number" step="0.01"></div>
+        <div><label>Net weight (kg) — min 250</label><input id="netWeightKg" type="number" step="0.01" min="250"></div>
+        <div><label>Benchmark price (Rs/kg)</label><input id="benchmarkPricePerKg" type="number" step="0.01"></div>
         <div><label>Depot</label><select id="depot"><option>Kumily</option><option>Kollaparachal</option></select></div>
-        <div><label>Sample %</label><input id="samplePct" type="number" step="0.01" value="0"></div>
+        <div><label>Sample collected (g)</label><input id="sampleGrams" type="number" step="1" value="100"></div>
       </div>
       <label>Grade notes</label>
       <textarea id="gradeNotes" rows="2"></textarea>
@@ -77,15 +77,23 @@
       <div id="newForm" class="hidden" style="background:var(--cream); padding:14px; border-radius:8px; margin-bottom:12px;">
         <div class="row">
           <div><label>Name</label><input id="n_name"></div>
-          <div><label>Type</label><select id="n_type"><option>Planter</option><option>Dealer</option><option>Trader</option></select></div>
+          <div><label>Type</label><select id="n_type"><option>Planter</option><option>Trader</option></select></div>
           <div><label>PAN</label><input id="n_pan"></div>
+          <div><label>Aadhaar</label><input id="n_aadhaar" inputmode="numeric" maxlength="14"></div>
           <div><label>Spices Board Reg</label><input id="n_sb"></div>
+          <div><label>GST Reg (required for Trader)</label><input id="n_gst"></div>
           <div><label>Bank A/C</label><input id="n_bank"></div>
           <div><label>IFSC</label><input id="n_ifsc"></div>
           <div><label>Phone</label><input id="n_phone" type="tel"></div>
           <div><label>Depot</label><select id="n_depot"><option>Kumily</option><option>Kollaparachal</option></select></div>
-          <div><label>Max Exposure (₹)</label><input id="n_max" type="number"></div>
-          <div><label>Rate (decimal, default 0.21)</label><input id="n_rate" type="number" step="0.01" value="0.21"></div>
+          <div><label>Max Exposure (Rs)</label><input id="n_max" type="number"></div>
+          <div><label>Holding rate (p.a.)</label>
+            <select id="n_rate">
+              <option value="0.18">18% — low risk</option>
+              <option value="0.21" selected>21% — standard</option>
+              <option value="0.24">24% — high risk</option>
+            </select>
+          </div>
         </div>
         <button id="saveNew" type="button">Save client</button>
         <span id="newMsg" style="margin-left:10px; font-size:13px;"></span>
@@ -128,8 +136,13 @@
 
   $('toggleNew').onclick = () => $('newForm').classList.toggle('hidden');
   $('saveNew').onclick = async () => {
+    if ($('n_type').value === 'Trader' && !$('n_gst').value.trim()) {
+      $('newMsg').innerHTML = '<span class="err">GST registration is required for Trader type</span>';
+      return;
+    }
     const body = {
       name: $('n_name').value, type: $('n_type').value, pan: $('n_pan').value,
+      aadhaar: $('n_aadhaar').value, gstReg: $('n_gst').value,
       spicesBoardReg: $('n_sb').value, bankAccount: $('n_bank').value, ifsc: $('n_ifsc').value,
       phone: $('n_phone').value, depot: $('n_depot').value,
       maxExposure: Number($('n_max').value)||0, rateAssigned: Number($('n_rate').value)||0.21
@@ -167,10 +180,11 @@
       netWeightKg: Number($('netWeightKg').value),
       benchmarkPricePerKg: Number($('benchmarkPricePerKg').value),
       gradeNotes: $('gradeNotes').value,
-      samplePct: Number($('samplePct').value)||0,
+      sampleGrams: Number($('sampleGrams').value)||100,
       depot: $('depot').value
     };
     if (!body.consignorId) { $('subMsg').innerHTML='<span class="err">Pick a client</span>'; return; }
+    if (!body.netWeightKg || body.netWeightKg < 250) { $('subMsg').innerHTML='<span class="err">Minimum lot is 250 kg</span>'; return; }
     const r = await fetch('/api/sepl/transactions', { method:'POST', headers:hdr, body:JSON.stringify(body) });
     const d = await r.json();
     if (!r.ok) { $('subMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }

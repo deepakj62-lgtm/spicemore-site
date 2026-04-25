@@ -109,6 +109,9 @@ module.exports = async function handler(req, res) {
       for (const k of required) if (b[k] === undefined || b[k] === null || b[k] === '') {
         return res.status(400).json({ error: `Missing ${k}` });
       }
+      if (Number(b.netWeightKg) < 250) {
+        return res.status(400).json({ error: 'Minimum lot is 250 kg' });
+      }
       const consignor = await loadConsignor(b.consignorId);
       if (!consignor) return res.status(404).json({ error: 'Consignor not found' });
 
@@ -137,7 +140,7 @@ module.exports = async function handler(req, res) {
         netWeightKg,
         benchmarkPricePerKg,
         gradeNotes: b.gradeNotes || '',
-        samplePct: Number(b.samplePct) || 0,
+        sampleGrams: Number(b.sampleGrams) || 100,
         grossStockValue,
         advanceRateUsed: SETTINGS.standardAdvanceRate,
         advanceAmount,

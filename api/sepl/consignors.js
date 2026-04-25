@@ -54,19 +54,28 @@ module.exports = async function handler(req, res) {
       if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
       const b = req.body || {};
       if (!b.name || !b.phone) return res.status(400).json({ error: 'name and phone required' });
+      const type = b.type === 'Trader' ? 'Trader' : 'Planter';
+      if (type === 'Trader' && !(b.gstReg && String(b.gstReg).trim())) {
+        return res.status(400).json({ error: 'GST registration is required for Trader type' });
+      }
+      const allowedRates = [0.18, 0.21, 0.24];
+      const rateRaw = typeof b.rateAssigned === 'number' ? b.rateAssigned : 0.21;
+      const rateAssigned = allowedRates.includes(rateRaw) ? rateRaw : 0.21;
       const all = await loadAll();
       const consignorId = await nextId(all);
       const record = {
         consignorId,
         name: b.name,
-        type: b.type || 'Planter',
+        type,
         pan: b.pan || '',
+        aadhaar: b.aadhaar ? String(b.aadhaar).replace(/[^0-9]/g, '') : '',
         spicesBoardReg: b.spicesBoardReg || '',
+        gstReg: b.gstReg || '',
         bankAccount: b.bankAccount || '',
         ifsc: b.ifsc || '',
         phone: String(b.phone).replace(/[^0-9+]/g, ''),
         depot: b.depot || SETTINGS.depots[0],
-        rateAssigned: typeof b.rateAssigned === 'number' ? b.rateAssigned : SETTINGS.annualHoldingRate,
+        rateAssigned,
         maxExposure: b.maxExposure || 0,
         status: 'Active',
         createdBy: { phone: session.phone, name: session.name },

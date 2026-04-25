@@ -33,6 +33,7 @@
             <a href="daily-sales-summary.html">Daily Sales Summary</a>
             <a href="smtc-request-tool.html">Request New Functionality</a>
             <a href="smtc-requests-view.html">View Requests</a>
+            <a href="https://deepak-finance-tracker.vercel.app" target="_blank" rel="noopener">Finance Tracker</a>
           </div>
         </div>
       </div>
@@ -105,6 +106,14 @@
             <span class="card-status status-live">Live</span>
           </a>
 
+          <!-- Finance Tracker Card -->
+          <a href="https://deepak-finance-tracker.vercel.app" target="_blank" rel="noopener" class="portal-card">
+            <div class="card-icon">&#128200;</div>
+            <h3>Finance Tracker</h3>
+            <p>Personal and business finance dashboard. Track income, expenses, investments, and net worth in one place.</p>
+            <span class="card-status status-live">Live</span>
+          </a>
+
         </div>
 
         <div class="portal-divider"></div>
@@ -164,7 +173,7 @@
   <script src="js/main.js"></script>
   <script>
     (function() {
-      const PASS = 'SPICE123';
+      const PASS = 'spice123';
       const gate = document.getElementById('passwordGate');
       const content = document.getElementById('portalContent');
       const form = document.getElementById('passwordForm');
@@ -179,7 +188,7 @@
 
       form.addEventListener('submit', function(e) {
         e.preventDefault();
-        if (input.value === PASS) {
+        if (input.value.toLowerCase() === PASS) {
           sessionStorage.setItem('smtc_auth', 'true');
           gate.style.display = 'none';
           content.style.display = 'block';

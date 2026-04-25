@@ -36,15 +36,23 @@
       <div class="h1">Add client</div>
       <div class="row">
         <div><label>Name</label><input id="name"></div>
-        <div><label>Type</label><select id="type"><option>Planter</option><option>Dealer</option><option>Trader</option></select></div>
+        <div><label>Type</label><select id="type"><option>Planter</option><option>Trader</option></select></div>
         <div><label>Phone</label><input id="phone"></div>
         <div><label>PAN</label><input id="pan"></div>
+        <div><label>Aadhaar</label><input id="aadhaar" inputmode="numeric" maxlength="14"></div>
         <div><label>Spices Board reg</label><input id="sb"></div>
+        <div><label>GST Reg (required for Trader)</label><input id="gst"></div>
         <div><label>Depot</label><select id="depot"><option>Kumily</option><option>Kollaparachal</option></select></div>
         <div><label>Bank A/C</label><input id="bank"></div>
         <div><label>IFSC</label><input id="ifsc"></div>
-        <div><label>Rate (default 0.21)</label><input id="rate" type="number" step="0.01" value="0.21"></div>
-        <div><label>Max exposure</label><input id="max" type="number"></div>
+        <div><label>Holding rate (p.a.)</label>
+          <select id="rate">
+            <option value="0.18">18% — low risk</option>
+            <option value="0.21" selected>21% — standard</option>
+            <option value="0.24">24% — high risk</option>
+          </select>
+        </div>
+        <div><label>Max exposure (Rs)</label><input id="max" type="number"></div>
       </div>
       <button id="save">Save</button>
       <span id="msg" style="margin-left:10px; font-size:13px;"></span>
@@ -68,9 +76,14 @@
   }
   load();
   $('save').onclick = async () => {
+    if ($('type').value === 'Trader' && !$('gst').value.trim()) {
+      $('msg').textContent = 'GST registration is required for Trader type';
+      return;
+    }
     const body = {
       name:$('name').value, type:$('type').value, phone:$('phone').value,
-      pan:$('pan').value, spicesBoardReg:$('sb').value, depot:$('depot').value,
+      pan:$('pan').value, aadhaar:$('aadhaar').value, gstReg:$('gst').value,
+      spicesBoardReg:$('sb').value, depot:$('depot').value,
       bankAccount:$('bank').value, ifsc:$('ifsc').value,
       rateAssigned:Number($('rate').value)||0.21, maxExposure:Number($('max').value)||0
     };
