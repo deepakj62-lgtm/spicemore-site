@@ -626,6 +626,11 @@
       let audioCtx = null, analyser = null, rafId = null;
       let timerId = null, startTs = 0;
       let mime = '';
+      // Segmentation: Vercel serverless has a ~4.5MB request body limit.
+      // Rotate the recorder every SEGMENT_MS so each upload stays under the
+      // cap, then stitch transcripts on the client.
+      const SEGMENT_MS = 25000;
+      let segments = [], segmentTimer = null, rotating = false, userStopped = false;
 
       if (!navigator.mediaDevices || typeof MediaRecorder === 'undefined') {
         btn.style.display = 'none';
@@ -656,9 +661,13 @@
           recorder = new MediaRecorder(stream);
         }
         chunks = [];
+        segments = [];
+        userStopped = false;
+        rotating = false;
         recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-        recorder.onstop = handleStop;
+        recorder.onstop = onRecorderStop;
         recorder.start();
+        scheduleRotation();
 
         btn.classList.add('recording');
         btnText.textContent = 'Stop';
@@ -705,7 +714,42 @@
           </div>`;
       }
 
+      function scheduleRotation() {
+        if (segmentTimer) clearTimeout(segmentTimer);
+        segmentTimer = setTimeout(rotateRecorder, SEGMENT_MS);
+      }
+
+      function rotateRecorder() {
+        if (!recorder || recorder.state !== 'recording' || userStopped) return;
+        rotating = true;
+        try { recorder.stop(); } catch(e) {}
+      }
+
+      function onRecorderStop() {
+        const blob = new Blob(chunks, { type: mime || 'audio/webm' });
+        if (blob.size > 0) segments.push(blob);
+        chunks = [];
+        if (rotating && !userStopped && stream) {
+          rotating = false;
+          try {
+            recorder = mime ? new MediaRecorder(stream, { mimeType: mime })
+                            : new MediaRecorder(stream);
+          } catch (e) {
+            recorder = new MediaRecorder(stream);
+          }
+          recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+          recorder.onstop = onRecorderStop;
+          recorder.start();
+          scheduleRotation();
+          return;
+        }
+        if (segmentTimer) { clearTimeout(segmentTimer); segmentTimer = null; }
+        handleStop();
+      }
+
       function stop() {
+        userStopped = true;
+        if (segmentTimer) { clearTimeout(segmentTimer); segmentTimer = null; }
         try { recorder.stop(); } catch(e) {}
         btn.classList.remove('recording');
         btnText.textContent = 'Speak';
@@ -717,23 +761,45 @@
         status.classList.add('processing');
       }
 
-      async function handleStop() {
-        const blob = new Blob(chunks, { type: mime || 'audio/webm' });
+      async function transcribeOne(blob) {
         const base64 = await blobToBase64(blob);
+        const resp = await fetch('/api/transcribe-audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audioBase64: base64, mimeType: blob.type })
+        });
+        const data = await resp.json();
+        return { text: (data && data.transcript || '').trim(), note: data && data.note };
+      }
+
+      async function handleStop() {
         try {
-          const resp = await fetch('/api/transcribe-audio', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ audioBase64: base64, mimeType: blob.type })
-          });
-          const data = await resp.json();
-          const raw = (data && data.transcript || '').trim();
+          const parts = [];
+          const failures = [];
+          let lastNote = '';
+          for (let i = 0; i < segments.length; i++) {
+            status.textContent = `Transcribing ${i + 1}/${segments.length}...`;
+            try {
+              const { text, note } = await transcribeOne(segments[i]);
+              if (text) parts.push(text);
+              else failures.push(i + 1);
+              if (note) lastNote = note;
+            } catch (err) {
+              failures.push(i + 1);
+              lastNote = (err && err.message) || 'segment fetch failed';
+            }
+          }
+          segments = [];
+          const raw = parts.join(' ').trim();
           if (!raw) {
-            status.textContent = (data && data.note)
-              ? ('Could not transcribe: ' + data.note)
+            status.textContent = lastNote
+              ? ('Could not transcribe: ' + lastNote)
               : 'No speech detected. Try again.';
             setTimeout(() => status.classList.remove('active'), 4000);
             return;
+          }
+          if (failures.length) {
+            lastNote = `Note: ${failures.length} of ${failures.length + parts.length} chunks failed (${lastNote || 'unknown'}). Partial transcript shown.`;
           }
           rawEl.textContent = raw;
           cleanEl.textContent = 'Cleaning up...';
