@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit SEPL Pages with Claude</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .wrap { max-width:880px; margin:0 auto; padding:90px 20px 60px; }
+    .h1 { font-family:var(--font-heading); font-weight:700; font-size:28px; color:var(--green-dark); margin-bottom:6px; }
+    .h2 { font-family:var(--font-heading); font-weight:600; font-size:18px; color:var(--green-dark); margin:28px 0 8px; }
+    .h3 { font-family:var(--font-heading); font-weight:600; font-size:15px; color:var(--green-dark); margin:14px 0 6px; }
+    .sub { color:var(--tan); font-size:14px; margin-bottom:16px; }
+    .card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:22px; margin-bottom:16px; }
+    .pathcard { background:var(--cream); border-left:4px solid var(--green-dark); border-radius:8px; padding:16px 18px; margin-bottom:14px; }
+    .pathcard b { color:var(--green-dark); }
+    ol, ul { padding-left:22px; line-height:1.7; }
+    li { margin-bottom:6px; }
+    code { background:#f5f0e6; padding:2px 6px; border-radius:4px; font-size:13px; font-family:'SF Mono', Menlo, monospace; }
+    pre { background:#f5f0e6; padding:14px; border-radius:8px; font-size:12px; overflow-x:auto; max-height:260px; line-height:1.45; }
+    button { padding:9px 14px; background:var(--green-primary); color:#fff; border:none; border-radius:6px; font-size:13px; cursor:pointer; font-family:var(--font-body); margin-right:6px; margin-top:6px; }
+    button.secondary { background:var(--button-dark); }
+    button.ghost { background:#fff; color:var(--green-dark); border:1px solid var(--green-dark); }
+    button:active { transform:scale(.97); }
+    .file-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--light-gray); flex-wrap:wrap; gap:10px; }
+    .file-row:last-child { border-bottom:0; }
+    .file-name { font-family:'SF Mono', Menlo, monospace; font-size:13px; color:var(--green-dark); }
+    .file-desc { font-size:12px; color:var(--tan); margin-top:2px; }
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--green-dark); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; z-index:1000; opacity:0; transition:opacity .25s; }
+    .toast.show { opacity:1; }
+    .nav-back { color:var(--green-dark); font-size:13px; text-decoration:none; }
+    details summary { cursor:pointer; font-family:var(--font-heading); font-weight:600; color:var(--green-dark); padding:6px 0; }
+    .quickcopy-area { background:#f5f0e6; padding:12px; border-radius:6px; font-size:12px; max-height:200px; overflow:auto; white-space:pre-wrap; word-break:break-word; font-family:'SF Mono', Menlo, monospace; }
+    @media (max-width:600px) { .wrap { padding-top:80px; } }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><div class="nav-container">
+    <a href="../index.html" class="nav-logo"><img src="../images/logo.png" alt="Spice More"></a>
+  </div></nav>
+
+  <div class="wrap">
+    <a class="nav-back" href="../sepl/index.html">← back to SEPL portal</a>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="h1">Edit SEPL pages with Claude</div>
+      <div class="sub">Tweak the Spicemore SEPL stock-advance pages from your phone, iPad, or laptop using any Claude account. No coding needed.</div>
+
+      <p style="font-size:14px;">Pick the path that fits you:</p>
+
+      <div class="pathcard">
+        <b>⚡ Quick path — one chat, zero setup</b><br>
+        <span style="font-size:13px;">Open Claude (any plan, any device), paste one prompt, get a live preview. Best for a single change.</span>
+        <div style="margin-top:8px;"><a href="#quick" style="font-size:13px; color:var(--green-dark);">Jump to Quick path →</a></div>
+      </div>
+
+      <div class="pathcard">
+        <b>📁 Project path — persistent workspace</b><br>
+        <span style="font-size:13px;">Set up a Claude Project once (~5 min). Iterate over many sessions with the source files always loaded.</span>
+        <div style="margin-top:8px;"><a href="#project" style="font-size:13px; color:var(--green-dark);">Jump to Project path →</a></div>
+      </div>
+    </div>
+
+    <!-- ============ QUICK PATH ============ -->
+    <div class="card" id="quick">
+      <div class="h2">⚡ Quick path</div>
+      <div class="sub">Three steps. No account upgrade. Works in the Claude iOS app, web, or anywhere.</div>
+
+      <div class="h3">Step 1 — pick which page you want to edit</div>
+      <select id="quickFile" style="padding:9px; border-radius:6px; border:1px solid var(--light-gray); font:inherit; width:100%; max-width:400px;">
+        <option value="intake.html">intake.html — staff create new intake</option>
+        <option value="portfolio.html">portfolio.html — live margin dashboard</option>
+        <option value="daily-price.html">daily-price.html — manual rate entry</option>
+        <option value="settings.html">settings.html — programme parameters</option>
+        <option value="login.html">login.html — staff login screen</option>
+        <option value="../sepl/index.html" data-base="">index.html — SEPL landing page</option>
+      </select>
+
+      <div class="h3">Step 2 — copy this prompt</div>
+      <div class="sub">Tap the button. It copies a complete prompt (system context + the chosen file's source) ready to paste into Claude.</div>
+      <button id="copyQuickPrompt">Copy prompt to clipboard</button>
+      <button id="previewQuickPrompt" class="ghost">Preview what gets copied</button>
+      <div id="quickPreview" style="display:none; margin-top:10px;" class="quickcopy-area"></div>
+
+      <div class="h3">Step 3 — paste into Claude and chat</div>
+      <ol style="font-size:14px;">
+        <li>Open the Claude app (or claude.ai in a browser).</li>
+        <li>Start a new chat. Paste.</li>
+        <li>After the prompt is in, type what you want to change. Examples:
+          <ul>
+            <li><i>"Add a checkbox so staff can mark whether the client brought their PAN card."</i></li>
+            <li><i>"Change the Create Intake button text to 'Confirm and Create'."</i></li>
+            <li><i>"Make the warning above Create Intake red instead of yellow."</i></li>
+          </ul>
+        </li>
+        <li>Claude shows an <b>artifact preview</b> of the page — tap it to see the full page render live. Iterate as long as you want.</li>
+        <li>When happy, say: <b>"I'm done — handoff."</b> Claude outputs the final file + a short summary.</li>
+        <li>Send the artifact / summary to Deepak (WhatsApp, email, or share the Claude conversation link). He'll ship it to spicemore.com (live in ~60 sec).</li>
+      </ol>
+    </div>
+
+    <!-- ============ PROJECT PATH ============ -->
+    <div class="card" id="project">
+      <div class="h2">📁 Project path</div>
+      <div class="sub">Persistent workspace. The source files live in your Project Knowledge — Claude reads them on every chat. ~5 min to set up.</div>
+
+      <div class="h3">Step 1 — create the Project</div>
+      <ol style="font-size:14px;">
+        <li>Open <code>claude.ai</code> on your iPad or laptop.</li>
+        <li>Sign in (any plan — Free, Pro, or Team works).</li>
+        <li>Tap <b>Projects</b> → <b>+ New project</b>. Name it: <code>Spicemore SEPL Pages</code>.</li>
+        <li>Tap the project's <b>Settings</b> (gear icon).</li>
+      </ol>
+
+      <div class="h3">Step 2 — paste the system prompt</div>
+      <div class="sub">In the project's <b>Custom instructions</b> field, paste this:</div>
+      <button id="copySystemPrompt">Copy system prompt</button>
+      <button id="previewSystemPrompt" class="ghost">Preview</button>
+      <div id="systemPromptPreview" style="display:none; margin-top:10px;" class="quickcopy-area"></div>
+
+      <div class="h3">Step 3 — upload source files to Project Knowledge</div>
+      <div class="sub">In the project's <b>Project knowledge</b> section, tap <b>Add files</b> and add each of these. Each file has a download button.</div>
+      <div id="fileList"></div>
+
+      <div class="h3">Step 4 — chat in the project</div>
+      <ol style="font-size:14px;">
+        <li>Close Settings. You're done with setup.</li>
+        <li>Start a new chat. Just describe what you want — Claude already has all the source files.</li>
+        <li>When done with a session, say <b>"I'm done — handoff."</b> Claude outputs final artifacts + a HANDOFF SUMMARY.</li>
+        <li>Send that summary to Deepak. He'll ship it.</li>
+      </ol>
+    </div>
+
+    <!-- ============ HANDOFF ============ -->
+    <div class="card">
+      <div class="h2">📨 Sending changes back to Deepak</div>
+      <div class="sub">Three ways. Pick whichever is easiest.</div>
+      <ul style="font-size:14px;">
+        <li><b>WhatsApp</b> — copy the artifact text or share the Claude chat URL. Send to Deepak. Fastest.</li>
+        <li><b>Email</b> — to <code>deepakj62@gmail.com</code> with subject prefix <code>SEPL HANDOFF:</code>.</li>
+        <li><b>Shared Drive folder</b> — if you've been added to the iCloud / Drive folder, drop the .html file there.</li>
+      </ul>
+      <p style="font-size:13px; color:var(--tan);">Deepak's Claude Code reads the handoff, sanity-checks against the system rules, commits, and pushes to GitHub. Vercel auto-deploys to spicemore.com. Live in ~60 sec.</p>
+    </div>
+
+    <!-- ============ DETAILS ============ -->
+    <div class="card">
+      <details>
+        <summary>What Claude can change here (and what it can't)</summary>
+        <div style="font-size:13px; padding-top:10px;">
+          <b>Can change:</b> any visual element on the SEPL pages — text, layout, colours within the Spicemore palette, button positions, dropdown options, validation messages, mandatory-field markers, new fields, new sections, new tabs, calculation labels.
+          <br><br>
+          <b>Can't change directly (these need Deepak's Claude Code):</b> backend API endpoints, database, scrapers, WhatsApp delivery, OTP, agreement PDF text, LTV bands, margin call thresholds, deployment/infra. If you ask for any of these, Claude will flag <i>"backend change needed — Deepak handles."</i>
+        </div>
+      </details>
+      <details>
+        <summary>Pricing / plan notes</summary>
+        <div style="font-size:13px; padding-top:10px;">
+          Both paths work on <b>Free</b>, <b>Pro</b>, and <b>Team</b> Claude plans. Free plan has daily message limits (~5–10 messages); Pro is ~5× higher. For day-to-day SEPL editing, Free is enough; for heavy iteration, Pro at $20/month is comfortable.
+          <br><br>
+          Claude Projects ARE per-account — they don't auto-share. If two people want a shared project (live collab), that needs the Team plan. Otherwise each person sets up their own copy from this page.
+        </div>
+      </details>
+      <details>
+        <summary>Privacy / what's public here</summary>
+        <div style="font-size:13px; padding-top:10px;">
+          The HTML source files on this page are the same ones already published at <code>spicemore.com/sepl/staff/...</code> — they're public by virtue of being a deployed website (anyone can View Source). No secrets, API keys, or auth tokens are exposed here. The economic model (advance %, holding rate, etc.) is also disclosed in the public agreement PDF.
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+<script>
+  const FILES = [
+    { name:'intake.html', path:'/sepl/staff/intake', desc:'staff: create new intake' },
+    { name:'portfolio.html', path:'/sepl/staff/portfolio', desc:'staff: live margin dashboard' },
+    { name:'daily-price.html', path:'/sepl/staff/daily-price', desc:'staff: manual rate entry' },
+    { name:'settings.html', path:'/sepl/staff/settings', desc:'staff: programme parameters' },
+    { name:'login.html', path:'/sepl/staff/login', desc:'staff: login screen' },
+    { name:'index.html', path:'/sepl/index.html', desc:'SEPL landing page' }
+  ];
+
+  const SYSTEM_PROMPT = `You are helping refine the Spicemore SEPL stock-advance pages. The Project Knowledge contains the current production HTML files. Treat them as the live state of https://spicemore.com/sepl/...
+
+Working style:
+1. Always render proposed changes as a complete HTML artifact so the user can preview the page live. Show the whole file.
+2. Keep the existing visual style: Spicemore green (var(--green-dark), var(--green-primary)), Syne for headings, Poppins for body, cream/tan accents. Don't swap fonts or palette. Pull colours from CSS variables, not literal hex.
+3. Keep the existing CSS variable references and the link to ../../css/style.css.
+4. Keep the navigation pattern (nav-sub row): Intake · Portfolio · Daily price · Settings · Finance Tracker · Logout. Don't add or remove tabs unless explicitly asked.
+5. Keep API contracts stable. Endpoints in use:
+   - GET /api/sepl/consignors — list clients
+   - POST /api/sepl/consignors — create (mandatory: name, type, phone, depot, bankAccount, ifsc; PAN if Planter; gstReg if SBL Dealer or GST-only Trader)
+   - GET /api/sepl/transactions — list
+   - POST /api/sepl/transactions — create intake (mandatory: consignorId, netWeightKg ≥ 250, benchmarkPricePerKg, depot)
+   - POST /api/sepl/transactions?resource=upload-blob — upload sample photo
+   - GET /api/sepl/daily-price?resource=cardamom-rate — current Cardamom Avg Rate
+   - POST /api/sepl/agreement-pdf — generate + send agreement to client WhatsApp
+6. Use "Client" in user-facing copy. Keep API field names like consignorId, consignorName as-is.
+7. Date format: "24 April 2026" via toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }).
+8. Currency: '₹'+Number(n).toLocaleString('en-IN', { maximumFractionDigits:2 }).
+
+Economic model (don't break in any change):
+- Client types: Planter | SBL Dealer | GST-only Trader. PAN mandatory for Planter; GST mandatory for the others.
+- Cardamom Avg Rate = average of yesterday's 2 Spices Board e-auctions (auto-pulled).
+- Price factors per grade (overridable): 8mm Bold = 1.15, 7-8mm = 1.05, Rejection = 0.80.
+- Weighted benchmark = CardamomRate × (pctBold×1.15 + pctMid×1.05 + pctRej×0.80).
+- Sample percentages from grams: 8mm + 7-8mm + Rejection must sum to Total tested grams.
+- Gross stock value = NetWeightKg × WeightedBenchmark.
+- Advance offer = 65% of Gross.
+- Daily charge = ₹60 per ₹1L of advance per day (= 21.9% p.a. on 365-day basis).
+- Standard tenure = 90 days from intake date.
+
+When the user says "I'm done" or "ship this":
+1. Output each changed file as a complete artifact named exactly with its filename (e.g. intake.html).
+2. Add a HANDOFF SUMMARY block at the end with: files changed, one-line description of each, any backend/API impact flags.
+3. Tell the user: "Send the artifact(s) and HANDOFF SUMMARY to Deepak via WhatsApp, email (deepakj62@gmail.com, subject prefix 'SEPL HANDOFF:'), or shared folder. He ships to spicemore.com (~60 sec)."
+
+Push back (don't silently do):
+- Removing required fields that protect against bad data
+- Changing LTV bands or margin-call thresholds
+- Removing the "only click after the client has committed" warning above Create Intake
+- Adding tracking pixels, analytics, or third-party widgets
+- Changing the agreement PDF text or WhatsApp delivery path
+
+Tone: clear, brief, no jargon. The user knows the cardamom trade but isn't a coder. Restate their requested change in one sentence to confirm, then make it.`;
+
+  const $ = id => document.getElementById(id);
+  const toast = (msg) => {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  };
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Copied to clipboard ✓');
+    } catch (e) {
+      // Fallback for older Safari
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('Copied ✓'); }
+      catch (_) { toast('Copy failed — long-press the preview to select.'); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  async function fetchFile(path) {
+    const r = await fetch(path, { cache: 'no-store' });
+    if (!r.ok) throw new Error('fetch ' + path + ' → ' + r.status);
+    return await r.text();
+  }
+
+  async function buildQuickPrompt() {
+    const sel = $('quickFile').value;
+    const path = '/sepl/staff/' + sel;
+    const realPath = sel === '../sepl/index.html' ? '/sepl/index.html' : path;
+    const filename = sel.split('/').pop();
+    const content = await fetchFile(realPath);
+    return `${SYSTEM_PROMPT}
+
+---
+
+The file you'll be editing is **${filename}**. Here's the current content:
+
+\`\`\`html
+${content}
+\`\`\`
+
+Now, here's what I want to change:
+
+[describe your change here]`;
+  }
+
+  $('copyQuickPrompt').onclick = async () => {
+    try {
+      const t = await buildQuickPrompt();
+      await copyText(t);
+    } catch (e) { toast('Error: ' + e.message); }
+  };
+  $('previewQuickPrompt').onclick = async () => {
+    try {
+      const t = await buildQuickPrompt();
+      $('quickPreview').textContent = t;
+      $('quickPreview').style.display = 'block';
+    } catch (e) { toast('Error: ' + e.message); }
+  };
+
+  $('copySystemPrompt').onclick = () => copyText(SYSTEM_PROMPT);
+  $('previewSystemPrompt').onclick = () => {
+    $('systemPromptPreview').textContent = SYSTEM_PROMPT;
+    $('systemPromptPreview').style.display = 'block';
+  };
+
+  // Render file list with download buttons
+  const fl = $('fileList');
+  FILES.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.innerHTML = `
+      <div>
+        <div class="file-name">${f.name}</div>
+        <div class="file-desc">${f.desc}</div>
+      </div>
+      <div>
+        <button class="ghost" data-action="view" data-path="${f.path}">View</button>
+        <button data-action="download" data-path="${f.path}" data-name="${f.name}">Download</button>
+        <button class="secondary" data-action="copy" data-path="${f.path}">Copy</button>
+      </div>
+    `;
+    fl.appendChild(row);
+  });
+
+  fl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    const action = btn.dataset.action;
+    const path = btn.dataset.path;
+    const name = btn.dataset.name;
+    try {
+      if (action === 'view') {
+        window.open(path, '_blank');
+      } else if (action === 'download') {
+        const txt = await fetchFile(path);
+        const blob = new Blob([txt], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = name;
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 300);
+      } else if (action === 'copy') {
+        const txt = await fetchFile(path);
+        await copyText(txt);
+      }
+    } catch (err) { toast('Error: ' + err.message); }
+  });
+</script>
+</body>
+</html>
