@@ -5,5 +5,8 @@
     "api/*.js": {
       "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    { "path": "/api/sepl/daily-price?resource=cardamom-rate&refresh=1", "schedule": "30 12 * * *" }
+  ]
 }

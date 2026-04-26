@@ -53,10 +53,20 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
       const b = req.body || {};
-      if (!b.name || !b.phone) return res.status(400).json({ error: 'name and phone required' });
-      const type = b.type === 'Trader' ? 'Trader' : 'Planter';
-      if (type === 'Trader' && !(b.gstReg && String(b.gstReg).trim())) {
-        return res.status(400).json({ error: 'GST registration is required for Trader type' });
+      const ALLOWED_TYPES = ['Planter', 'SBL Dealer', 'GST-only Trader'];
+      // Back-compat: accept legacy 'Trader' as 'GST-only Trader'
+      let type = b.type;
+      if (type === 'Trader') type = 'GST-only Trader';
+      if (!ALLOWED_TYPES.includes(type)) type = 'Planter';
+      const requiredFields = { name: 'Name', phone: 'Phone', bankAccount: 'Bank A/C', ifsc: 'IFSC', depot: 'Depot' };
+      for (const [k, label] of Object.entries(requiredFields)) {
+        if (!b[k] || !String(b[k]).trim()) return res.status(400).json({ error: `${label} is required` });
+      }
+      if (type === 'Planter') {
+        if (!b.pan || !String(b.pan).trim()) return res.status(400).json({ error: 'PAN is required for Planter' });
+      } else {
+        // SBL Dealer or GST-only Trader
+        if (!b.gstReg || !String(b.gstReg).trim()) return res.status(400).json({ error: `GST is required for ${type}` });
       }
       const allowedRates = [0.18, 0.21, 0.24];
       const rateRaw = typeof b.rateAssigned === 'number' ? b.rateAssigned : 0.21;

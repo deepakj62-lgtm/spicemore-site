@@ -8,24 +8,44 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../css/style.css">
   <style>
-    .sepl-wrap { max-width:680px; margin:0 auto; padding:90px 16px 40px; }
+    .sepl-wrap { max-width:720px; margin:0 auto; padding:90px 16px 60px; }
     .sepl-card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:20px; margin-bottom:14px; }
     .sepl-h { font-family:var(--font-heading); font-weight:700; color:var(--green-dark); margin-bottom:10px; }
     .h1 { font-size:22px; } .h2 { font-size:16px; margin-top:8px; }
     label { display:block; font-size:13px; margin-bottom:6px; color:var(--brown); }
+    label .req { color:#c00; margin-left:2px; }
     input, select, textarea { width:100%; padding:11px; border:1px solid var(--light-gray); border-radius:8px; font-size:15px; margin-bottom:12px; font-family:var(--font-body); background:var(--white); }
+    input:invalid:not(:placeholder-shown) { border-color:#c00; }
     button { padding:12px 18px; background:var(--green-primary); color:var(--white); border:none; border-radius:8px; font-size:14px; cursor:pointer; font-family:var(--font-body); }
     button.small { padding:8px 12px; font-size:13px; }
     button.secondary { background:var(--button-dark); }
+    button.danger { background:#c0392b; }
+    button[disabled] { opacity:.55; cursor:not-allowed; }
     .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .row3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
     .calc { background:var(--cream); padding:16px; border-radius:8px; }
     .calc-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--light-gray); font-size:14px; }
+    .calc-row:last-child { border-bottom:0; }
     .calc-row b { font-family:var(--font-heading); color:var(--green-dark); }
     .nav-sub { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; font-size:13px; }
     .nav-sub a { color:var(--green-dark); text-decoration:underline; }
+    .nav-sub a.active { font-weight:600; text-decoration:none; }
     .ok { color:var(--green-dark); font-weight:500; } .err { color:#b33; }
     .hidden { display:none; }
-    @media (max-width:500px) { .row { grid-template-columns:1fr; } }
+    .pf-line { display:flex; gap:8px; align-items:center; font-size:12px; color:var(--tan); margin-bottom:8px; flex-wrap:wrap; }
+    .pf-line input { width:64px; padding:5px 7px; margin:0; font-size:12px; }
+    .commit-warning { background:#fff3cd; border:1px solid #ffe69c; color:#7a5b00; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:10px; }
+    .photo-preview { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
+    .photo-preview img { width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid var(--light-gray); }
+    .rate-banner { background:var(--green-dark); color:#fff; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:13px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+    .rate-banner b { font-size:16px; }
+    .rate-banner button { background:#fff; color:var(--green-dark); padding:6px 12px; font-size:12px; }
+    .sample-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .sample-grid .full { grid-column:1 / -1; }
+    .sum-check { font-size:12px; padding:6px 10px; border-radius:6px; margin-bottom:12px; }
+    .sum-check.ok { background:#d7ecd9; color:#1b5e20; }
+    .sum-check.err { background:#f8d7da; color:#721c24; }
+    @media (max-width:540px) { .row, .row3, .sample-grid { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -34,41 +54,84 @@
   </div></nav>
   <div class="sepl-wrap">
     <div class="nav-sub">
-      <a href="intake.html">Intake</a> ·
+      <a href="intake.html" class="active">Intake</a> ·
       <a href="portfolio.html">Portfolio</a> ·
       <a href="daily-price.html">Daily price</a> ·
       <a href="settings.html">Settings</a> ·
       <a href="https://deepak-finance-tracker.vercel.app" target="_blank" rel="noopener">Finance Tracker</a> ·
       <a href="#" id="logout">Logout</a>
     </div>
+
     <div class="sepl-card">
       <div class="sepl-h h1">New intake</div>
       <div id="who" style="font-size:13px; color:var(--tan); margin-bottom:10px;"></div>
 
+      <div id="rateBanner" class="rate-banner">
+        <div>Cardamom Avg Rate <span id="rateMeta" style="font-size:11px; opacity:.85; display:block;">loading…</span></div>
+        <div><b id="rateValue">—</b>/kg</div>
+        <button id="refreshRate" type="button">Refresh now</button>
+      </div>
+
+      <!-- 1. INTAKE DETAILS (first, per Edwin) -->
       <div class="sepl-h h2">1. Intake details</div>
       <div class="row">
-        <div><label>Net weight (kg) — min 250</label><input id="netWeightKg" type="number" step="0.01" min="250"></div>
-        <div><label>Benchmark price (Rs/kg)</label><input id="benchmarkPricePerKg" type="number" step="0.01"></div>
-        <div><label>Depot</label><select id="depot"><option>Kumily</option><option>Kollaparachal</option></select></div>
-        <div><label>Sample collected (g)</label><input id="sampleGrams" type="number" step="1" value="100"></div>
+        <div>
+          <label>Net weight (kg) <span class="req">*</span> <span style="color:var(--tan); font-size:11px;">(min 250)</span></label>
+          <input id="netWeightKg" type="number" step="0.01" min="250" required>
+        </div>
+        <div>
+          <label>Depot <span class="req">*</span></label>
+          <select id="depot" required><option>Kumily</option><option>Kollaparachal</option></select>
+        </div>
       </div>
-      <label>Grade notes</label>
-      <textarea id="gradeNotes" rows="2"></textarea>
 
-      <div class="sepl-h h2">Live calc</div>
+      <div class="sepl-h h2" style="font-size:14px; margin-top:14px;">Sample test (grams)</div>
+      <div class="sample-grid">
+        <div>
+          <label>Total sample tested (g) <span class="req">*</span></label>
+          <input id="s_total" type="number" step="1" min="1" required>
+        </div>
+        <div>
+          <label>8mm Bold (g) <span class="req">*</span></label>
+          <input id="s_bold" type="number" step="1" min="0" required>
+        </div>
+        <div>
+          <label>7-8mm (g) <span class="req">*</span></label>
+          <input id="s_mid" type="number" step="1" min="0" required>
+        </div>
+        <div>
+          <label>Rejection (g) <span class="req">*</span></label>
+          <input id="s_rej" type="number" step="1" min="0" required>
+        </div>
+      </div>
+      <div id="sumCheck" class="sum-check" style="display:none;"></div>
+
+      <div class="pf-line">
+        <span>Price factors (overridable):</span>
+        <span>8mm <input id="pf_bold" type="number" step="0.01" value="1.15"></span>
+        <span>7-8mm <input id="pf_mid" type="number" step="0.01" value="1.05"></span>
+        <span>Rej <input id="pf_rej" type="number" step="0.01" value="0.80"></span>
+      </div>
+
+      <label>Sample photo (optional — camera or gallery)</label>
+      <input id="samplePhoto" type="file" accept="image/*" capture="environment">
+      <div id="photoPreview" class="photo-preview"></div>
+
+      <div class="sepl-h h2" style="margin-top:14px;">Advance Value Calculation</div>
       <div class="calc">
+        <div class="calc-row"><span>Weighted benchmark price</span><b id="c_weighted">—</b></div>
         <div class="calc-row"><span>Gross stock value</span><b id="c_gross">₹0</b></div>
         <div class="calc-row"><span>Advance offer (65%)</span><b id="c_adv">₹0</b></div>
-        <div class="calc-row"><span>Daily holding charge (21% p.a.)</span><b id="c_daily">₹0</b></div>
-        <div class="calc-row"><span>Expected exit (90d)</span><b id="c_exit">—</b></div>
-        <div class="calc-row"><span>Max exit (120d)</span><b id="c_max">—</b></div>
+        <div class="calc-row"><span>Daily charge (₹60 per ₹1L of Advance availed)</span><b id="c_daily">₹0</b></div>
+        <div class="calc-row"><span>Expected exit (90 days)</span><b id="c_exit">—</b></div>
       </div>
 
-      <div class="sepl-h h2">2. Client</div>
+      <!-- 2. CLIENT (second, per Edwin: only collect after intake details discussed) -->
+      <div class="sepl-h h2" style="margin-top:18px;">2. Client details</div>
       <div class="row">
         <div>
-          <label>Select client</label>
-          <select id="consignorId"><option value="">— choose —</option></select>
+          <label>Select existing client</label>
+          <select id="clientId"><option value="">— choose —</option></select>
         </div>
         <div style="display:flex; align-items:flex-end;">
           <button class="small secondary" id="toggleNew" type="button">+ New client</button>
@@ -77,30 +140,57 @@
 
       <div id="newForm" class="hidden" style="background:var(--cream); padding:14px; border-radius:8px; margin-bottom:12px;">
         <div class="row">
-          <div><label>Name</label><input id="n_name"></div>
-          <div><label>Type</label><select id="n_type"><option>Planter</option><option>Trader</option></select></div>
-          <div><label>PAN</label><input id="n_pan"></div>
-          <div><label>Aadhaar</label><input id="n_aadhaar" inputmode="numeric" maxlength="14"></div>
-          <div><label>Spices Board Reg</label><input id="n_sb"></div>
-          <div><label>GST Reg (required for Trader)</label><input id="n_gst"></div>
-          <div><label>Bank A/C</label><input id="n_bank"></div>
-          <div><label>IFSC</label><input id="n_ifsc"></div>
-          <div><label>Phone</label><input id="n_phone" type="tel"></div>
-          <div><label>Depot</label><select id="n_depot"><option>Kumily</option><option>Kollaparachal</option></select></div>
-          <div><label>Max Exposure (Rs)</label><input id="n_max" type="number"></div>
-          <div><label>Holding rate (p.a.)</label>
-            <select id="n_rate">
-              <option value="0.18">18% — low risk</option>
-              <option value="0.21" selected>21% — standard</option>
-              <option value="0.24">24% — high risk</option>
+          <div>
+            <label>Name <span class="req">*</span></label>
+            <input id="n_name" required>
+          </div>
+          <div>
+            <label>Type <span class="req">*</span></label>
+            <select id="n_type" required>
+              <option value="Planter">Planter</option>
+              <option value="SBL Dealer">SBL Dealer</option>
+              <option value="GST-only Trader">GST-only Trader</option>
             </select>
+          </div>
+          <div id="panWrap">
+            <label>PAN <span class="req">*</span></label>
+            <input id="n_pan" placeholder="ABCDE1234F" required>
+          </div>
+          <div id="gstWrap" class="hidden">
+            <label>GST <span class="req">*</span></label>
+            <input id="n_gst" placeholder="22ABCDE1234F1Z5">
+          </div>
+          <div>
+            <label>Bank A/C <span class="req">*</span></label>
+            <input id="n_bank" required>
+          </div>
+          <div>
+            <label>IFSC <span class="req">*</span></label>
+            <input id="n_ifsc" required>
+          </div>
+          <div>
+            <label>Phone <span class="req">*</span></label>
+            <input id="n_phone" type="tel" placeholder="+91…" required>
+          </div>
+          <div>
+            <label>Depot <span class="req">*</span></label>
+            <select id="n_depot" required><option>Kumily</option><option>Kollaparachal</option></select>
+          </div>
+          <div class="row" style="grid-column:1 / -1;">
+            <div>
+              <label>Spices Board Reg / CR / SBL <span style="color:var(--tan); font-size:11px;">(optional)</span></label>
+              <input id="n_sb">
+            </div>
+            <div></div>
           </div>
         </div>
         <button id="saveNew" type="button">Save client</button>
         <span id="newMsg" style="margin-left:10px; font-size:13px;"></span>
       </div>
 
-      <div style="margin-top:14px;">
+      <!-- 3. CREATE INTAKE -->
+      <div class="commit-warning"><b>⚠ Only click "Create intake" after the client has committed to the intake.</b> This action records the position and calculates accruing daily charges from today.</div>
+      <div style="margin-top:8px;">
         <button id="submit">Create intake</button>
         <span id="subMsg" style="margin-left:10px; font-size:13px;"></span>
       </div>
@@ -110,6 +200,7 @@
       <div class="sepl-h h2">Intake created</div>
       <div id="confirmBody"></div>
       <button id="sendAgreement" style="margin-top:10px;">Send agreement to client WhatsApp</button>
+      <a id="viewAgreement" style="margin-left:8px; font-size:13px;" href="#" target="_blank">View PDF</a>
       <span id="agreeMsg" style="margin-left:10px; font-size:13px;"></span>
     </div>
   </div>
@@ -122,91 +213,272 @@
   $('logout').onclick = (e) => { e.preventDefault(); sessionStorage.clear(); location.href='login.html'; };
 
   const hdr = { 'Content-Type':'application/json', 'Authorization':'Bearer '+token };
+  const inr = n => '₹' + Number(n||0).toLocaleString('en-IN', { maximumFractionDigits:2 });
+  const inrInt = n => '₹' + Number(n||0).toLocaleString('en-IN', { maximumFractionDigits:0 });
 
-  async function loadConsignors() {
+  // pretty date e.g. "24 April 2026"
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+  }
+  function addDays(n) {
+    const d = new Date(); d.setDate(d.getDate()+n);
+    return d.toISOString().slice(0,10);
+  }
+
+  // ---------- cardamom rate ----------
+  let cardamomRate = null;
+
+  async function loadRate(forceRefresh = false) {
+    $('rateMeta').textContent = forceRefresh ? 'refreshing…' : 'loading…';
+    try {
+      const url = '/api/sepl/daily-price?resource=cardamom-rate' + (forceRefresh ? '&refresh=1' : '');
+      const r = await fetch(url, { headers: hdr });
+      const d = await r.json();
+      if (d && d.rate) {
+        cardamomRate = Number(d.rate.pricePerKg) || 0;
+        $('rateValue').textContent = inr(cardamomRate);
+        const src = d.rate.source || 'manual';
+        const date = d.rate.date || '';
+        $('rateMeta').textContent = `${src} · ${fmtDate(date)}` + (d.rate.cached ? ' (cached)' : '');
+      } else {
+        cardamomRate = 0;
+        $('rateValue').textContent = '—';
+        $('rateMeta').textContent = 'no rate yet — set on Daily price tab';
+      }
+    } catch (e) {
+      $('rateMeta').textContent = 'error: ' + e.message;
+    }
+    calc();
+  }
+  $('refreshRate').onclick = () => loadRate(true);
+
+  // ---------- clients ----------
+  async function loadClients() {
     const r = await fetch('/api/sepl/consignors', { headers: hdr });
     const d = await r.json();
-    const sel = $('consignorId'); sel.innerHTML = '<option value="">— choose —</option>';
+    const sel = $('clientId'); sel.innerHTML = '<option value="">— choose —</option>';
     (d.consignors||[]).forEach(c => {
       const o = document.createElement('option'); o.value = c.consignorId;
       o.textContent = c.consignorId + ' · ' + c.name + ' (' + c.type + ')';
       sel.appendChild(o);
     });
   }
-  loadConsignors();
+  loadClients();
+  loadRate(false);
 
   $('toggleNew').onclick = () => $('newForm').classList.toggle('hidden');
+
+  // Conditional PAN vs GST visibility
+  function syncTypeFields() {
+    const t = $('n_type').value;
+    if (t === 'Planter') {
+      $('panWrap').classList.remove('hidden');
+      $('gstWrap').classList.add('hidden');
+      $('n_pan').required = true;
+      $('n_gst').required = false;
+    } else {
+      $('panWrap').classList.add('hidden');
+      $('gstWrap').classList.remove('hidden');
+      $('n_pan').required = false;
+      $('n_gst').required = true;
+    }
+  }
+  $('n_type').addEventListener('change', syncTypeFields);
+  syncTypeFields();
+
   $('saveNew').onclick = async () => {
-    if ($('n_type').value === 'Trader' && !$('n_gst').value.trim()) {
-      $('newMsg').innerHTML = '<span class="err">GST registration is required for Trader type</span>';
-      return;
+    const t = $('n_type').value;
+    // mandatory checks
+    const required = ['n_name','n_bank','n_ifsc','n_phone','n_depot'];
+    for (const id of required) {
+      if (!$(id).value.trim()) { $('newMsg').innerHTML = '<span class="err">Fill all mandatory fields</span>'; return; }
+    }
+    if (t === 'Planter' && !$('n_pan').value.trim()) {
+      $('newMsg').innerHTML = '<span class="err">PAN is required for Planter</span>'; return;
+    }
+    if ((t === 'SBL Dealer' || t === 'GST-only Trader') && !$('n_gst').value.trim()) {
+      $('newMsg').innerHTML = '<span class="err">GST is required for ' + t + '</span>'; return;
     }
     const body = {
-      name: $('n_name').value, type: $('n_type').value, pan: $('n_pan').value,
-      aadhaar: $('n_aadhaar').value, gstReg: $('n_gst').value,
-      spicesBoardReg: $('n_sb').value, bankAccount: $('n_bank').value, ifsc: $('n_ifsc').value,
-      phone: $('n_phone').value, depot: $('n_depot').value,
-      maxExposure: Number($('n_max').value)||0, rateAssigned: Number($('n_rate').value)||0.21
+      name: $('n_name').value, type: t,
+      pan: $('n_pan').value, gstReg: $('n_gst').value,
+      spicesBoardReg: $('n_sb').value,
+      bankAccount: $('n_bank').value, ifsc: $('n_ifsc').value,
+      phone: $('n_phone').value, depot: $('n_depot').value
     };
     const r = await fetch('/api/sepl/consignors', { method:'POST', headers: hdr, body: JSON.stringify(body) });
     const d = await r.json();
     if (!r.ok) { $('newMsg').innerHTML = '<span class="err">'+d.error+'</span>'; return; }
     $('newMsg').innerHTML = '<span class="ok">Saved '+d.consignor.consignorId+'</span>';
-    await loadConsignors();
-    $('consignorId').value = d.consignor.consignorId;
+    await loadClients();
+    $('clientId').value = d.consignor.consignorId;
     $('newForm').classList.add('hidden');
   };
 
+  // ---------- sample sum + weighted price ----------
+  function sampleStats() {
+    const total = Number($('s_total').value)||0;
+    const bold = Number($('s_bold').value)||0;
+    const mid = Number($('s_mid').value)||0;
+    const rej = Number($('s_rej').value)||0;
+    const sum = bold + mid + rej;
+    let validity = '';
+    if (total === 0 && sum === 0) {
+      $('sumCheck').style.display = 'none';
+    } else if (sum !== total) {
+      $('sumCheck').style.display = 'block';
+      $('sumCheck').className = 'sum-check err';
+      $('sumCheck').textContent = `Grades sum to ${sum} g but total tested is ${total} g — must match.`;
+      validity = 'mismatch';
+    } else if (total > 0) {
+      $('sumCheck').style.display = 'block';
+      $('sumCheck').className = 'sum-check ok';
+      const pBold = (bold/total*100).toFixed(1), pMid = (mid/total*100).toFixed(1), pRej = (rej/total*100).toFixed(1);
+      $('sumCheck').textContent = `OK — 8mm ${pBold}% · 7-8mm ${pMid}% · Rej ${pRej}%`;
+    }
+    return { total, bold, mid, rej, valid: validity === '' && total > 0 && sum === total,
+             pBold: total ? bold/total : 0, pMid: total ? mid/total : 0, pRej: total ? rej/total : 0 };
+  }
+
+  function weightedBenchmark(stats) {
+    if (!stats.valid || !cardamomRate) return 0;
+    const pf_bold = Number($('pf_bold').value)||1.15;
+    const pf_mid = Number($('pf_mid').value)||1.05;
+    const pf_rej = Number($('pf_rej').value)||0.80;
+    return cardamomRate * (stats.pBold*pf_bold + stats.pMid*pf_mid + stats.pRej*pf_rej);
+  }
+
   function calc() {
     const w = Number($('netWeightKg').value)||0;
-    const p = Number($('benchmarkPricePerKg').value)||0;
-    const gross = w*p;
+    const stats = sampleStats();
+    const wb = weightedBenchmark(stats);
+    const gross = w*wb;
     const adv = gross*0.65;
-    const daily = adv*0.21/365;
-    const inr = n => '₹'+n.toLocaleString('en-IN',{maximumFractionDigits:2});
-    $('c_gross').textContent = inr(gross);
-    $('c_adv').textContent = inr(adv);
-    $('c_daily').textContent = inr(daily);
-    const d = new Date(); const e = new Date(); e.setDate(d.getDate()+90);
-    const m = new Date(); m.setDate(d.getDate()+120);
-    $('c_exit').textContent = e.toISOString().slice(0,10);
-    $('c_max').textContent = m.toISOString().slice(0,10);
-  }
-  ['netWeightKg','benchmarkPricePerKg'].forEach(id => $(id).addEventListener('input', calc));
+    // ₹60 per ₹1,00,000 advance per day (Edwin's rule, ≈21.9% p.a.)
+    const daily = adv * 60 / 100000;
 
+    $('c_weighted').textContent = wb ? inr(wb) : '—';
+    $('c_gross').textContent = inrInt(gross);
+    $('c_adv').textContent = inrInt(adv);
+    $('c_daily').textContent = inr(daily);
+    $('c_exit').textContent = fmtDate(addDays(90));
+  }
+  ['netWeightKg','s_total','s_bold','s_mid','s_rej','pf_bold','pf_mid','pf_rej'].forEach(id => {
+    $(id).addEventListener('input', calc);
+  });
+
+  // ---------- photo preview ----------
+  let samplePhotoFile = null;
+  $('samplePhoto').addEventListener('change', (e) => {
+    samplePhotoFile = e.target.files[0] || null;
+    const wrap = $('photoPreview'); wrap.innerHTML = '';
+    if (!samplePhotoFile) return;
+    const url = URL.createObjectURL(samplePhotoFile);
+    const img = document.createElement('img'); img.src = url;
+    wrap.appendChild(img);
+  });
+
+  // ---------- submit intake ----------
   let lastTxn = null;
+  async function uploadSamplePhoto() {
+    if (!samplePhotoFile) return null;
+    // Resize to max 1600px on long edge to keep payload small (iPhone photos can be 4-8 MB)
+    const dataUrl = await resizeImage(samplePhotoFile, 1600, 0.85);
+    const base64 = dataUrl.split(',')[1];
+    const r = await fetch('/api/sepl/transactions?resource=upload-blob', {
+      method:'POST', headers: hdr,
+      body: JSON.stringify({ filename: samplePhotoFile.name, contentType: 'image/jpeg', base64 })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'upload failed');
+    return d.url;
+  }
+
+  async function resizeImage(file, maxEdge, quality) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = () => { img.src = reader.result; };
+      reader.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   $('submit').onclick = async () => {
+    const stats = sampleStats();
+    if (!stats.valid) { $('subMsg').innerHTML = '<span class="err">Fix sample grams (must sum to total)</span>'; return; }
+    if (!$('netWeightKg').value || Number($('netWeightKg').value) < 250) {
+      $('subMsg').innerHTML = '<span class="err">Net weight ≥ 250 kg required</span>'; return;
+    }
+    if (!$('clientId').value) { $('subMsg').innerHTML = '<span class="err">Pick a client (or save a new one)</span>'; return; }
+    if (!cardamomRate) { $('subMsg').innerHTML = '<span class="err">Cardamom rate not set — save on Daily price tab</span>'; return; }
+
+    $('submit').disabled = true;
+    $('subMsg').textContent = 'Submitting…';
+
+    let photoUrl = null;
+    try { photoUrl = await uploadSamplePhoto(); }
+    catch (e) { $('subMsg').innerHTML = '<span class="err">Photo upload failed: ' + e.message + '</span>'; $('submit').disabled = false; return; }
+
+    const wb = weightedBenchmark(stats);
     const body = {
-      consignorId: $('consignorId').value,
+      consignorId: $('clientId').value,
       netWeightKg: Number($('netWeightKg').value),
-      benchmarkPricePerKg: Number($('benchmarkPricePerKg').value),
-      gradeNotes: $('gradeNotes').value,
-      sampleGrams: Number($('sampleGrams').value)||100,
-      depot: $('depot').value
+      benchmarkPricePerKg: wb,
+      cardamomRate: cardamomRate,
+      depot: $('depot').value,
+      sample: {
+        totalG: stats.total, bold8mmG: stats.bold, mid7to8G: stats.mid, rejectionG: stats.rej,
+        pctBold: stats.pBold, pctMid: stats.pMid, pctRej: stats.pRej
+      },
+      priceFactors: {
+        bold: Number($('pf_bold').value)||1.15,
+        mid: Number($('pf_mid').value)||1.05,
+        rej: Number($('pf_rej').value)||0.80
+      },
+      samplePhotoUrl: photoUrl
     };
-    if (!body.consignorId) { $('subMsg').innerHTML='<span class="err">Pick a client</span>'; return; }
-    if (!body.netWeightKg || body.netWeightKg < 250) { $('subMsg').innerHTML='<span class="err">Minimum lot is 250 kg</span>'; return; }
     const r = await fetch('/api/sepl/transactions', { method:'POST', headers:hdr, body:JSON.stringify(body) });
     const d = await r.json();
+    $('submit').disabled = false;
     if (!r.ok) { $('subMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }
     lastTxn = d.transaction;
     const t = d.transaction;
     $('confirm').classList.remove('hidden');
     $('confirmBody').innerHTML =
       '<div><b>'+t.txnId+'</b> · '+t.consignorName+' · '+t.depot+'</div>'+
-      '<div>Weight: '+t.netWeightKg+'kg · Advance: ₹'+t.advanceAmount.toLocaleString('en-IN')+' · Daily ₹'+t.dailyHoldingCharge.toFixed(2)+'</div>'+
-      '<div>Exit: '+t.expectedExitDate+'</div>';
+      '<div>Weight: '+t.netWeightKg+' kg · Advance: '+inrInt(t.advanceAmount)+' · Daily charge: '+inr(t.dailyHoldingCharge)+'</div>'+
+      '<div>Expected exit: '+fmtDate(t.expectedExitDate)+'</div>';
+    $('viewAgreement').href = '/api/sepl/agreement-pdf?txnId='+encodeURIComponent(t.txnId)+'&inline=1';
     $('subMsg').innerHTML = '<span class="ok">Created '+t.txnId+'</span>';
+    window.scrollTo({ top: $('confirm').offsetTop - 80, behavior: 'smooth' });
   };
 
   $('sendAgreement').onclick = async () => {
     if (!lastTxn) return;
-    $('agreeMsg').textContent = 'Generating…';
+    $('agreeMsg').textContent = 'Sending…';
     const r = await fetch('/api/sepl/agreement-pdf', { method:'POST', headers:hdr, body: JSON.stringify({ txnId: lastTxn.txnId }) });
     const d = await r.json();
     if (!r.ok) { $('agreeMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }
-    $('agreeMsg').innerHTML = '<span class="ok">Sent ✓ (WhatsApp stubbed — payload saved to outbox)</span>';
+    const wa = d.whatsapp;
+    if (wa && wa.ok && !wa.stubbed) $('agreeMsg').innerHTML = '<span class="ok">Sent on WhatsApp ✓</span>';
+    else if (wa && wa.stubbed) $('agreeMsg').innerHTML = '<span class="err">WhatsApp bridge offline — saved to outbox</span>';
+    else $('agreeMsg').innerHTML = '<span class="err">Send issue: ' + (wa?.error || 'unknown') + '</span>';
   };
+
+  // initial calc render
+  calc();
 </script>
 </body>
 </html>

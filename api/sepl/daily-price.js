@@ -5,7 +5,7 @@ const DEFAULTS = require('./_settings');
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
@@ -89,6 +89,164 @@ async function handleSettings(req, res) {
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
+// ---------- cardamom rate scrape (Spices Board daily price page) ----------
+
+const CARDAMOM_URL = 'https://www.indianspices.com/marketing/price/domestic/daily-price-small.html';
+const CACHE_PATH = 'sepl-cardamom-rate/latest.json';
+const OVERRIDE_PATH = 'sepl-cardamom-rate/override.json';
+const CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+async function readBlobJson(pathname) {
+  try {
+    const { blobs } = await list({ prefix: pathname });
+    const match = blobs.find(b => b.pathname === pathname);
+    if (!match) return null;
+    const r = await fetch(match.url);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (_) { return null; }
+}
+
+async function writeBlobJson(pathname, data) {
+  return put(pathname, JSON.stringify(data), {
+    access: 'public', contentType: 'application/json', addRandomSuffix: false, cacheControlMaxAge: 0
+  });
+}
+
+async function scrapeCardamomRate() {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 10000);
+  let html;
+  try {
+    const r = await fetch(CARDAMOM_URL, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SpicemoreCardamomBot/1.0)' },
+      signal: ctrl.signal
+    });
+    if (!r.ok) throw new Error(`fetch failed ${r.status}`);
+    html = await r.text();
+  } finally { clearTimeout(t); }
+
+  // Strip tags into rough rows. Split by </tr> to keep row context.
+  const rowChunks = html.split(/<\/tr>/i);
+  const candidates = [];
+  for (const chunk of rowChunks) {
+    const text = chunk.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const lower = text.toLowerCase();
+    if (!lower.includes('cardamom') || !lower.includes('small')) continue;
+
+    const dateMatches = text.match(/\b(\d{2}[-/]\d{2}[-/]\d{4}|\d{4}-\d{2}-\d{2})\b/g) || [];
+    const numMatches = (text.match(/\b(\d{3,5}(?:\.\d{1,2})?)\b/g) || [])
+      .map(Number)
+      .filter(n => n >= 500 && n <= 10000);
+
+    if (dateMatches.length && numMatches.length) {
+      // Pair the first (likely-only) date in this row with the largest plausible price.
+      const price = numMatches[numMatches.length - 1];
+      candidates.push({ date: dateMatches[0], price });
+    }
+  }
+
+  if (!candidates.length) throw new Error('parse failed');
+
+  // Normalise dates to comparable ISO-ish keys for sorting
+  const toKey = (d) => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+    const m = d.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+    return d;
+  };
+  candidates.sort((a, b) => toKey(b.date).localeCompare(toKey(a.date)));
+
+  const top = candidates.slice(0, 2);
+  const avg = top.reduce((s, c) => s + c.price, 0) / top.length;
+  const latestDate = top[0].date;
+
+  return {
+    pricePerKg: Number(avg.toFixed(2)),
+    date: latestDate,
+    source: 'Spices Board e-auction (avg of 2 prior-day auctions)',
+    raw: { auctions: top }
+  };
+}
+
+async function handleCardamomRate(req, res) {
+  if (req.method === 'GET') {
+    const forceRefresh = req.query?.refresh === '1' || req.query?.refresh === 1;
+    const cache = await readBlobJson(CACHE_PATH);
+    const cacheAge = cache?.scrapedAt ? Date.now() - new Date(cache.scrapedAt).getTime() : Infinity;
+
+    if (cache && cacheAge < CACHE_MAX_AGE_MS && !forceRefresh) {
+      return res.status(200).json({ rate: { ...cache, cached: true } });
+    }
+
+    try {
+      const scraped = await scrapeCardamomRate();
+      const record = { ...scraped, scrapedAt: new Date().toISOString() };
+      await writeBlobJson(CACHE_PATH, record);
+      return res.status(200).json({ rate: { ...record, cached: false } });
+    } catch (e) {
+      console.error('cardamom scrape failed', e);
+      const override = await readBlobJson(OVERRIDE_PATH);
+      if (override && typeof override.pricePerKg === 'number') {
+        return res.status(200).json({
+          rate: {
+            pricePerKg: override.pricePerKg,
+            date: (override.at || '').slice(0, 10),
+            source: 'manual override',
+            cached: false,
+            scrapedAt: override.at,
+            raw: { override }
+          },
+          error: e.message
+        });
+      }
+      if (cache) {
+        return res.status(200).json({
+          rate: {
+            ...cache,
+            source: `${cache.source || 'cached'} (stale)`,
+            cached: true
+          },
+          error: e.message
+        });
+      }
+      return res.status(200).json({ rate: null, error: e.message });
+    }
+  }
+
+  if (req.method === 'POST') {
+    let session;
+    try { session = verifyToken(req); } catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
+    if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
+
+    const { pricePerKg, note } = req.body || {};
+    if (!pricePerKg || isNaN(Number(pricePerKg))) {
+      return res.status(400).json({ error: 'pricePerKg (number) required' });
+    }
+    const override = {
+      pricePerKg: Number(pricePerKg),
+      note: note || '',
+      by: { name: session.name, phone: session.phone },
+      at: new Date().toISOString()
+    };
+    await writeBlobJson(OVERRIDE_PATH, override);
+    return res.status(200).json({ override });
+  }
+
+  if (req.method === 'DELETE') {
+    let session;
+    try { session = verifyToken(req); } catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
+    if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
+
+    try {
+      await writeBlobJson(OVERRIDE_PATH, { cleared: true, at: new Date().toISOString(), by: { name: session.name, phone: session.phone } });
+    } catch (_) {}
+    return res.status(200).json({ cleared: true });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
 // ---------- main handler: price by default, settings when ?resource=settings ----------
 
 module.exports = async function handler(req, res) {
@@ -97,6 +255,7 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.query?.resource === 'settings') return handleSettings(req, res);
+    if (req.query?.resource === 'cardamom-rate') return handleCardamomRate(req, res);
 
     if (req.method === 'POST') {
       let session;

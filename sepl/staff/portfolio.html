@@ -33,12 +33,36 @@
     .ltv.forced { background:#d00; color:#fff; }
     .filter-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; font-size:13px; }
     .filter-row input, .filter-row select { padding:6px 10px; border:1px solid var(--light-gray); border-radius:6px; font:inherit; }
-    .price-banner { display:flex; justify-content:space-between; align-items:center; background:var(--green-dark); color:#fff; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:13px; }
+    .price-banner { display:flex; justify-content:space-between; align-items:center; background:var(--green-dark); color:#fff; padding:10px 14px; border-radius:8px; margin-bottom:10px; font-size:13px; }
     .price-banner b { font-size:16px; }
     details { margin-top:4px; }
     summary { cursor:pointer; color:var(--green-dark); font-size:11px; }
     .accrual-tbl { font-size:11px; margin-top:8px; }
     .accrual-tbl th,.accrual-tbl td { padding:4px 6px; }
+    .pf-panel { display:flex; gap:14px; align-items:center; flex-wrap:wrap; background:var(--cream); border:1px solid var(--light-gray); border-radius:8px; padding:8px 12px; margin-bottom:14px; font-size:12px; }
+    .pf-panel .pf-title { font-weight:600; color:var(--green-dark); }
+    .pf-panel label { display:flex; align-items:center; gap:6px; color:var(--tan); }
+    .pf-panel input { width:64px; padding:4px 6px; border:1px solid var(--light-gray); border-radius:5px; font:inherit; text-align:right; }
+    .pf-panel button { background:transparent; border:1px solid var(--light-gray); border-radius:5px; padding:3px 8px; font-size:11px; cursor:pointer; color:var(--tan); }
+    .pf-panel button:hover { color:var(--green-dark); border-color:var(--green-dark); }
+    .client-link { color:var(--green-dark); text-decoration:underline; cursor:pointer; background:none; border:none; padding:0; font:inherit; }
+    .client-link:hover { color:#000; }
+    .drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:999; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .drawer-overlay.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; top:0; right:0; height:100vh; width:380px; max-width:100vw; background:#fff; box-shadow:-4px 0 18px rgba(0,0,0,0.18); z-index:1000; transform:translateX(100%); transition:transform .25s ease; overflow-y:auto; padding:20px 22px 30px; }
+    .drawer.open { transform:translateX(0); }
+    .drawer .close { position:absolute; top:10px; right:14px; background:none; border:none; font-size:24px; cursor:pointer; color:var(--tan); line-height:1; }
+    .drawer .close:hover { color:#000; }
+    .drawer h2 { font-family:var(--font-heading); font-weight:700; color:var(--green-dark); font-size:18px; margin:0 0 4px; padding-right:24px; }
+    .drawer .meta { color:var(--tan); font-size:12px; margin-bottom:14px; }
+    .drawer dl { display:grid; grid-template-columns:110px 1fr; gap:6px 10px; font-size:13px; margin:0 0 16px; }
+    .drawer dt { color:var(--tan); font-size:11px; text-transform:uppercase; letter-spacing:.4px; align-self:center; }
+    .drawer dd { margin:0; color:#222; word-break:break-word; }
+    .drawer h3 { font-size:13px; font-weight:600; color:var(--green-dark); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.5px; }
+    .drawer .txn-list { font-size:12px; }
+    .drawer .txn-list .row { padding:6px 0; border-bottom:1px solid var(--light-gray); display:flex; justify-content:space-between; gap:8px; }
+    .drawer .txn-list .row:last-child { border-bottom:none; }
+    @media (max-width:480px) { .drawer { width:100vw; } }
   </style>
 </head>
 <body>
@@ -56,8 +80,15 @@
 
     <div class="card">
       <div class="h1">Portfolio Dashboard</div>
-      <div class="sub">Live margin monitor across all active consignments. LTV uses today's Spices Board price.</div>
+      <div class="sub">Live margin monitor across all active client positions. LTV uses today's Spices Board price.</div>
       <div id="priceBanner" class="price-banner" style="display:none;"></div>
+      <div class="pf-panel" id="pfPanel">
+        <span class="pf-title">Price Factor:</span>
+        <label>8mm Bold <input type="number" id="pfBold" step="0.01" min="0"></label>
+        <label>7-8mm <input type="number" id="pfMid" step="0.01" min="0"></label>
+        <label>Rejection <input type="number" id="pfRej" step="0.01" min="0"></label>
+        <button type="button" id="pfReset" title="Reset to defaults">Reset</button>
+      </div>
       <div class="kpi-grid" id="kpis">
         <div class="kpi"><div class="lbl">Loading…</div></div>
       </div>
@@ -107,6 +138,12 @@
     </div>
   </div>
 
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="clientDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerName">
+    <button type="button" class="close" id="drawerClose" aria-label="Close">&times;</button>
+    <div id="drawerBody"><div class="meta">Loading…</div></div>
+  </aside>
+
 <script>
   const token = sessionStorage.sepl_token;
   if (!token || sessionStorage.sepl_role !== 'staff') location.href = 'login.html';
@@ -116,6 +153,23 @@
   const pct = n => (n * 100).toFixed(1) + '%';
   const today = () => new Date().toISOString().slice(0, 10);
   const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+  const fmtDate = d => {
+    if (!d) return '';
+    const dt = new Date(d);
+    if (isNaN(dt)) return d;
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  const PF_KEY = 'sepl_price_factors_v1';
+  const PF_DEFAULTS = { bold: 1.15, mid: 1.05, rej: 0.80 };
+  function loadPF() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(PF_KEY) || 'null');
+      if (raw && typeof raw === 'object') return { ...PF_DEFAULTS, ...raw };
+    } catch (e) {}
+    return { ...PF_DEFAULTS };
+  }
+  function savePF(pf) { localStorage.setItem(PF_KEY, JSON.stringify(pf)); }
 
   const LTV = { yellow: 0.75, orange: 0.80, red: 0.85, forced: 0.90 };
   function ltvBand(l) {
@@ -129,28 +183,59 @@
     return ({ green:'GREEN', yellow:'MONITOR', orange:'MARGIN CALL', red:'SELL 48H', forced:'FORCED SALE' })[b];
   }
 
-  let state = { txns: [], price: null, sortK: 'ltv', sortDir: -1 };
+  let state = { txns: [], price: null, sortK: 'ltv', sortDir: -1, pf: loadPF(), consignors: {} };
+
+  async function fetchCardamomRate() {
+    try {
+      const r = await fetch('/api/sepl/daily-price?resource=cardamom-rate', { headers: hdr });
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (j && j.rate && j.rate.pricePerKg != null) {
+        return {
+          pricePerKg: j.rate.pricePerKg,
+          date: j.rate.date,
+          source: j.rate.source || "Spices Board",
+          grade: 'Cardamom Avg',
+          _cardamomAvg: true
+        };
+      }
+    } catch (e) {}
+    return null;
+  }
 
   async function load() {
-    const [tRes, pRes] = await Promise.all([
+    const [tRes, cardamom] = await Promise.all([
       fetch('/api/sepl/transactions', { headers: hdr }),
-      fetch('/api/sepl/daily-price', { headers: hdr })
+      fetchCardamomRate()
     ]);
     const tData = await tRes.json();
-    const pData = await pRes.json();
     state.txns = tData.transactions || [];
-    state.price = pData.latest;
+    if (cardamom) {
+      state.price = cardamom;
+    } else {
+      const pRes = await fetch('/api/sepl/daily-price', { headers: hdr });
+      const pData = await pRes.json();
+      state.price = pData.latest;
+    }
     render();
   }
 
   function enrich(t) {
     const days = daysBetween(t.intakeDate, today());
-    const currentPx = state.price ? state.price.pricePerKg : t.benchmarkPricePerKg;
-    const currentStockValue = t.netWeightKg * currentPx;
+    const cardamomRate = state.price ? state.price.pricePerKg : t.benchmarkPricePerKg;
+    const pf = state.pf;
+    let effectivePx = cardamomRate;
+    if (t.sample && (t.sample.pctBold != null || t.sample.pctMid != null || t.sample.pctRej != null)) {
+      const pctBold = Number(t.sample.pctBold || 0);
+      const pctMid = Number(t.sample.pctMid || 0);
+      const pctRej = Number(t.sample.pctRej || 0);
+      effectivePx = cardamomRate * (pctBold * pf.bold + pctMid * pf.mid + pctRej * pf.rej);
+    }
+    const currentStockValue = t.netWeightKg * effectivePx;
     const accruedHolding = t.dailyHoldingCharge * days;
     const ltv = currentStockValue > 0 ? (t.advanceAmount + accruedHolding) / currentStockValue : 0;
     const daysToExit = daysBetween(today(), t.expectedExitDate);
-    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx };
+    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx: effectivePx };
   }
 
   function render() {
@@ -167,7 +252,7 @@
     if (state.price) {
       document.getElementById('priceBanner').style.display = 'flex';
       document.getElementById('priceBanner').innerHTML =
-        `<div>Today's benchmark (${state.price.grade})</div><div><b>${inr2(state.price.pricePerKg)}/kg</b> · ${state.price.source} · ${state.price.date}</div>`;
+        `<div><b>Cardamom Avg Rate</b> <span style="opacity:.85;font-size:11px;">(avg of yesterday's 2 auctions)</span></div><div><b>${inr2(state.price.pricePerKg)}/kg</b> · ${state.price.source || ''} · ${fmtDate(state.price.date)}</div>`;
     }
 
     document.getElementById('kpis').innerHTML = `
@@ -210,9 +295,10 @@
 
     document.getElementById('posBody').innerHTML = rows.map(t => {
       const band = ltvBand(t.ltv);
+      const safeName = String(t.consignorName || '').replace(/"/g, '&quot;');
       return `<tr>
         <td><b>${t.txnId}</b></td>
-        <td>${t.consignorName}</td>
+        <td><button type="button" class="client-link" data-cid="${t.consignorId || ''}">${safeName}</button></td>
         <td>${t.depot}</td>
         <td class="num">${t.netWeightKg.toLocaleString('en-IN')}</td>
         <td class="num">${inr(t.advanceAmount)}</td>
@@ -220,11 +306,18 @@
         <td class="num"><span class="ltv ${band}" title="${ltvLabel(band)}">${pct(t.ltv)}</span></td>
         <td class="num">${t.daysHeld}</td>
         <td class="num">${inr(t.accruedHolding)}</td>
-        <td>${t.expectedExitDate}</td>
+        <td>${fmtDate(t.expectedExitDate)}</td>
         <td class="num" style="color:${t.daysToExit<0?'#c00':t.daysToExit<14?'#b26a00':''}">${t.daysToExit}</td>
         <td>${t.status}</td>
       </tr>`;
     }).join('') || `<tr><td colspan="12" style="color:var(--tan)">No positions.</td></tr>`;
+
+    document.querySelectorAll('#posBody .client-link').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cid = btn.dataset.cid;
+        if (cid) openClientDrawer(cid);
+      });
+    });
   }
 
   function renderAccrual(enriched) {
@@ -288,6 +381,88 @@
   ['activeOnly','ltvFilter','depotFilter','search'].forEach(id => {
     document.getElementById(id).addEventListener(id === 'search' ? 'input' : 'change', render);
   });
+
+  // Price Factor inputs
+  function syncPFInputs() {
+    document.getElementById('pfBold').value = state.pf.bold;
+    document.getElementById('pfMid').value = state.pf.mid;
+    document.getElementById('pfRej').value = state.pf.rej;
+  }
+  function pfChange() {
+    const bold = parseFloat(document.getElementById('pfBold').value);
+    const mid = parseFloat(document.getElementById('pfMid').value);
+    const rej = parseFloat(document.getElementById('pfRej').value);
+    state.pf = {
+      bold: isNaN(bold) ? PF_DEFAULTS.bold : bold,
+      mid: isNaN(mid) ? PF_DEFAULTS.mid : mid,
+      rej: isNaN(rej) ? PF_DEFAULTS.rej : rej
+    };
+    savePF(state.pf);
+    render();
+  }
+  syncPFInputs();
+  ['pfBold','pfMid','pfRej'].forEach(id => {
+    document.getElementById(id).addEventListener('change', pfChange);
+  });
+  document.getElementById('pfReset').addEventListener('click', () => {
+    state.pf = { ...PF_DEFAULTS };
+    savePF(state.pf);
+    syncPFInputs();
+    render();
+  });
+
+  // Client drawer
+  const overlayEl = document.getElementById('drawerOverlay');
+  const drawerEl = document.getElementById('clientDrawer');
+  const drawerBody = document.getElementById('drawerBody');
+  function closeDrawer() {
+    overlayEl.classList.remove('open');
+    drawerEl.classList.remove('open');
+  }
+  document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+  overlayEl.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+  async function openClientDrawer(cid) {
+    overlayEl.classList.add('open');
+    drawerEl.classList.add('open');
+    drawerBody.innerHTML = '<div class="meta">Loading client…</div>';
+    let client = state.consignors[cid];
+    if (!client) {
+      try {
+        const r = await fetch('/api/sepl/consignors?id=' + encodeURIComponent(cid), { headers: hdr });
+        const j = await r.json();
+        client = j.consignor || j.client || (Array.isArray(j.consignors) ? j.consignors[0] : null) || j;
+        if (client) state.consignors[cid] = client;
+      } catch (e) {
+        drawerBody.innerHTML = '<div class="meta" style="color:#c00">Failed to load client.</div>';
+        return;
+      }
+    }
+    if (!client) {
+      drawerBody.innerHTML = '<div class="meta" style="color:#c00">Client not found.</div>';
+      return;
+    }
+    const txns = state.txns.filter(t => t.consignorId === cid && t.status === 'Active');
+    const fld = (label, val) => val ? `<dt>${label}</dt><dd>${val}</dd>` : '';
+    drawerBody.innerHTML = `
+      <h2 id="drawerName">${client.name || client.consignorName || 'Client'}</h2>
+      <div class="meta">${client.type || ''}${client.status ? ' · ' + client.status : ''}</div>
+      <dl>
+        ${fld('Phone', client.phone || client.consignorPhone)}
+        ${fld('Depot', client.depot)}
+        ${fld('PAN', client.pan)}
+        ${fld('GST', client.gst || client.gstin)}
+        ${fld('Spices Board', client.spicesBoardReg || client.spicesBoardRegNo)}
+        ${fld('Bank A/C', client.bankAccount || client.bankAcc)}
+        ${fld('IFSC', client.ifsc)}
+      </dl>
+      <h3>Active positions (${txns.length})</h3>
+      <div class="txn-list">
+        ${txns.map(t => `<div class="row"><span><b>${t.txnId}</b> · ${t.depot}</span><span>${inr(t.advanceAmount)}</span></div>`).join('') || '<div class="meta">None.</div>'}
+      </div>
+    `;
+  }
 
   load();
 </script>

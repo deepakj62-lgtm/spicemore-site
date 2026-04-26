@@ -2,63 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Transactions | SEPL</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../css/style.css">
-  <style>
-    .wrap { max-width:1000px; margin:0 auto; padding:90px 16px 40px; }
-    .card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:20px; }
-    .h1 { font-family:var(--font-heading); font-weight:700; font-size:22px; color:var(--green-dark); margin-bottom:12px; }
-    table { width:100%; border-collapse:collapse; font-size:13px; }
-    th,td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--light-gray); }
-    th { color:var(--tan); font-weight:500; text-transform:uppercase; font-size:11px; }
-    .nav-sub { display:flex; gap:10px; margin-bottom:14px; font-size:13px; flex-wrap:wrap; }
-    .nav-sub a { color:var(--green-dark); text-decoration:underline; }
-    .pill { padding:2px 8px; border-radius:10px; background:var(--cream); font-size:11px; }
-  </style>
+  <title>Redirecting…</title>
+  <meta http-equiv="refresh" content="0; url=portfolio.html">
+  <script>location.replace('portfolio.html');</script>
 </head>
 <body>
-  <nav class="navbar"><div class="nav-container">
-    <a href="../../index.html" class="nav-logo"><img src="../../images/logo.png" alt="Spice More"></a>
-  </div></nav>
-  <div class="wrap">
-    <div class="nav-sub">
-      <a href="intake.html">Intake</a> ·
-      <a href="portfolio.html">Portfolio</a> · <a href="daily-price.html">Daily price</a> ·
-      <a href="settings.html">Settings</a> ·
-      <a href="https://deepak-finance-tracker.vercel.app" target="_blank" rel="noopener">Finance Tracker</a>
-    </div>
-    <div class="card">
-      <div class="h1">Transactions</div>
-      <div style="margin-bottom:10px;">
-        <label><input type="checkbox" id="activeOnly" checked> Active only</label>
-      </div>
-      <div style="overflow-x:auto;">
-      <table><thead><tr>
-        <th>Txn</th><th>Client</th><th>Depot</th><th>Weight</th><th>Advance</th><th>Daily</th><th>Intake</th><th>Exit</th><th>Status</th><th></th>
-      </tr></thead><tbody id="tbody"></tbody></table>
-      </div>
-    </div>
-  </div>
-<script>
-  const token = sessionStorage.sepl_token;
-  if (!token || sessionStorage.sepl_role!=='staff') location.href='login.html';
-  const hdr = { 'Authorization':'Bearer '+token };
-  const inr = n => '₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:2});
-  async function load() {
-    const active = document.getElementById('activeOnly').checked;
-    const r = await fetch('/api/sepl/transactions'+(active?'?status=active':''), { headers:hdr });
-    const d = await r.json();
-    document.getElementById('tbody').innerHTML = (d.transactions||[]).map(t =>
-      `<tr><td><b>${t.txnId}</b></td><td>${t.consignorName}</td><td>${t.depot}</td><td>${t.netWeightKg} kg</td>`+
-      `<td>${inr(t.advanceAmount)}</td><td>${inr(t.dailyHoldingCharge)}</td><td>${t.intakeDate}</td><td>${t.expectedExitDate}</td>`+
-      `<td><span class="pill">${t.status}</span></td><td><a href="#" onclick="alert('Detail page — Phase 2');return false;">view</a></td></tr>`
-    ).join('') || '<tr><td colspan="10" style="color:var(--tan)">No transactions yet.</td></tr>';
-  }
-  document.getElementById('activeOnly').onchange = load;
-  load();
-</script>
+  <p>Transactions are now in <a href="portfolio.html">Portfolio</a>. Uncheck "Active only" to see closed positions.</p>
 </body>
 </html>

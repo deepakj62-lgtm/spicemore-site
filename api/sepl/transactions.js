@@ -72,6 +72,53 @@ module.exports = async function handler(req, res) {
   cors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  if (req.query?.resource === 'upload-url' && req.method === 'POST') {
+    // verify session as staff
+    let session;
+    try { session = verifyToken(req); }
+    catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
+    if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
+
+    const { filename, contentType } = req.body || {};
+    if (!filename || !contentType) return res.status(400).json({ error: 'filename and contentType required' });
+    if (!String(contentType).startsWith('image/')) return res.status(400).json({ error: 'Only image/* content-types accepted' });
+
+    // Vercel Blob has no public "signed PUT URL" pattern in the standard SDK.
+    // Instead: caller will POST the file body to this same endpoint with ?resource=upload-blob (multipart-style).
+    // For simplicity, we instead accept a base64 payload via a single round-trip endpoint at ?resource=upload-blob.
+    // Return an instruction object pointing the client at the upload-blob endpoint.
+    return res.status(200).json({
+      method: 'POST',
+      uploadEndpoint: '/api/sepl/transactions?resource=upload-blob',
+      expectsJsonBody: { filename, contentType, base64: '<base64-encoded-bytes>' },
+      maxBytesHint: 4_000_000
+    });
+  }
+
+  if (req.query?.resource === 'upload-blob' && req.method === 'POST') {
+    let session;
+    try { session = verifyToken(req); }
+    catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
+    if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
+
+    const { filename, contentType, base64 } = req.body || {};
+    if (!filename || !contentType || !base64) return res.status(400).json({ error: 'filename, contentType, base64 required' });
+    try {
+      const buf = Buffer.from(base64, 'base64');
+      if (buf.length === 0) return res.status(400).json({ error: 'Empty payload' });
+      if (buf.length > 6_000_000) return res.status(413).json({ error: 'Photo too large (max 6 MB)' });
+      const safeName = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80);
+      const key = `sepl-sample-photos/${Date.now()}-${safeName}`;
+      const blob = await put(key, buf, {
+        access: 'public', contentType, addRandomSuffix: false, cacheControlMaxAge: 31536000
+      });
+      return res.status(200).json({ url: blob.url, key });
+    } catch (e) {
+      console.error('upload-blob error', e);
+      return res.status(500).json({ error: 'Upload failed', details: e.message });
+    }
+  }
+
   try {
     let session;
     try { session = verifyToken(req); }
@@ -112,6 +159,33 @@ module.exports = async function handler(req, res) {
       if (Number(b.netWeightKg) < 250) {
         return res.status(400).json({ error: 'Minimum lot is 250 kg' });
       }
+
+      // Sample sanity checks
+      if (b.sample && typeof b.sample === 'object') {
+        const totalG = Number(b.sample.totalG) || 0;
+        const boldG = Number(b.sample.bold8mmG) || 0;
+        const midG = Number(b.sample.mid7to8G) || 0;
+        const rejG = Number(b.sample.rejectionG) || 0;
+        if (Math.abs((boldG + midG + rejG) - totalG) > 1) {
+          return res.status(400).json({ error: 'Sample grades do not sum to total' });
+        }
+        const cardamomRateNum = Number(b.cardamomRate) || 0;
+        if (cardamomRateNum > 0 && totalG > 0) {
+          const pf = b.priceFactors || {};
+          const pf_bold = Number(pf.bold) || 1.15;
+          const pf_mid = Number(pf.mid) || 1.05;
+          const pf_rej = Number(pf.rej) || 0.80;
+          const pctBold = boldG / totalG;
+          const pctMid = midG / totalG;
+          const pctRej = rejG / totalG;
+          const recomputed = cardamomRateNum * (pctBold * pf_bold + pctMid * pf_mid + pctRej * pf_rej);
+          const submitted = Number(b.benchmarkPricePerKg) || 0;
+          if (recomputed > 0 && Math.abs(submitted - recomputed) / recomputed > 0.05) {
+            return res.status(400).json({ error: 'Sample/rate inconsistent with submitted benchmark price' });
+          }
+        }
+      }
+
       const consignor = await loadConsignor(b.consignorId);
       if (!consignor) return res.status(404).json({ error: 'Consignor not found' });
 
@@ -140,7 +214,11 @@ module.exports = async function handler(req, res) {
         netWeightKg,
         benchmarkPricePerKg,
         gradeNotes: b.gradeNotes || '',
-        sampleGrams: Number(b.sampleGrams) || 100,
+        sampleGrams: Number(b.sampleGrams) || (b.sample && Number(b.sample.totalG)) || 100,
+        sample: b.sample || null,
+        priceFactors: b.priceFactors || null,
+        cardamomRate: Number(b.cardamomRate) || null,
+        samplePhotoUrl: b.samplePhotoUrl || null,
         grossStockValue,
         advanceRateUsed: SETTINGS.standardAdvanceRate,
         advanceAmount,
