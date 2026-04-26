@@ -126,46 +126,58 @@ async function scrapeCardamomRate() {
     html = await r.text();
   } finally { clearTimeout(t); }
 
-  // Strip tags into rough rows. Split by </tr> to keep row context.
-  const rowChunks = html.split(/<\/tr>/i);
+  // The page renders Small Cardamom auctions as prose blocks, not table rows:
+  //   <b>Spice: Small Cardamom</b>,
+  //   Date of Auction: 25-Apr-2026,
+  //   Auctioneer: IDUKKI MAHILA ...,
+  //   ...
+  //   Avg. Price (Rs./Kg): 2702.39
+  //
+  // Split on the "Spice:" marker, keep blocks where the species line says Small.
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+  const blocks = text.split(/Spice\s*:\s*/i).slice(1);
   const candidates = [];
-  for (const chunk of rowChunks) {
-    const text = chunk.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    const lower = text.toLowerCase();
-    if (!lower.includes('cardamom') || !lower.includes('small')) continue;
-
-    const dateMatches = text.match(/\b(\d{2}[-/]\d{2}[-/]\d{4}|\d{4}-\d{2}-\d{2})\b/g) || [];
-    const numMatches = (text.match(/\b(\d{3,5}(?:\.\d{1,2})?)\b/g) || [])
-      .map(Number)
-      .filter(n => n >= 500 && n <= 10000);
-
-    if (dateMatches.length && numMatches.length) {
-      // Pair the first (likely-only) date in this row with the largest plausible price.
-      const price = numMatches[numMatches.length - 1];
-      candidates.push({ date: dateMatches[0], price });
-    }
+  for (const blk of blocks) {
+    const head = blk.slice(0, 60).toLowerCase();
+    if (!head.includes('small cardamom')) continue;
+    // Stop the block at the next "Spice:" marker if we accidentally swallowed multiple
+    const segment = blk.split(/Spice\s*:/i)[0];
+    const dateMatch = segment.match(/Date(?:\s+of\s+Auction)?\s*:\s*([0-9]{1,2}[-/][A-Za-z]{3,9}[-/][0-9]{4}|[0-9]{2}[-/][0-9]{2}[-/][0-9]{4}|[0-9]{4}[-/][0-9]{2}[-/][0-9]{2})/i);
+    const priceMatch = segment.match(/Avg\.?\s*Price[^0-9]{0,40}([0-9]{3,5}(?:\.[0-9]{1,2})?)/i);
+    if (!dateMatch || !priceMatch) continue;
+    const price = Number(priceMatch[1]);
+    if (!(price >= 500 && price <= 15000)) continue;
+    candidates.push({ date: dateMatch[1], price });
   }
 
-  if (!candidates.length) throw new Error('parse failed');
+  if (!candidates.length) throw new Error('parse failed: no Small Cardamom blocks with date+price');
 
-  // Normalise dates to comparable ISO-ish keys for sorting
+  // Normalise to YYYY-MM-DD for sorting. Handles "25-Apr-2026", "25-04-2026", "2026-04-25".
+  const MONTHS = { jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12' };
   const toKey = (d) => {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-    const m = d.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
-    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+    let m;
+    if ((m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/))) return d;
+    if ((m = d.match(/^(\d{1,2})[-/]([A-Za-z]{3,9})[-/](\d{4})$/))) {
+      const mm = MONTHS[m[2].slice(0,3).toLowerCase()];
+      return mm ? `${m[3]}-${mm}-${m[1].padStart(2,'0')}` : d;
+    }
+    if ((m = d.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/))) return `${m[3]}-${m[2]}-${m[1]}`;
     return d;
   };
   candidates.sort((a, b) => toKey(b.date).localeCompare(toKey(a.date)));
 
-  const top = candidates.slice(0, 2);
+  // Take all auctions on the most recent date (typically 2 — IDUKKI MAHILA + SUGANDHAGIRI)
+  const latestDate = candidates[0].date;
+  const latestKey = toKey(latestDate);
+  const sameDay = candidates.filter(c => toKey(c.date) === latestKey);
+  const top = sameDay.length >= 2 ? sameDay.slice(0, 2) : candidates.slice(0, 2);
   const avg = top.reduce((s, c) => s + c.price, 0) / top.length;
-  const latestDate = top[0].date;
 
   return {
     pricePerKg: Number(avg.toFixed(2)),
     date: latestDate,
-    source: 'Spices Board e-auction (avg of 2 prior-day auctions)',
-    raw: { auctions: top }
+    source: `Spices Board e-auction (avg of ${top.length} ${latestDate} auctions)`,
+    raw: { auctions: top, candidatesParsed: candidates.length }
   };
 }
 
