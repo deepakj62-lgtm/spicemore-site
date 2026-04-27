@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iPhone / iPad — Direct Edit Setup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .wrap { max-width:780px; margin:0 auto; padding:90px 20px 60px; }
+    .h1 { font-family:var(--font-heading); font-weight:700; font-size:28px; color:var(--green-dark); margin-bottom:6px; }
+    .h2 { font-family:var(--font-heading); font-weight:600; font-size:20px; color:var(--green-dark); margin:32px 0 8px; padding-top:10px; border-top:1px solid var(--light-gray); }
+    .h2.first { border-top:0; padding-top:0; margin-top:18px; }
+    .h3 { font-family:var(--font-heading); font-weight:600; font-size:15px; color:var(--green-dark); margin:18px 0 6px; }
+    .sub { color:var(--tan); font-size:14px; margin-bottom:14px; }
+    .card { background:var(--white); border:1px solid var(--light-gray); border-radius:12px; padding:24px; margin-bottom:16px; }
+    .nav-back { color:var(--green-dark); font-size:13px; text-decoration:none; }
+    code { background:#f5f0e6; padding:2px 6px; border-radius:4px; font-size:13px; font-family:'SF Mono', Menlo, monospace; word-break:break-all; }
+    pre { background:#f5f0e6; padding:14px; border-radius:8px; font-size:12px; overflow-x:auto; line-height:1.5; font-family:'SF Mono', Menlo, monospace; }
+    ol, ul { padding-left:22px; line-height:1.8; font-size:15px; }
+    li { margin-bottom:8px; }
+    .step-num { display:inline-block; width:26px; height:26px; line-height:26px; text-align:center; background:var(--green-dark); color:#fff; border-radius:50%; font-weight:600; margin-right:10px; font-size:13px; vertical-align:middle; }
+    .warn { background:#fff3cd; border:1px solid #ffe69c; color:#7a5b00; padding:14px 18px; border-radius:8px; margin:14px 0; font-size:14px; }
+    .danger { background:#fee; border:1px solid #fbb; color:#922; padding:14px 18px; border-radius:8px; margin:14px 0; font-size:14px; }
+    .tip { background:#e8f3ec; border:1px solid #b8d8c2; color:#1b5e20; padding:14px 18px; border-radius:8px; margin:14px 0; font-size:14px; }
+    .recipe { background:#fafafa; border-left:4px solid var(--green-primary); padding:14px 18px; margin:14px 0; }
+    .recipe b { color:var(--green-dark); display:block; margin-bottom:6px; font-family:var(--font-heading); }
+    a { color:var(--green-dark); }
+  </style>
+</head>
+<body>
+  <nav class="navbar"><div class="nav-container">
+    <a href="../index.html" class="nav-logo"><img src="../images/logo.png" alt="Spice More"></a>
+  </div></nav>
+
+  <div class="wrap">
+    <a class="nav-back" href="index.html">← back to sepl-edit</a>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="h1">Direct Edit — iPhone / iPad Setup</div>
+      <div class="sub">Edwin — this gives you full edit + push access to spicemore.com from your iPad or iPhone. No laptop. No relay through Deepak. Your edits go live in ~60 seconds.</div>
+
+      <p style="font-size:14px;">You'll be using <b>Claude Code</b> on your iPad/iPhone. It's a version of Claude that can directly edit files and push them to the website. Setup takes ~10 minutes once. After that, every change is just a sentence.</p>
+
+      <div class="warn">
+        <b>Heads up — full access means full responsibility.</b> Deepak is giving you direct-push to production. A bad commit goes live immediately. Read the guardrails section at the bottom before you start. If you ever want to test something risky, ask Deepak first.
+      </div>
+    </div>
+
+    <!-- ============ ONE-TIME SETUP ============ -->
+    <div class="card">
+      <div class="h2 first">First-time setup — 10 minutes, do once</div>
+
+      <div class="h3"><span class="step-num">1</span>Get Claude Pro (if you don't have it)</div>
+      <ul>
+        <li>$20/month. Includes Claude Code access on iPad/iPhone.</li>
+        <li>Open the App Store → search <b>Claude</b> → install → sign in with your email.</li>
+        <li>In the Claude app: tap your profile (bottom-right) → <b>Settings</b> → <b>Subscription</b> → upgrade to Pro if you haven't.</li>
+      </ul>
+
+      <div class="h3"><span class="step-num">2</span>Create a GitHub account (if you don't have one)</div>
+      <ul>
+        <li>Open Safari → <a href="https://github.com/signup" target="_blank">github.com/signup</a></li>
+        <li>Use any email. Pick a username — write it down, you'll send it to Deepak so he can add you to the spicemore-site repo.</li>
+        <li>Verify your email when prompted.</li>
+      </ul>
+
+      <div class="h3"><span class="step-num">3</span>Send Deepak your GitHub username</div>
+      <ul>
+        <li>WhatsApp him: <i>"My GitHub username is &lt;your-username&gt;"</i></li>
+        <li>He'll add you as a collaborator on <code>github.com/deepakj62-lgtm/spicemore-site</code>.</li>
+        <li>You'll get an email invite — open it on your iPad and tap <b>Accept invitation</b>.</li>
+      </ul>
+
+      <div class="h3"><span class="step-num">4</span>Generate a GitHub Personal Access Token</div>
+      <div class="sub">This is a long string that lets Claude Code push to the repo on your behalf.</div>
+      <ol>
+        <li>In Safari: <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens?type=beta</a></li>
+        <li>Tap <b>Generate new token</b> → <b>Fine-grained personal access token</b>.</li>
+        <li>Name: <code>spicemore-claude-code</code></li>
+        <li>Expiration: 1 year (or longer — your call).</li>
+        <li>Repository access: <b>Only select repositories</b> → pick <code>deepakj62-lgtm/spicemore-site</code>.</li>
+        <li>Permissions → Repository permissions:
+          <ul>
+            <li><b>Contents</b>: Read and write</li>
+            <li><b>Pull requests</b>: Read and write</li>
+            <li><b>Metadata</b>: Read-only (auto-selected)</li>
+          </ul>
+        </li>
+        <li>Tap <b>Generate token</b>.</li>
+        <li>Copy the token (long string starting with <code>github_pat_...</code>) — <b>save it somewhere safe right now</b>. Apple Notes works. You won't be able to see it again.</li>
+      </ol>
+
+      <div class="warn">
+        <b>Treat this token like a password.</b> Don't share it on WhatsApp, don't paste it in random chats, don't email it. If you think it leaked, go back to that GitHub page and revoke it — generate a new one.
+      </div>
+
+      <div class="h3"><span class="step-num">5</span>Open Claude Code on your iPad</div>
+      <ul>
+        <li>In the Claude app: tap the <b>+ New chat</b> button.</li>
+        <li>In the chat type-bar, look for the <b>Code</b> mode toggle (or a "Claude Code" option in the chat-type picker). Tap it. (If you can't find it, just open Safari and go to <a href="https://claude.ai/code" target="_blank">claude.ai/code</a> — same thing in browser.)</li>
+        <li>You'll see a coding-style chat with a sandbox terminal underneath. That's your private cloud Linux machine — anything you do here stays in your Claude account.</li>
+      </ul>
+
+      <div class="h3"><span class="step-num">6</span>Tell Claude Code about your GitHub token</div>
+      <div class="sub">One-time. After this, Claude Code remembers and you never type the token again.</div>
+      <p>In your first Claude Code session, type this (paste your actual token where it says <code>github_pat_xxx</code>):</p>
+      <pre>Set up my GitHub credentials. My username is &lt;your-github-username&gt; and my Personal Access Token is github_pat_xxx. Configure git globally so I can push to deepakj62-lgtm/spicemore-site without re-entering credentials each time.</pre>
+      <p>Claude Code will run the right git config commands and store the token in its session. Test that it worked:</p>
+      <pre>Clone deepakj62-lgtm/spicemore-site into ~/work and confirm you can see the file sepl/staff/intake.html</pre>
+      <p>If Claude Code reports the file exists, you're set up. ✅</p>
+
+      <div class="tip">
+        <b>You're done with one-time setup.</b> From here on, every change is one or two sentences in Claude Code.
+      </div>
+    </div>
+
+    <!-- ============ EVERYDAY FLOW ============ -->
+    <div class="card">
+      <div class="h2">Everyday flow — making a change</div>
+      <div class="sub">Once setup is done, here's how every edit works. ~2 minutes per change.</div>
+
+      <div class="h3"><span class="step-num">1</span>Open Claude Code, describe what you want</div>
+      <p>Plain English. Examples:</p>
+
+      <div class="recipe">
+        <b>Tweak text or copy</b>
+        <pre>In spicemore-site, change the warning text on sepl/staff/intake.html from "Only click after the client has committed the intake" to "Only click after the client has signed the intake form". Commit with a clear message and push.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>Change colours / styling</b>
+        <pre>On sepl/staff/intake.html, change the warning banner background from yellow to red. Use the existing CSS variables — don't add hex colours. Commit and push.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>Add a new field</b>
+        <pre>On sepl/staff/intake.html in the Client section, add a new optional field called "Aadhaar number" right below the Phone field. Match the styling of the other inputs. Commit and push.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>Reorder sections</b>
+        <pre>On sepl/staff/intake.html, swap the order of the "Sample test" block and the "Depot" dropdown so Depot comes first. Commit and push.</pre>
+      </div>
+
+      <div class="h3"><span class="step-num">2</span>Claude Code does it</div>
+      <ul>
+        <li>Reads the file, makes the change, commits with a clear message, pushes to <code>main</code>.</li>
+        <li>Vercel automatically deploys to <a href="https://spicemore.com" target="_blank">spicemore.com</a> in ~30-60 seconds.</li>
+        <li>Claude Code will tell you when it's done.</li>
+      </ul>
+
+      <div class="h3"><span class="step-num">3</span>Verify on the live site</div>
+      <ul>
+        <li>Open <a href="https://spicemore.com/sepl/staff/intake" target="_blank">spicemore.com/sepl/staff/intake</a> on your iPad.</li>
+        <li>Pull-to-refresh. Check your change is live.</li>
+        <li>If it's not what you wanted, just tell Claude Code: <i>"undo that change"</i> or <i>"revert the last commit"</i> — it'll do it.</li>
+      </ul>
+
+      <div class="tip">
+        <b>Bigger changes:</b> If you want to test a risky change without going live first, ask Claude Code to: <i>"create a branch called <code>edwin/test-X</code>, do the change there instead of main, push, and give me the preview URL."</i> Vercel auto-builds a preview URL for any branch — you can test there before merging.
+      </div>
+    </div>
+
+    <!-- ============ COMMON RECIPES ============ -->
+    <div class="card">
+      <div class="h2">Recipes — copy-paste these for common things</div>
+      <div class="sub">Replace <code>X</code> / <code>Y</code> / <code>Z</code> with what you actually want.</div>
+
+      <div class="recipe">
+        <b>Quickly view what a file currently looks like</b>
+        <pre>Show me the contents of spicemore-site/sepl/staff/intake.html, just the body section.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>Make a simple text edit</b>
+        <pre>In spicemore-site, in sepl/staff/X.html, change "OLD TEXT" to "NEW TEXT". Commit and push.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>Change a number / value</b>
+        <pre>In spicemore-site, on sepl/staff/intake.html, change the minimum net weight from 250 kg to 300 kg. Update both the input min attribute and the validation message. Commit and push.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>Test on a preview branch first (before going live)</b>
+        <pre>In spicemore-site, create a branch called edwin/test-X. Do this change: [describe change]. Push the branch. Give me the Vercel preview URL.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>Undo a change you just made</b>
+        <pre>Revert the last commit on main and push. The change I just made was wrong.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>See what was changed recently</b>
+        <pre>Show me the last 5 commits on spicemore-site main branch with what each one changed.</pre>
+      </div>
+
+      <div class="recipe">
+        <b>Get help understanding a page</b>
+        <pre>Walk me through what sepl/staff/portfolio.html does — what each section is for. I want to plan some changes.</pre>
+      </div>
+    </div>
+
+    <!-- ============ GUARDRAILS ============ -->
+    <div class="card">
+      <div class="h2">Guardrails — please don't do these</div>
+
+      <div class="danger">
+        <b>NEVER tell Claude Code to:</b>
+        <ul style="margin-top:8px;">
+          <li><b>Delete the repo</b> or do <code>git push --force</code> on main</li>
+          <li><b>Change anything in <code>api/</code></b> (the backend code) — those are running calculations and money flow. Anything in api/ needs Deepak to review.</li>
+          <li><b>Change the agreement PDF text</b> in <code>api/sepl/agreement-pdf.js</code> — that's legal text Edwin signed off on Apr 15.</li>
+          <li><b>Change LTV thresholds or holding rate</b> in <code>api/sepl/_settings.js</code> — those are the economic terms.</li>
+          <li><b>Push secrets / tokens / passwords</b> into the repo. If Claude Code suggests committing a <code>.env</code> file, say no.</li>
+        </ul>
+      </div>
+
+      <div class="warn">
+        <b>If Claude Code asks "should I do X" and you're not sure — answer NO.</b> WhatsApp Deepak with what it asked. Better to wait 5 minutes than break production.
+      </div>
+
+      <div class="tip">
+        <b>Safe to do anytime:</b>
+        <ul style="margin-top:8px;">
+          <li>Edit anything in <code>sepl/staff/*.html</code> (the staff-facing pages — your main editing surface)</li>
+          <li>Edit anything in <code>sepl/consignor/*.html</code> (client-facing pages)</li>
+          <li>Edit <code>sepl/index.html</code> (SEPL portal landing page)</li>
+          <li>Change CSS in <code>css/style.css</code></li>
+          <li>Update text, copy, layout, fields, validation messages, error messages, tooltips, button labels</li>
+          <li>Add new pages under <code>sepl/</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ TROUBLESHOOTING ============ -->
+    <div class="card">
+      <div class="h2">Troubleshooting</div>
+
+      <div class="h3">"Claude Code says it can't push — permission denied"</div>
+      <ul>
+        <li>Token expired or invalid. Generate a new one (step 4 above) and tell Claude Code: <i>"Update my GitHub token to github_pat_NEW_TOKEN_HERE"</i>.</li>
+        <li>Or you haven't accepted the collaborator invite yet — check email.</li>
+      </ul>
+
+      <div class="h3">"My change isn't showing on spicemore.com"</div>
+      <ul>
+        <li>Wait 60 seconds. Vercel takes a moment to build + deploy.</li>
+        <li>Hard-refresh: pull-to-refresh in Safari, or close and reopen the tab.</li>
+        <li>Check it's actually deployed: ask Claude Code: <i>"What's the current deployment status of spicemore.com?"</i> — it can check Vercel for you.</li>
+      </ul>
+
+      <div class="h3">"Claude Code edited the wrong file"</div>
+      <ul>
+        <li>Tell it: <i>"That was the wrong file — revert that change and try again on FILE_NAME instead."</i></li>
+        <li>If it already pushed, ask it to revert the commit and re-do.</li>
+      </ul>
+
+      <div class="h3">"I broke something and don't know how to fix it"</div>
+      <ul>
+        <li>WhatsApp Deepak. Don't keep poking at it. He can revert from his side in 30 seconds.</li>
+        <li>Send him: the page that's broken, what you tried last, and what error you see.</li>
+      </ul>
+
+      <div class="h3">"Claude Code is being weird / slow / not understanding"</div>
+      <ul>
+        <li>Start a new chat. Sometimes the session gets confused. Each new chat is fresh.</li>
+        <li>Be more specific. Instead of "fix the warning" say "in sepl/staff/intake.html, change the text inside the div with class commit-warning to: ..."</li>
+      </ul>
+    </div>
+
+    <!-- ============ CHEAT SHEET ============ -->
+    <div class="card">
+      <div class="h2">Cheat sheet — keep this open</div>
+
+      <ul style="font-size:14px;">
+        <li><b>Repo:</b> <code>deepakj62-lgtm/spicemore-site</code></li>
+        <li><b>Live site:</b> <a href="https://spicemore.com">spicemore.com</a></li>
+        <li><b>Staff pages folder:</b> <code>sepl/staff/</code></li>
+        <li><b>SEPL pages:</b> intake.html · portfolio.html · daily-price.html · settings.html · login.html</li>
+        <li><b>To make a change:</b> open Claude Code, describe in plain English, push.</li>
+        <li><b>To preview before going live:</b> ask Claude Code to make a branch first.</li>
+        <li><b>To undo:</b> "revert the last commit on main and push"</li>
+        <li><b>Stuck:</b> WhatsApp Deepak.</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
