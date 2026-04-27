@@ -757,6 +757,19 @@ function riskLabel(days, c) {
   return 'CRITICAL';
 }
 
+// Days an unpaid invoice has been outstanding.
+// Reference date = March 31 of the invoice's FY if that FY has closed,
+// otherwise today — so closed-FY invoices don't grow indefinitely.
+function pendingDays(invoiceDate) {
+  const m = invoiceDate.getMonth(); // 0-indexed; April = 3
+  const y = invoiceDate.getFullYear();
+  const fyEndYear = m >= 3 ? y + 1 : y;
+  const fyEnd = new Date(fyEndYear, 2, 31);  // March 31
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const ref = fyEnd < today ? fyEnd : today;
+  return Math.max(0, (ref - invoiceDate) / 864e5);
+}
+
 // ══════════════════════════════════════════════════════════
 // FILE HANDLING
 // ══════════════════════════════════════════════════════════
@@ -937,6 +950,15 @@ function analyse(name, cosData, c) {
       effTotal += p.amount;
     }
   }
+  // Outstanding (unpaid) portions — count days to FY-end or today
+  for (const s of allSett) {
+    if (s.outstanding <= 0.01) continue;
+    const pd = pendingDays(s.date);
+    effWeighted  += pd * s.outstanding;
+    cashWeighted += pd * s.outstanding;
+    cashTotal    += s.outstanding;
+    effTotal     += s.outstanding;
+  }
   const avgDays = effTotal > 0 ? effWeighted / effTotal : 0;
   const cashAvgDays = cashTotal > 0 ? cashWeighted / cashTotal : null;
   const purcRawDays = purcTotal > 0 ? purcWeighted / purcTotal : null;
@@ -980,6 +1002,10 @@ function analyse(name, cosData, c) {
       const ed = p.type === 'Purc' ? p.days + c.cd : p.days;
       recentEffW += ed * p.amount;
       recentEffT += p.amount;
+    }
+    if (s.outstanding > 0.01) {
+      recentEffW += pendingDays(s.date) * s.outstanding;
+      recentEffT += s.outstanding;
     }
   }
   const recentAvg = recentEffT > 0 ? recentEffW / recentEffT : avgDays;
@@ -1380,19 +1406,24 @@ function render() {
       let hasPurc = false;
       for (const p of s.pays) { if (p.type === 'Purc') hasPurc = true; }
       let effDays = null;
+      let isPendingUnpaid = false;
       if (s.settlementDate) {
         effDays = (s.settlementDate - s.date) / 864e5;
         if (hasPurc) effDays += c.cd;
       } else if (s.pays.length > 0) {
         const lastPay = s.pays.reduce((a, p) => p.payDate > a ? p.payDate : a, s.pays[0].payDate);
         effDays = (lastPay - s.date) / 864e5;
+      } else {
+        // Fully unpaid — show days elapsed to FY-end or today
+        effDays = pendingDays(s.date);
+        isPendingUnpaid = true;
       }
       const dc = effDays === null ? '' : effDays < c.cd ? 'df' : effDays <= 30 ? 'do' : effDays <= 45 ? 'ds' : 'db';
-      const dt = effDays === null ? '—' : effDays.toFixed(1) + 'd' + (hasPurc ? ' 🔄' : '');
+      const dt = effDays === null ? '—' : effDays.toFixed(1) + 'd' + (hasPurc ? ' 🔄' : '') + (isPendingUnpaid ? ' ⏳' : '');
       const co = Object.entries(r.breakdown).find(([, d]) => d.settlements.find(x => x.vch === s.vch))?.[0] || '?';
       const hasCash = s.pays.some(p => p.type === 'Rcpt');
       let settleType, settleTypeClr;
-      if (s.outstanding > 0 && s.pays.length === 0) { settleType = '—'; settleTypeClr = 'var(--t5)'; }
+      if (s.outstanding > 0 && s.pays.length === 0) { settleType = '⏳ Unpaid'; settleTypeClr = 'var(--r)'; }
       else if (s.outstanding > 0) { settleType = '⏳ Partial'; settleTypeClr = 'var(--a)'; }
       else if (hasPurc && hasCash) { settleType = '⚡ Mixed'; settleTypeClr = '#7C3AED'; }
       else if (hasPurc) { settleType = '🔄 Buyback'; settleTypeClr = '#D97706'; }
