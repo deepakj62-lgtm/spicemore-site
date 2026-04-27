@@ -121,7 +121,7 @@
   const COMMISSION_RATE = 0.01;
   const GST_ON_COMMISSION = 0.18;
 
-  const inr = n => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const inr = n => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
   const daysBetween = (from, to) => {
     const a = new Date(from), b = new Date(to);
     return Math.max(0, Math.round((b - a) / 86400000));
