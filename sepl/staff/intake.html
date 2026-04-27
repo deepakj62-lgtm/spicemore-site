@@ -378,9 +378,16 @@
     if (!samplePhotoFile) return null;
     const dataUrl = await resizeImage(samplePhotoFile, 1600, 0.85);
     const base64 = dataUrl.split(',')[1];
+    // Pass consignorId + depot so server can name the file <client>-<date>.jpg in <depot>/ folder
     const r = await fetch('/api/sepl/transactions?resource=upload-blob', {
       method:'POST', headers: hdr,
-      body: JSON.stringify({ filename: samplePhotoFile.name, contentType: 'image/jpeg', base64 })
+      body: JSON.stringify({
+        filename: samplePhotoFile.name,
+        contentType: 'image/jpeg',
+        base64,
+        consignorId: $('clientId').value,
+        depot: $('depot').value
+      })
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'upload failed');

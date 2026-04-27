@@ -32,7 +32,7 @@ async function effectiveSettings() {
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
@@ -101,14 +101,36 @@ module.exports = async function handler(req, res) {
     catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
     if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
 
-    const { filename, contentType, base64 } = req.body || {};
+    const { filename, contentType, base64, consignorId, depot } = req.body || {};
     if (!filename || !contentType || !base64) return res.status(400).json({ error: 'filename, contentType, base64 required' });
     try {
       const buf = Buffer.from(base64, 'base64');
       if (buf.length === 0) return res.status(400).json({ error: 'Empty payload' });
       if (buf.length > 6_000_000) return res.status(413).json({ error: 'Photo too large (max 6 MB)' });
-      const safeName = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80);
-      const key = `sepl-sample-photos/${Date.now()}-${safeName}`;
+
+      // Build path per Edwin's spec: <depot>/<client-name>-<YYYY-MM-DD-HHMM>.<ext>
+      // Falls back to legacy <Date.now()>-<filename> when consignorId/depot missing.
+      const ext = (() => {
+        const m = String(filename).match(/\.([a-zA-Z0-9]{1,6})$/);
+        if (m) return m[1].toLowerCase();
+        if (contentType === 'image/jpeg') return 'jpg';
+        if (contentType === 'image/png') return 'png';
+        return 'jpg';
+      })();
+      const safe = (s) => String(s || '').trim().replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'unknown';
+      const now = new Date();
+      const stamp = now.toISOString().slice(0, 16).replace(/[:T]/g, '-'); // YYYY-MM-DD-HH-MM
+
+      let key;
+      if (consignorId && depot) {
+        const consignor = await loadConsignor(consignorId);
+        const clientName = safe(consignor?.name) || safe(consignorId);
+        const depotSafe = safe(depot);
+        key = `sepl-sample-photos/${depotSafe}/${clientName}-${stamp}.${ext}`;
+      } else {
+        const safeName = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80);
+        key = `sepl-sample-photos/${Date.now()}-${safeName}`;
+      }
       const blob = await put(key, buf, {
         access: 'public', contentType, addRandomSuffix: false, cacheControlMaxAge: 31536000
       });
@@ -117,6 +139,52 @@ module.exports = async function handler(req, res) {
       console.error('upload-blob error', e);
       return res.status(500).json({ error: 'Upload failed', details: e.message });
     }
+  }
+
+  // PATCH /api/sepl/transactions — update status (close a position).
+  // Body: { txnId, status }   status ∈ ['Active','Closed']
+  if (req.method === 'PATCH') {
+    let session;
+    try { session = verifyToken(req); }
+    catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
+    if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
+
+    const { txnId, status } = req.body || {};
+    if (!txnId) return res.status(400).json({ error: 'txnId required' });
+    const ALLOWED_STATUSES = ['Active', 'Closed'];
+    if (!ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({ error: `status must be one of ${ALLOWED_STATUSES.join(', ')}` });
+    }
+
+    const all = await loadAll();
+    const existing = all.find(t => t.txnId === txnId);
+    if (!existing) return res.status(404).json({ error: 'Transaction not found' });
+    if (existing.status === status) {
+      return res.status(200).json({ transaction: existing, noop: true });
+    }
+
+    const updated = {
+      ...existing,
+      status,
+      auditLog: [
+        ...(existing.auditLog || []),
+        {
+          action: 'status-change',
+          from: existing.status,
+          to: status,
+          byStaff: session.name,
+          byPhone: session.phone,
+          at: new Date().toISOString()
+        }
+      ],
+      updatedAt: new Date().toISOString()
+    };
+    if (status === 'Closed' && !existing.closedAt) updated.closedAt = new Date().toISOString();
+
+    await put(`sepl-transactions/${txnId}.json`, JSON.stringify(updated), {
+      access: 'public', contentType: 'application/json', addRandomSuffix: false, cacheControlMaxAge: 0
+    });
+    return res.status(200).json({ transaction: updated });
   }
 
   try {
