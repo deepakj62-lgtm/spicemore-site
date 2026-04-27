@@ -79,8 +79,15 @@ H. GENERAL
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+// Accept token from ?t= query param (browser GET link) or Authorization header
+function verifyAny(req) {
+  const qt = req.query && req.query.t;
+  if (qt) return verifyToken({ headers: { authorization: 'Bearer ' + qt } });
+  return verifyToken(req);
 }
 
 async function loadByKey(prefix, key) {
@@ -161,11 +168,32 @@ async function buildPdf(txn, consignor) {
 module.exports = async function handler(req, res) {
   cors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // GET ?txnId=&inline=1&t=<token> — browser link view
+  if (req.method === 'GET') {
+    try {
+      verifyAny(req);
+      const txnId = req.query && req.query.txnId;
+      if (!txnId) return res.status(400).json({ error: 'txnId required' });
+      const txn = await loadByKey('sepl-transactions/', txnId);
+      if (!txn) return res.status(404).json({ error: 'Transaction not found' });
+      const consignor = await loadByKey('sepl-consignors/', txn.consignorId);
+      if (!consignor) return res.status(404).json({ error: 'Consignor not found' });
+      const buf = await buildPdf(txn, consignor);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="SEPL-Agreement-${txnId}.pdf"`);
+      return res.status(200).send(buf);
+    } catch (e) {
+      return res.status(e.message.includes('token') || e.message.includes('Token') ? 401 : 500)
+        .json({ error: e.message });
+    }
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     let session;
-    try { session = verifyToken(req); }
+    try { session = verifyAny(req); }
     catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
 
     const { txnId, sendWhatsApp } = req.body || {};
@@ -186,12 +214,6 @@ module.exports = async function handler(req, res) {
         `SEPL-Agreement-${txnId}.pdf`,
         'Your SEPL consignment agreement'
       );
-    }
-
-    if (req.query?.inline === '1') {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="SEPL-Agreement-${txnId}.pdf"`);
-      return res.status(200).send(buf);
     }
 
     return res.status(200).json({

@@ -496,21 +496,35 @@
     $('confirmBody').innerHTML =
       '<div><b>'+t.txnId+'</b> · '+t.consignorName+' · '+t.depot+'</div>'+
       '<div>Weight: '+t.netWeightKg+' kg · Advance: '+inrInt(t.advanceAmount)+' · Daily charge: '+inr(t.dailyHoldingCharge)+'</div>';
-    $('viewAgreement').href = '/api/sepl/agreement-pdf?txnId='+encodeURIComponent(t.txnId)+'&inline=1';
+    $('viewAgreement').href = '/api/sepl/agreement-pdf?txnId='+encodeURIComponent(t.txnId)+'&inline=1&t='+encodeURIComponent(token);
     $('subMsg').innerHTML = '<span class="ok">Created '+t.txnId+'</span>';
     window.scrollTo({ top: $('confirm').offsetTop - 80, behavior: 'smooth' });
   };
 
+  function b64ToBlob(b64, type) {
+    const bin = atob(b64); const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type });
+  }
+
   $('sendAgreement').onclick = async () => {
     if (!lastTxn) return;
-    $('agreeMsg').textContent = 'Sending…';
+    $('agreeMsg').textContent = 'Generating PDF…';
     const r = await fetch('/api/sepl/agreement-pdf', { method:'POST', headers:hdr, body: JSON.stringify({ txnId: lastTxn.txnId }) });
     const d = await r.json();
     if (!r.ok) { $('agreeMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }
     const wa = d.whatsapp;
-    if (wa && wa.ok && !wa.stubbed) $('agreeMsg').innerHTML = '<span class="ok">Sent on WhatsApp ✓</span>';
-    else if (wa && wa.stubbed) $('agreeMsg').innerHTML = '<span class="err">WhatsApp bridge offline — saved to outbox</span>';
-    else $('agreeMsg').innerHTML = '<span class="err">Send issue: ' + (wa?.error || 'unknown') + '</span>';
+    if (wa && wa.ok && !wa.stubbed) {
+      $('agreeMsg').innerHTML = '<span class="ok">Sent on WhatsApp ✓</span>';
+    } else {
+      // WhatsApp bridge offline — open the PDF from the returned base64
+      let dlLink = '';
+      if (d.base64) {
+        const url = URL.createObjectURL(b64ToBlob(d.base64, 'application/pdf'));
+        dlLink = ' <a href="'+url+'" target="_blank" style="color:var(--green-dark); font-weight:500;">Open PDF ↗</a>';
+      }
+      $('agreeMsg').innerHTML = '<span class="err">WhatsApp unavailable.</span>'+dlLink;
+    }
   };
 
   // initial calc render
