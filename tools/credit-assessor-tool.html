@@ -899,7 +899,7 @@ function parseLedger(fileObj) {
           if (!d || isNaN(d.getTime())) continue;
           const type = String(row[1] || '').trim();
           if (!type || type === 'Type') continue;
-          txns.push({ date: d, type, vch: row[2] || '', account: row[3] || '',
+          txns.push({ date: d, rawDate: raw, type, vch: row[2] || '', account: row[3] || '',
             debit: Number(row[4]) || 0, credit: Number(row[5]) || 0 });
         }
         res(txns);
@@ -924,7 +924,7 @@ function fifo(txns) {
       if (s.rem <= 0 || rr <= 0) continue;
       const u = Math.min(s.rem, rr);
       const d = (r.date - s.date) / 864e5;
-      s.pays.push({ days: Math.round(d * 10) / 10, amount: u, type: r.type, vch: r.vch, payDate: r.date });
+      s.pays.push({ days: Math.round(d * 10) / 10, amount: u, type: r.type, vch: r.vch, payDate: r.date, rawDate: r.rawDate });
       s.rem -= u; rr -= u;
       if (!s.lastPayDate || r.date > s.lastPayDate) s.lastPayDate = r.date;
     }
@@ -1380,7 +1380,9 @@ async function runAnalysis() {
     if (!grouped[f.dealer]) grouped[f.dealer] = {};
     grouped[f.dealer][f.company] = f;
   }
-  rawData = {};
+  // Remove the cache-restored sentinel so recalc can tell real data is present,
+  // but keep any other dealers that were already in rawData from prior uploads.
+  delete rawData.__restored;
   let i = 0;
   for (const [dealer, cos] of Object.entries(grouped)) {
     i++;
@@ -1396,17 +1398,26 @@ async function runAnalysis() {
 }
 
 function recalc() {
-  if (!Object.keys(rawData).length) return;
-  // Skip re-analysis if data was restored from storage (no raw txns available)
-  if (rawData.__restored) { render(); return; }
+  const realDealers = Object.keys(rawData).filter(k => k !== '__restored');
+  // Nothing uploaded yet and no cached results — nothing to do
+  if (!realDealers.length && !results.length) return;
+  // No raw data at all (e.g. pure cache restore) — just re-render
+  if (!realDealers.length) { render(); return; }
+
   const c = cfg();
-  results = [];
-  for (const [dealer, cosData] of Object.entries(rawData)) {
-    results.push(analyse(dealer, cosData, c));
+  const fresh = {};
+  for (const dealer of realDealers) {
+    fresh[dealer] = analyse(dealer, rawData[dealer], c);
   }
-  results.sort((a, b) => b.recommended - a.recommended);
+
+  // Merge: fresh results replace their matching cached entry; others are kept as-is
+  const merged = results.map(r => fresh[r.name] ?? r);
+  for (const [dealer, result] of Object.entries(fresh)) {
+    if (!merged.find(r => r.name === dealer)) merged.push(result);
+  }
+  results = merged.sort((a, b) => b.recommended - a.recommended);
   render();
-  saveToStorage();  // persist after every recalc
+  saveToStorage();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1500,6 +1511,7 @@ function render() {
             <table style="font-size:11px;border-collapse:collapse">
               <thead><tr style="color:var(--t5)">
                 <th style="padding:3px 12px 3px 0;font-weight:600;text-align:left">Receipt Date</th>
+                <th style="padding:3px 12px 3px 0;font-weight:600;text-align:left;color:#bbb">Raw cell value</th>
                 <th style="padding:3px 12px 3px 0;font-weight:600;text-align:right">Amount Applied</th>
                 <th style="padding:3px 12px 3px 0;font-weight:600;text-align:right">Days</th>
                 <th style="padding:3px 12px 3px 0;font-weight:600">Type</th>
@@ -1507,6 +1519,7 @@ function render() {
               </tr></thead>
               <tbody>${s.pays.map(p => `<tr>
                 <td style="padding:2px 12px 2px 0;font-weight:600">${fmtD(p.payDate)}</td>
+                <td style="padding:2px 12px 2px 0;font-family:var(--mono);font-size:10px;color:#aaa">${p.rawDate ?? '—'}</td>
                 <td style="padding:2px 12px 2px 0;text-align:right;font-family:var(--mono)">${fmtN(p.amount)}</td>
                 <td style="padding:2px 12px 2px 0;text-align:right;font-family:var(--mono);
                   color:${p.days < c.cd ? '#16A34A' : p.days <= 45 ? 'var(--a)' : 'var(--r)'}">${p.days.toFixed(1)}d</td>
