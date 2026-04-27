@@ -914,7 +914,8 @@ function parseLedger(fileObj) {
 // ══════════════════════════════════════════════════════════
 function fifo(txns) {
   const sales = txns.filter(t => t.type === 'Sale' && t.account === 'Sales' && t.debit > 0)
-    .sort((a, b) => a.date - b.date).map(s => ({ ...s, rem: s.debit, pays: [], lastPayDate: null }));
+    .sort((a, b) => a.date - b.date)
+    .map(s => ({ ...s, rem: s.debit, pays: [], lastPayDate: null, substantialSettleDate: null }));
   const rcpts = txns.filter(t => (t.type === 'Rcpt' || t.type === 'Purc') && t.credit > 0)
     .sort((a, b) => a.date - b.date);
   for (const r of rcpts) {
@@ -927,13 +928,23 @@ function fifo(txns) {
       s.pays.push({ days: Math.round(d * 10) / 10, amount: u, type: r.type, vch: r.vch, payDate: r.date, rawDate: r.rawDate });
       s.rem -= u; rr -= u;
       if (!s.lastPayDate || r.date > s.lastPayDate) s.lastPayDate = r.date;
+      // Mark the date when the invoice became effectively settled.
+      // BUSY/Tally often leaves a tiny residual (rounding, bank charges) — treat
+      // anything below 1% of invoice value (max ₹5,000) as cleared on this date.
+      const tol = Math.min(s.debit * 0.01, 5000);
+      if (s.rem <= tol && !s.substantialSettleDate) s.substantialSettleDate = r.date;
     }
   }
   return sales.map(s => {
     const settled = s.pays.reduce((a, p) => a + p.amount, 0);
     const wd = s.pays.reduce((a, p) => a + p.days * p.amount, 0);
-    const settlementDate = s.rem <= 0.01 ? s.lastPayDate : null;
-    return { vch: s.vch, date: s.date, amount: s.debit, settled, outstanding: s.rem,
+    const tol = Math.min(s.debit * 0.01, 5000);
+    // Residuals below tolerance are zeroed — they're accounting noise, not real outstanding
+    const effectiveRem = s.rem <= tol ? 0 : s.rem;
+    const settlementDate = effectiveRem <= 0.01
+      ? (s.substantialSettleDate || s.lastPayDate)
+      : null;
+    return { vch: s.vch, date: s.date, amount: s.debit, settled, outstanding: effectiveRem,
       days: settled > 0 ? wd / settled : null, pays: s.pays, settlementDate };
   });
 }
