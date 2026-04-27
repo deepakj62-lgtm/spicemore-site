@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Consignments | SEPL</title>
+  <title>My Stock | SEPL</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../css/style.css">
@@ -56,8 +56,8 @@
     </div>
 
     <div class="card">
-      <div class="h1">My consignments</div>
-      <div class="sub">Tap a consignment to simulate payoff at different sale prices.</div>
+      <div class="h1">My stock</div>
+      <div class="sub">Tap a stock entry to simulate payoff at different sale prices.</div>
       <div id="txnList"><div class="empty">Loading...</div></div>
     </div>
 
@@ -73,25 +73,22 @@
         <div>
           <label for="salePrice">Expected sale price (₹/kg)</label>
           <input id="salePrice" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 2450">
+          <div id="priceHint" style="font-size:12px; color:var(--tan); margin-top:4px;"></div>
         </div>
-        <div>
-          <label for="exitType">Exit type</label>
-          <select id="exitType">
-            <option value="SMTC AUCTION">SMTC Auction (1% commission + 18% GST)</option>
-            <option value="BUYBACK">Buyback (no commission)</option>
-          </select>
-        </div>
-        <div>
-          <label>&nbsp;</label>
-          <div id="priceHint" style="font-size:12px; color:var(--tan); padding-top:11px;"></div>
-        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label for="exitType">Exit type</label>
+        <select id="exitType">
+          <option value="SMTC AUCTION">SMTC Auction (1% commission + 18% GST)</option>
+          <option value="BUYBACK">Buyback (no commission)</option>
+        </select>
       </div>
 
       <div class="h2">Computed</div>
       <div class="calc" id="calcPanel">
         <div class="calc-row"><span>Days elapsed (intake → exit)</span><b id="o_days">—</b></div>
         <div class="calc-row"><span>Initial stock value (weight × benchmark)</span><b id="o_stock">—</b></div>
-        <div class="calc-row"><span>Expected sale value (weight × sale price)</span><b id="o_sale">—</b></div>
+        <div class="calc-row" id="row_sale"><span>Expected sale value (weight × sale price)</span><b id="o_sale">—</b></div>
         <div class="calc-row"><span>Advance disbursed</span><b id="o_adv">—</b></div>
         <div class="calc-row"><span>Daily holding cost</span><b id="o_daily">—</b></div>
         <div class="calc-row"><span>Total holding charge</span><b id="o_hold">—</b></div>
@@ -99,10 +96,10 @@
         <div class="calc-row"><span>Total deductions</span><b id="o_ded">—</b></div>
       </div>
       <div class="balance">
-        <div class="lbl">Balance receivable</div>
+        <div class="lbl" id="balance_lbl">Balance receivable</div>
         <div class="val" id="o_balance">—</div>
       </div>
-      <div class="fine">Final settlement subject to actual sale price and SEPL approval. Figures above are indicative, computed using the advance, holding rate, and tenure recorded at intake.</div>
+      <div class="fine" id="fine_text">Final settlement subject to actual sale price and SEPL approval. Figures above are indicative, computed using the advance, holding rate, and tenure recorded at intake.</div>
     </div>
   </div>
 
@@ -150,13 +147,13 @@
       try { const pd = await priceResp.json(); dailyPrice = pd.latest; } catch (_) {}
       renderList();
     } catch (e) {
-      document.getElementById('txnList').innerHTML = '<div class="err">Could not load consignments. Please refresh.</div>';
+      document.getElementById('txnList').innerHTML = '<div class="err">Could not load. Please refresh.</div>';
     }
   }
 
   function renderList() {
     const el = document.getElementById('txnList');
-    if (!txns.length) { el.innerHTML = '<div class="empty">No active consignments yet.</div>'; return; }
+    if (!txns.length) { el.innerHTML = '<div class="empty">No active stock yet.</div>'; return; }
     el.innerHTML = txns.map((t, i) =>
       '<div class="txn-card" data-i="'+i+'">'+
         '<div class="row1"><div class="txnId">'+t.txnId+'</div><div class="status">'+(t.status||'')+'</div></div>'+
@@ -191,7 +188,7 @@
     const hint = document.getElementById('priceHint');
     if (dailyPrice && dailyPrice.pricePerKg) {
       document.getElementById('salePrice').value = dailyPrice.pricePerKg;
-      hint.textContent = 'Prefilled from Spices Board ' + dailyPrice.date + ' (' + (dailyPrice.grade || '') + ').';
+      hint.textContent = 'Prefilled from Spices Board ' + (dailyPrice.date || '') + '.';
     } else {
       hint.textContent = 'Enter expected sale price per kg.';
     }
@@ -211,24 +208,30 @@
     const advance = Number(selected.advanceAmount) || 0;
     const dailyHold = Number(selected.dailyHoldingCharge) || 0;
 
+    const isBuyback = exitType === 'BUYBACK';
     const days = (exitDate && selected.intakeDate) ? daysBetween(selected.intakeDate, exitDate) : 0;
     const stockValue = weight * benchmark;
     const saleValue = weight * salePrice;
     const totalHolding = dailyHold * days;
-    const commRate = exitType === 'SMTC AUCTION' ? COMMISSION_RATE : 0;
+    const commRate = isBuyback ? 0 : COMMISSION_RATE;
     const commission = saleValue * commRate * (1 + GST_ON_COMMISSION);
     const totalDed = totalHolding + commission;
-    const balance = saleValue - advance - totalDed;
+    const balance = isBuyback ? (advance + totalHolding) : (saleValue - advance - totalDed);
 
     document.getElementById('o_days').textContent = days + ' days';
     document.getElementById('o_stock').textContent = inr(stockValue);
+    document.getElementById('row_sale').style.display = isBuyback ? 'none' : '';
     document.getElementById('o_sale').textContent = inr(saleValue);
     document.getElementById('o_adv').textContent = inr(advance);
     document.getElementById('o_daily').textContent = inr(dailyHold);
     document.getElementById('o_hold').textContent = inr(totalHolding);
-    document.getElementById('o_comm').textContent = commRate ? inr(commission) + '  (1% + 18% GST)' : '—  (buyback)';
-    document.getElementById('o_ded').textContent = inr(totalDed);
+    document.getElementById('o_comm').textContent = isBuyback ? '— (buyback)' : inr(commission) + ' (1% + 18% GST)';
+    document.getElementById('o_ded').textContent = isBuyback ? '— (buyback)' : inr(totalDed);
     document.getElementById('o_balance').textContent = inr(balance);
+    document.getElementById('balance_lbl').textContent = isBuyback ? 'Amount to repay for release' : 'Balance receivable';
+    document.getElementById('fine_text').textContent = isBuyback
+      ? 'Amount to repay = advance disbursed + accrued holding charges to the expected exit date. Final figure subject to SEPL confirmation.'
+      : 'Final settlement subject to actual sale price and SEPL approval. Figures above are indicative, computed using the advance, holding rate, and tenure recorded at intake.';
   }
 
   ['exitDate','salePrice','exitType'].forEach(id => {
