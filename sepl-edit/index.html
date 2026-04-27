@@ -48,47 +48,16 @@
       <div class="h1">Edit SEPL pages with Claude</div>
       <div class="sub">Tweak the Spicemore SEPL stock-advance pages from your phone, iPad, or laptop using any Claude account. No coding needed.</div>
 
-      <p style="font-size:14px;">Pick the path that fits you:</p>
-
-      <div class="pathcard" style="border-left-color:#c9572f; background:#fff7f2;">
-        <b>🚀 One-tap path — open Claude already loaded with the page</b><br>
-        <span style="font-size:13px;">Tap a button below. Opens the Claude app on your phone/iPad (or claude.ai in browser) pre-loaded to edit that page. Just type the change you want.</span>
-        <div style="margin-top:8px;"><a href="#onetap" style="font-size:13px; color:var(--green-dark);">Jump to One-tap path →</a></div>
-      </div>
-
-      <div class="pathcard">
-        <b>⚡ Quick path — copy a prompt, paste into Claude</b><br>
-        <span style="font-size:13px;">If the One-tap path doesn't trigger the app, this is the manual fallback. Same result, one extra paste.</span>
-        <div style="margin-top:8px;"><a href="#quick" style="font-size:13px; color:var(--green-dark);">Jump to Quick path →</a></div>
-      </div>
-
-      <div class="pathcard">
-        <b>📁 Project path — persistent workspace</b><br>
-        <span style="font-size:13px;">Set up a Claude Project once (~5 min). Iterate over many sessions with the source files always loaded.</span>
-        <div style="margin-top:8px;"><a href="#project" style="font-size:13px; color:var(--green-dark);">Jump to Project path →</a></div>
-      </div>
+      <p style="font-size:14px; margin-bottom:6px;">No coding needed. No backend setup. No databases to wire up — the website's data layer already runs on its own. You just describe the visual change you want.</p>
     </div>
 
-    <!-- ============ ONE-TAP PATH ============ -->
-    <div class="card" id="onetap">
-      <div class="h2">🚀 One-tap path</div>
-      <div class="sub">Tap any page below. On iPhone/iPad with the Claude app installed, it opens the app directly. Otherwise it opens claude.ai in your browser. Either way — Claude is pre-loaded with the system rules and the current source for that page.</div>
+    <!-- ============ PRIMARY: COPY-PASTE PATH ============ -->
+    <div class="card" id="quick" style="border:2px solid var(--green-dark);">
+      <div class="h2" style="margin-top:0;">📋 Copy-and-paste — the simplest way</div>
+      <div class="sub">4 taps total. Works on any phone/iPad/laptop. Any Claude account (Free or Pro).</div>
 
-      <div id="onetapList"></div>
-
-      <div style="font-size:12px; color:var(--tan); margin-top:14px;">
-        <b>Tip:</b> First time you tap, your phone may ask whether to open in Claude or in browser. Pick Claude. After that it remembers.<br>
-        <b>What happens after you tap:</b> Claude reads the system rules + current source code, then says <i>"Got it — what would you like to change?"</i>. Type your change in plain English and watch the preview update.
-      </div>
-    </div>
-
-    <!-- ============ QUICK PATH ============ -->
-    <div class="card" id="quick">
-      <div class="h2">⚡ Quick path</div>
-      <div class="sub">Three steps. No account upgrade. Works in the Claude iOS app, web, or anywhere.</div>
-
-      <div class="h3">Step 1 — pick which page you want to edit</div>
-      <select id="quickFile" style="padding:9px; border-radius:6px; border:1px solid var(--light-gray); font:inherit; width:100%; max-width:400px;">
+      <div class="h3">Step 1 — pick the page you want to edit</div>
+      <select id="quickFile" style="padding:11px; border-radius:6px; border:1px solid var(--light-gray); font:inherit; width:100%; max-width:480px; font-size:15px;">
         <option value="intake.html">intake.html — staff create new intake</option>
         <option value="portfolio.html">portfolio.html — live margin dashboard</option>
         <option value="daily-price.html">daily-price.html — manual rate entry</option>
@@ -97,27 +66,51 @@
         <option value="../sepl/index.html" data-base="">index.html — SEPL landing page</option>
       </select>
 
-      <div class="h3">Step 2 — copy this prompt</div>
-      <div class="sub">Tap the button. It copies a complete prompt (system context + the chosen file's source) ready to paste into Claude.</div>
-      <button id="copyQuickPrompt">Copy prompt to clipboard</button>
+      <div class="h3" style="margin-top:18px;">Step 2 — copy everything Claude needs</div>
+      <div class="sub">One tap. Clipboard now has the rules + the page's full HTML source. Ready to paste into any Claude chat.</div>
+      <button id="copyQuickPrompt" style="font-size:16px; padding:14px 22px; background:var(--green-dark);">📋 Copy to clipboard</button>
       <button id="previewQuickPrompt" class="ghost">Preview what gets copied</button>
       <div id="quickPreview" style="display:none; margin-top:10px;" class="quickcopy-area"></div>
 
-      <div class="h3">Step 3 — paste into Claude and chat</div>
-      <ol style="font-size:14px;">
-        <li>Open the Claude app (or claude.ai in a browser).</li>
-        <li>Start a new chat. Paste.</li>
-        <li>After the prompt is in, type what you want to change. Examples:
-          <ul>
-            <li><i>"Add a checkbox so staff can mark whether the client brought their PAN card."</i></li>
-            <li><i>"Change the Create Intake button text to 'Confirm and Create'."</i></li>
-            <li><i>"Make the warning above Create Intake red instead of yellow."</i></li>
-          </ul>
+      <div class="h3" style="margin-top:18px;">Step 3 — open Claude and paste</div>
+      <ol style="font-size:15px; line-height:1.7;">
+        <li>Open the <b>Claude app</b> on your phone/iPad (or <a href="https://claude.ai" target="_blank" style="color:var(--green-dark);">claude.ai</a> in a browser).</li>
+        <li>Start a <b>new chat</b>.</li>
+        <li>Long-press the message box → <b>Paste</b>.</li>
+        <li>At the end, type what you want changed (replace the <code>[describe your change here]</code> placeholder). Examples:
+          <div style="font-size:13px; padding:8px 12px; background:#f5f0e6; border-radius:6px; margin-top:6px;">
+            • <i>"Change the Create Intake button text to 'Confirm and Create'."</i><br>
+            • <i>"Make the warning above Create Intake red instead of yellow."</i><br>
+            • <i>"Add a checkbox to mark whether the client brought their PAN card."</i>
+          </div>
         </li>
-        <li>Claude shows an <b>artifact preview</b> of the page — tap it to see the full page render live. Iterate as long as you want.</li>
-        <li>When happy, say: <b>"I'm done — handoff."</b> Claude outputs the final file + a short summary.</li>
-        <li>Send the artifact / summary to Deepak (WhatsApp, email, or share the Claude conversation link). He'll ship it to spicemore.com (live in ~60 sec).</li>
+        <li>Tap <b>Send</b>.</li>
       </ol>
+
+      <div class="h3" style="margin-top:18px;">Step 4 — iterate, then handoff</div>
+      <ol style="font-size:15px; line-height:1.7;">
+        <li>Claude shows the page as a previewable <b>artifact</b>. Tap to see it render full-screen.</li>
+        <li>Each change you ask for updates the same artifact in place. Watch the preview re-render.</li>
+        <li>When you're happy, say: <b>"I'm done — handoff."</b></li>
+        <li>Claude outputs the final file + a short HANDOFF SUMMARY.</li>
+        <li>Copy the artifact and the summary, send to Deepak on WhatsApp. He ships it to spicemore.com — live in ~60 seconds.</li>
+      </ol>
+
+      <div style="background:#e8f3ec; border:1px solid #b8d8c2; border-radius:8px; padding:12px 14px; margin-top:18px; font-size:13px;">
+        <b>That's it.</b> No deeplinks, no project setup, no plan upgrade required. Most reliable path because Claude has all the source code right in the message — nothing to fetch, nothing that can fail.
+      </div>
+    </div>
+
+    <!-- ============ ALTERNATIVE: ONE-TAP DEEPLINK ============ -->
+    <div class="card" id="onetap">
+      <div class="h2" style="margin-top:0;">🚀 One-tap link (alternative)</div>
+      <div class="sub">If you'd rather not paste — tap a button below to open Claude with everything pre-filled. Tap Send when Claude opens. Same result. Slightly fancier, slightly less reliable on some devices.</div>
+
+      <div id="onetapList"></div>
+
+      <div style="font-size:12px; color:var(--tan); margin-top:14px;">
+        <b>Note:</b> The first time you tap, iOS may ask whether to open in the Claude app or in Safari. Pick Claude. If the link opens in Safari instead, just use the copy-paste path above — it always works.
+      </div>
     </div>
 
     <!-- ============ PROJECT PATH ============ -->
