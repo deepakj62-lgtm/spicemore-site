@@ -47,7 +47,10 @@
       const d = await r.json();
       if (!r.ok) { $('msg').innerHTML='<div class="err">'+d.error+'</div>'; return; }
       $('step1').classList.add('hidden'); $('step2').classList.remove('hidden');
-      $('msg').innerHTML='<div class="ok">OTP sent.'+(d.devOtp?' DEV OTP: <b>'+d.devOtp+'</b>':'')+'</div>';
+      const otpNote = d.devOtp
+        ? ' WhatsApp unavailable — your OTP is <b style="font-size:18px; letter-spacing:2px;">'+d.devOtp+'</b>'
+        : ' Check WhatsApp.';
+      $('msg').innerHTML='<div class="ok">OTP sent.'+otpNote+'</div>';
     };
     $('ver').onclick = async () => {
       const otp = $('otp').value.trim();
