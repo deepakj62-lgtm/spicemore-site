@@ -297,8 +297,7 @@
     const r = await fetch('/api/sepl/consignors', { method:'POST', headers: hdr, body: JSON.stringify(body) });
     const d = await r.json();
     if (!r.ok) { $('newMsg').innerHTML = '<span class="err">'+d.error+'</span>'; return; }
-        const newId = d.consignor.consignorId;
-        const newId = d.consignor.consignorId;
+    const newId = d.consignor.consignorId;
     $('newMsg').innerHTML = '<span class="ok">Saved '+newId+'</span>';
     // Immediately append new client to dropdown without re-fetching
     const sel = $('clientId');
