@@ -118,7 +118,7 @@
           <div class="calc-row"><span>Advance offer (70%)</span><b id="c_adv">₹0</b></div>
           <div class="calc-row" style="align-items:center;">
             <span>Client Requirement <span style="font-size:11px; color:var(--tan);">(if different from above)</span></span>
-            <input id="c_req" type="number" min="0" step="1000" placeholder="blank = use advance" style="width:150px; padding:5px 8px; border:1px solid var(--light-gray); border-radius:6px; font:inherit; font-size:13px; text-align:right; margin-bottom:0;">
+            <input id="c_req" type="text" inputmode="numeric" placeholder="blank = use advance" style="width:150px; padding:5px 8px; border:1px solid var(--light-gray); border-radius:6px; font:inherit; font-size:13px; text-align:right; margin-bottom:0;">
           </div>
           <div class="calc-row"><span>Daily charge (₹60 per ₹1L of amount availed)</span><b id="c_daily">₹0</b></div>
         </div>
@@ -378,7 +378,7 @@
     const wb = weightedBenchmark(stats);
     const gross = w*wb;
     const adv = gross*0.70;
-    const reqAmt = Number($('c_req') ? $('c_req').value : 0)||0;
+    const reqAmt = Number($('c_req') ? $('c_req').value.replace(/,/g,'') : 0)||0;
     const dailyBase = reqAmt > 0 ? reqAmt : adv;
     const daily = dailyBase * 60 / 100000;
 
@@ -390,6 +390,15 @@
   ['netWeightKg','s_total','s_bold','s_mid','s_rej','c_req'].forEach(id => {
     const el = $(id); if (el) el.addEventListener('input', calc);
   });
+  (function() {
+    const el = $('c_req');
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const raw = el.value.replace(/[^0-9]/g, '');
+      if (!raw) { el.value = ''; return; }
+      el.value = Number(raw).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    });
+  })();
 
   // ---------- photo — mandatory, reveals calc ----------
   let samplePhotoFile = null;
@@ -467,7 +476,7 @@
 
     const wb = weightedBenchmark(stats);
     const rates = getEffectiveRates();
-    const reqAmt = Number($('c_req') ? $('c_req').value : 0)||0;
+    const reqAmt = Number($('c_req') ? $('c_req').value.replace(/,/g,'') : 0)||0;
     const body = {
       consignorId: $('clientId').value,
       netWeightKg: Number($('netWeightKg').value),
