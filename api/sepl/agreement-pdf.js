@@ -2,80 +2,30 @@ const { list } = require('@vercel/blob');
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 const { verifyToken } = require('./_session');
 const { sendWhatsAppDocument } = require('./_whatsapp');
-const SETTINGS = require('./_settings');
 
-// Verbatim from Edwin's "Stock Advance Programme - 15 April 2026" (Google Sheet, T&C-relevant tabs), v1.0 April 2026.
-const TNC_TEXT = `SEPL CARDAMOM CONSIGNMENT PROGRAMME — TERMS & CONDITIONS
-Spicemore Exim Private Limited (SEPL) | Version 1.0 | April 2026 | Confidential
-
-A. DOCUMENTS REQUIRED FROM CONSIGNOR
-   1. PAN card + Aadhaar.
-   2. Bank account details (for NEFT/RTGS remittance).
-   3. Spices Board registration certificate (if any).
-   4. GST registration (if dealer).
-
-B. STOCK INTAKE & ADVANCE
-   1. Advance up to 70% of net stock value on date of intake.
-   2. Stock valuation based on previous day's Spices Board average auction
-      closing price for the relevant grade.
-   3. Disbursement via NEFT/RTGS only — within 24 hours of stock receipt
-      and documentation.
-   4. Minimum stock quantity per lot: 250 kg.
-   5. A free sample of 100 g will be collected for record keeping and
-      verification purpose.
-
-C. TENURE
-   1. Standard tenure: maximum of 90 days from date of intake.
-   2. Extension up to 120 days by prior written approval from management.
-   3. Management reserves the right to call for exit at any time if margin
-      conditions are breached.
-
-D. HOLDING CHARGE
-   1. Interest equivalent to Rs60 per day per Rs1,00,000 advance (21.9% p.a.).
-   2. Calculated on a 365-day basis from date of advance disbursement.
-   3. Accrues every calendar day including Sundays and public holidays.
-   4. No holding charge is waived for any reason once accrued.
-
-E. MARGIN & FORCED SALE
-   1. If advance plus accrued charges exceed 75% of current stock value —
-      consignor will be notified to monitor.
-   2. If advance plus accrued charges exceed 80% of current stock value —
-      formal margin call issued, consignor must top up or partially exit
-      within 7 days.
-   3. If advance plus accrued charges exceed 85% of current stock value —
-      Management reserves the right to sell stock with 48 hours notice.
-   4. If advance plus accrued charges exceed 90% of current stock value —
-      Management may sell stock immediately without further notice.
-   5. Stock value for margin purposes is assessed daily based on prevailing
-      Spices Board auction rates.
-
-F. STORAGE & CUSTODY
-   1. All stock physically deposited at Management designated depot —
-      Kumily or Kollaparachal.
-   2. Stock weighed on certified weighbridge and graded on intake — Goods
-      Receipt Note (GRN) issued.
-   3. Management not liable for natural quality deterioration of stock
-      beyond normal storage conditions.
-   4. Periodic physical stock verification may be conducted by Management
-      at any time.
-
-G. EXIT OPTIONS
-   1. Option A — Buyback: Consignor repays advance + all accrued charges.
-      Stock released same day upon clearance of funds.
-   2. Option B — Auction via SMTC: Stock auctioned on consignor's behalf at
-      next available auction. Sale proceeds applied against all dues.
-      Balance after the auction commission (1% + 18% GST) is remitted to
-      consignor as per the normal auction settlement terms.
-
-H. GENERAL
-   1. All disputes subject to jurisdiction of Peerumedu Courts.
-   2. Management reserves the right to amend terms with 7 days notice to
-      active consignors.
-   3. These terms are subject to change. Current terms prevail over any
-      previously communicated terms.
-   4. For queries contact: Joshy Joseph — 62824 89418 |
-      joshy.joseph@spicemore.com
-`;
+const PROGRAMME_TERMS = [
+  ['Holding Charge',
+    'The daily holding charge accrues from the date of advance disbursement on every calendar day, ' +
+    'including Sundays and public holidays. No charge is waived once accrued.'],
+  ['Tenure',
+    'The advance is extended for a maximum of 90 days from the date of intake. Extensions beyond the ' +
+    'Latest Release Date require prior written approval from the Company.'],
+  ['Margin Monitoring',
+    'The Company monitors the ratio of advance plus accrued charges against the prevailing market value ' +
+    'of the stock on a daily basis. Should this ratio approach or exceed the Company\'s internal ' +
+    'thresholds, the Company may issue a margin notice and require partial repayment or stock release. ' +
+    'In cases of significant margin breach, the Company reserves the right to act to protect its ' +
+    'interest with reasonable notice to the client.'],
+  ['Stock Custody',
+    'Stock is held at the Company\'s designated depot. The Company is not liable for natural quality ' +
+    'deterioration beyond normal storage conditions. Periodic physical verification of stock may be ' +
+    'conducted at any time.'],
+  ['Settlement',
+    'All accrued charges and applicable costs are settled before any balance is remitted or stock is ' +
+    'released to the client.'],
+  ['Governing Law',
+    'All disputes are subject to the jurisdiction of Peerumedu Courts.'],
+];
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -118,49 +68,105 @@ function wrap(text, max) {
 }
 
 async function buildPdf(txn, consignor) {
-  const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const inr = n => 'Rs' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const pdf    = await PDFDocument.create();
+  const font   = await pdf.embedFont(StandardFonts.TimesRoman);
+  const bold   = await pdf.embedFont(StandardFonts.TimesRomanBold);
+  const italic = await pdf.embedFont(StandardFonts.TimesRomanItalic);
+  const inr = n => 'Rs.' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
-  const addPage = () => pdf.addPage([595, 842]); // A4
+  const W = 595, H = 842, lm = 60, rm = 535;
+  const green = rgb(0.12, 0.30, 0.16);
+  const gray  = rgb(0.42, 0.42, 0.42);
+
+  const addPage = () => pdf.addPage([W, H]);
   let page = addPage();
-  let y = 800;
-  const left = 50;
-  const write = (txt, f = font, size = 10, color = rgb(0, 0, 0)) => {
-    if (y < 60) { page = addPage(); y = 800; }
-    page.drawText(String(txt), { x: left, y, size, font: f, color });
-    y -= size + 4;
+  let y = 790;
+
+  const line = (txt, f = font, size = 10, color = rgb(0, 0, 0), x = lm) => {
+    if (y < 70) { page = addPage(); y = 790; }
+    page.drawText(String(txt), { x, y, size, font: f, color });
+    y -= size + 5;
   };
 
-  write('SEPL CARDAMOM CONSIGNMENT AGREEMENT', bold, 14, rgb(0.17, 0.31, 0.09));
-  y -= 6;
-  write(`Agreement Ref: ${txn.txnId}`, font, 10);
-  write(`Intake Date: ${txn.intakeDate}`, font, 10);
-  write(`Depot: ${txn.depot}`, font, 10);
-  y -= 6;
-  write('PARTIES', bold, 11);
-  write(`SEPL: ${SETTINGS.issuer}`, font, 10);
-  write(`Consignor: ${consignor.name} (${consignor.consignorId}) — ${consignor.type}`, font, 10);
-  write(`Phone: ${consignor.phone}  PAN: ${consignor.pan || '-'}`, font, 10);
-  write(`Spices Board: ${consignor.spicesBoardReg || '-'}`, font, 10);
-  write(`Bank: ${consignor.bankAccount || '-'} (IFSC: ${consignor.ifsc || '-'})`, font, 10);
-  y -= 6;
-  write('STOCK & FINANCIAL TERMS', bold, 11);
-  write(`Net Weight: ${txn.netWeightKg} kg`, font, 10);
-  write(`Benchmark Price: ${inr(txn.benchmarkPricePerKg)} / kg`, font, 10);
-  write(`Gross Stock Value: ${inr(txn.grossStockValue)}`, font, 10);
-  write(`Advance Rate: ${(txn.advanceRateUsed * 100).toFixed(0)}%  Advance Amount: ${inr(txn.advanceAmount)}`, font, 10);
-  write(`Holding Rate: ${(txn.annualRateUsed * 100).toFixed(1)}% p.a.  Daily Charge: ${inr(txn.dailyHoldingCharge)}`, font, 10);
-  write(`Expected Exit: ${txn.expectedExitDate}  Max Exit: ${txn.maxExitDate}`, font, 10);
-  write(`Grade / Notes: ${txn.gradeNotes || '-'}  Sample %: ${txn.samplePct || 0}`, font, 10);
-  y -= 10;
-  write('TERMS & CONDITIONS', bold, 11);
-  for (const line of wrap(TNC_TEXT, 95)) {
-    write(line, font, 9);
+  const center = (txt, f, size, color) => {
+    const tw = f.widthOfTextAtSize(txt, size);
+    line(txt, f, size, color, Math.max(lm, (W - tw) / 2));
+  };
+
+  const rule = (thickness = 0.5, col = rgb(0.65, 0.65, 0.65)) => {
+    if (y < 70) { page = addPage(); y = 790; }
+    page.drawLine({ start: { x: lm, y: y + 4 }, end: { x: rm, y: y + 4 }, thickness, color: col });
+    y -= 9;
+  };
+
+  const gap = n => { y -= n; };
+
+  const section = (txt) => {
+    gap(8);
+    line(txt, bold, 10, green);
+    rule(0.4, rgb(0.7, 0.7, 0.7));
+  };
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  center('SPICEMORE GROUP', bold, 15, green);
+  gap(2);
+  center('CARDAMOM STOCK ADVANCE', bold, 11, green);
+  center('Programme Acknowledgement', italic, 10, gray);
+  gap(5);
+  rule(0.8, rgb(0.3, 0.3, 0.3));
+  gap(2);
+  line(`Document Ref: ${txn.txnId}   |   Date of Issue: ${txn.intakeDate}`, font, 9, gray);
+  gap(6);
+
+  // ── Parties ───────────────────────────────────────────────────────────────
+  section('PARTIES');
+  line('Company:   SpiceMore Group', font, 10);
+  line(`Client:    ${consignor.name} (${consignor.consignorId}) — ${consignor.type}`, font, 10);
+  line(`Phone:     ${consignor.phone}   PAN: ${consignor.pan || '—'}`, font, 10);
+  if (consignor.spicesBoardReg) line(`Spices Board Reg:   ${consignor.spicesBoardReg}`, font, 10);
+
+  // ── Stock Details ─────────────────────────────────────────────────────────
+  section('STOCK DETAILS');
+  line(`Net Weight:               ${Number(txn.netWeightKg).toLocaleString('en-IN')} kg`, font, 10);
+  if (txn.gradeNotes) line(`Grade / Notes:            ${txn.gradeNotes}`, font, 10);
+  line(`Depot:                    ${txn.depot}`, font, 10);
+  line(`Date of Intake:           ${txn.intakeDate}`, font, 10);
+  line(`Benchmark Price at Intake:  ${inr(txn.benchmarkPricePerKg)} / kg`, font, 10);
+  line(`Gross Stock Value:          ${inr(txn.grossStockValue)}`, font, 10);
+  if (txn.samplePct) line(`Sample Collected:         ${txn.samplePct}%`, font, 10);
+
+  // ── Financial Terms ───────────────────────────────────────────────────────
+  section('FINANCIAL TERMS');
+  line(`Advance Disbursed:        ${inr(txn.advanceAmount)}`, font, 10);
+  line(`Daily Holding Charge:     ${inr(txn.dailyHoldingCharge)}  (Rs.60 per day per Rs.1,00,000 of advance)`, font, 10);
+  line(`Latest Release Date:      ${txn.maxExitDate}  (90 days from date of intake)`, font, 10);
+  line(`Disbursement Account:     ${consignor.bankAccount || '—'}  (IFSC: ${consignor.ifsc || '—'})`, font, 10);
+  line('Disbursement Mode:        NEFT / RTGS within 24 hours of intake and documentation.', font, 10);
+
+  // ── Programme Terms ───────────────────────────────────────────────────────
+  section('PROGRAMME TERMS');
+  for (let i = 0; i < PROGRAMME_TERMS.length; i++) {
+    const [title, body] = PROGRAMME_TERMS[i];
+    line(`${i + 1}.  ${title}`, bold, 10);
+    for (const ln of wrap(body, 84)) {
+      line('    ' + ln, font, 10);
+    }
+    gap(3);
   }
-  y -= 16;
-  write('Signed for SEPL: ____________________    Consignor: ____________________', font, 10);
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+  gap(6);
+  rule(0.8, rgb(0.3, 0.3, 0.3));
+  gap(2);
+  for (const ln of [
+    'This is a computer-generated programme acknowledgement issued by SpiceMore Group. It is not a',
+    'negotiable instrument and does not require a physical signature. The terms above govern the stock',
+    'advance extended to the client named in this document.',
+    '',
+    'For queries: Joshy Joseph  —  62824 89418  |  joshy.joseph@spicemore.com',
+  ]) {
+    line(ln, italic, 9, gray);
+  }
 
   return Buffer.from(await pdf.save());
 }
@@ -181,7 +187,7 @@ module.exports = async function handler(req, res) {
       if (!consignor) return res.status(404).json({ error: 'Consignor not found' });
       const buf = await buildPdf(txn, consignor);
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="SEPL-Agreement-${txnId}.pdf"`);
+      res.setHeader('Content-Disposition', `inline; filename="SpiceMore-StockAdvance-${txnId}.pdf"`);
       return res.status(200).send(buf);
     } catch (e) {
       return res.status(e.message.includes('token') || e.message.includes('Token') ? 401 : 500)
@@ -211,8 +217,8 @@ module.exports = async function handler(req, res) {
       whatsappResult = await sendWhatsAppDocument(
         consignor.phone,
         buf,
-        `SEPL-Agreement-${txnId}.pdf`,
-        'Your SEPL consignment agreement'
+        `SpiceMore-StockAdvance-${txnId}.pdf`,
+        'Your SpiceMore stock advance acknowledgement'
       );
     }
 

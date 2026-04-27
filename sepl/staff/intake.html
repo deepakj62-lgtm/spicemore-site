@@ -526,11 +526,13 @@
     if (wa && wa.ok && !wa.stubbed) {
       $('agreeMsg').innerHTML = '<span class="ok">Sent on WhatsApp ✓</span>';
     } else {
-      // WhatsApp bridge offline — open the PDF from the returned base64
+      // WhatsApp bridge offline — surface PDF for manual share / download
       let dlLink = '';
       if (d.base64) {
         const url = URL.createObjectURL(b64ToBlob(d.base64, 'application/pdf'));
-        dlLink = ' <a href="'+url+'" target="_blank" style="color:var(--green-dark); font-weight:500;">Open PDF ↗</a>';
+        const fname = 'SpiceMore-StockAdvance-' + lastTxn.txnId + '.pdf';
+        dlLink = ' <a href="'+url+'" target="_blank" style="color:var(--green-dark); font-weight:500;">Open ↗</a>'
+               + '  <a href="'+url+'" download="'+fname+'" style="color:var(--green-dark); font-weight:500;">Download ↓</a>';
       }
       $('agreeMsg').innerHTML = '<span class="err">WhatsApp unavailable.</span>'+dlLink;
     }
