@@ -264,6 +264,11 @@
 
   $('toggleNew').onclick = () => $('newForm').classList.toggle('hidden');
 
+  // Force uppercase on all text inputs in the new client form
+  document.querySelectorAll('#newForm input').forEach(el => {
+    el.addEventListener('input', () => { el.value = el.value.toUpperCase(); });
+  });
+
   // Conditional PAN vs GST visibility
   function syncTypeFields() {
     const t = $('n_type').value;
