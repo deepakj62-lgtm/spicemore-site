@@ -372,7 +372,7 @@ header .right{font-size:12px;opacity:.5;text-align:right}
   </div>
   <div class="file-chips" id="fileChips"></div>
   <button class="btn btn-go" id="goBtn" disabled onclick="runAnalysis()">⚡ Analyse</button>
-  <button class="btn btn-clear" onclick="clearAll()">Clear files</button>
+  <button class="btn btn-clear" onclick="clearAll()">Clear files &amp; saved analysis</button>
 
   <h2>⚙️ Credit Policy</h2>
   <div class="e-row">
@@ -489,6 +489,131 @@ let charts = {};
 
 document.getElementById('hDate').innerHTML =
   new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + '<br>FY 2025–26';
+
+// ══════════════════════════════════════════════════════════
+// PERSISTENT STORAGE  (window.storage API)
+// Saves computed results so any team member opening the page
+// sees the last run analysis — no re-upload needed.
+// shared=true → all users share the same saved state.
+// ══════════════════════════════════════════════════════════
+const STORAGE_KEY = 'smtc_credit_v1';
+
+function serDate(d) { return d ? d.toISOString() : null; }
+function revDate(s) { return s ? new Date(s) : null; }
+
+function serSett(s) {
+  return {
+    ...s,
+    date: serDate(s.date),
+    settlementDate: serDate(s.settlementDate),
+    pays: (s.pays || []).map(p => ({ ...p, payDate: serDate(p.payDate) }))
+  };
+}
+function revSett(s) {
+  return {
+    ...s,
+    date: revDate(s.date),
+    settlementDate: revDate(s.settlementDate),
+    pays: (s.pays || []).map(p => ({ ...p, payDate: revDate(p.payDate) }))
+  };
+}
+
+function buildPayload() {
+  return {
+    savedAt: new Date().toISOString(),
+    overrides,
+    results: results.map(r => ({
+      ...r,
+      allSett: r.allSett.map(serSett),
+      monthly: r.monthly,
+      months: r.months,
+      active: r.active,
+      breakdown: Object.fromEntries(
+        Object.entries(r.breakdown).map(([co, d]) => [co, {
+          sales: d.sales,
+          settlements: d.settlements.map(serSett)
+          // txns intentionally omitted — large raw data not needed for display
+        }])
+      )
+    }))
+  };
+}
+
+function restorePayload(payload) {
+  return payload.results.map(r => ({
+    ...r,
+    allSett: (r.allSett || []).map(revSett),
+    monthly: r.monthly || {},
+    months: r.months || [],
+    active: r.active || [],
+    breakdown: Object.fromEntries(
+      Object.entries(r.breakdown || {}).map(([co, d]) => [co, {
+        sales: d.sales,
+        settlements: (d.settlements || []).map(revSett),
+        txns: []   // not stored; not needed post-restore
+      }])
+    )
+  }));
+}
+
+async function saveToStorage() {
+  if (!results.length) return;
+  try {
+    const payload = JSON.stringify(buildPayload());
+    await window.storage.set(STORAGE_KEY, payload, true);
+    console.log('Credit Assessor: analysis saved to storage');
+  } catch(e) {
+    console.warn('Credit Assessor: storage save failed', e);
+  }
+}
+
+async function loadFromStorage() {
+  try {
+    const stored = await window.storage.get(STORAGE_KEY, true);
+    if (!stored?.value) return false;
+    const payload = JSON.parse(stored.value);
+    if (!payload.results?.length) return false;
+    overrides = payload.overrides || {};
+    results   = restorePayload(payload);
+    rawData   = { __restored: true };  // sentinel — data exists, no re-upload needed
+    showCacheBanner(payload.savedAt);
+    render();
+    return true;
+  } catch(e) {
+    console.warn('Credit Assessor: storage load failed', e);
+    return false;
+  }
+}
+
+async function clearStorage() {
+  try {
+    await window.storage.delete(STORAGE_KEY, true);
+  } catch(e) {
+    console.warn('Credit Assessor: storage clear failed', e);
+  }
+}
+
+function showCacheBanner(iso) {
+  document.getElementById('cacheBanner')?.remove();
+  const d   = new Date(iso);
+  const lbl = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+              + ' at ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  const b = document.createElement('div');
+  b.id = 'cacheBanner';
+  b.style.cssText = [
+    'display:flex', 'align-items:center', 'gap:10px',
+    'background:#FFF8E1', 'border:1px solid #FFD54F', 'border-radius:8px',
+    'padding:10px 16px', 'margin-bottom:16px', 'font-size:12px', 'color:#6B4F0A'
+  ].join(';');
+  b.innerHTML =
+    '<span style="font-size:16px">📂</span>' +
+    '<span style="flex:1">Showing <strong>saved analysis</strong> from ' + lbl + '. ' +
+    'Upload new files and click <strong>⚡ Analyse</strong> to update.</span>' +
+    '<button onclick="this.parentElement.remove()" style="background:none;border:none;' +
+    'font-size:16px;cursor:pointer;color:#9A7B0A;padding:0 4px;line-height:1">×</button>';
+  const resultsDiv = document.getElementById('results');
+  if (resultsDiv) resultsDiv.insertBefore(b, resultsDiv.firstChild);
+}
 
 // ══════════════════════════════════════════════════════════
 // EDITABLE FIELD HELPERS
@@ -627,13 +752,17 @@ function renderChips() {
 }
 
 function removeFile(i) { files.splice(i, 1); renderChips(); }
+
 function clearAll() {
   files = []; rawData = {}; results = []; overrides = {};
   sgState.sortCol = null; sgState.sortDir = 'asc'; sgState.filters = {}; sgState.search = ''; sgState.colWidths = {};
   renderChips();
+  document.getElementById('cacheBanner')?.remove();
   document.getElementById('results').style.display = 'none';
   document.getElementById('emptyState').style.display = '';
   fi.value = '';
+  clearStorage();
+  toast('🗑 Cleared — saved analysis removed');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -730,23 +859,17 @@ function analyse(name, cosData, c) {
   }
 
   // ── Settlement day calculation (adjusted for commodity buyback) ──
-  // When a Purc (commodity buyback) settles a Sale, the dealer hasn't paid cash.
-  // The buyback creates a REVERSE credit obligation (company owes dealer),
-  // with its own credit-term cycle. So effective days = raw days + credit terms.
   let effWeighted = 0, effTotal = 0;
   let cashWeighted = 0, cashTotal = 0;
   let purcWeighted = 0, purcTotal = 0;
   for (const s of allSett) {
     for (const p of s.pays) {
       if (p.type === 'Purc') {
-        // Commodity buyback: add credit term days because the buyback
-        // creates a new payment obligation from company to dealer
         const effDays = p.days + c.cd;
         effWeighted += effDays * p.amount;
         purcWeighted += p.days * p.amount;
         purcTotal += p.amount;
       } else {
-        // Cash/bank receipt: use actual days as-is
         effWeighted += p.days * p.amount;
         cashWeighted += p.days * p.amount;
         cashTotal += p.amount;
@@ -773,7 +896,7 @@ function analyse(name, cosData, c) {
   const months = Object.keys(monthly).sort();
   const active = months.filter(k => monthly[k].total > 0);
   const combined = Object.values(breakdown).reduce((a, d) => a + d.sales, 0);
-  const mAvg = combined / 12;  // Edwin: "12 months total" — always divide by 12
+  const mAvg = combined / 12;
 
   // Peak
   let bal = 0, peak = 0;
@@ -801,21 +924,16 @@ function analyse(name, cosData, c) {
   }
   const recentAvg = recentEffT > 0 ? recentEffW / recentEffT : avgDays;
 
-  // ── Labour Charge (interest on Purc cycles) ──
-  // "Labour Charge" in account name = interest billed to dealer for buyback credit cycles.
-  // Can appear as Sale, Jrnl, or other type — catch by account name regardless of type.
-  // Debit = charged to dealer (income for us); also check credit side for reversals.
+  // Labour Charge
   const labourTxns = allTxns.filter(t => String(t.account || '').toLowerCase().includes('labour'));
   const labourTotal = labourTxns.reduce((a, t) => a + (t.debit || 0), 0);
   const labourTxnCount = labourTxns.length;
 
-  // ── Payment consistency: std deviation of per-invoice settlement days ──
-  // Uses days-to-final-settlement for each fully settled invoice
+  // Payment consistency: std deviation
   const settledInvDays = allSett
     .filter(s => s.settlementDate)
     .map(s => {
       const raw = (s.settlementDate - s.date) / 864e5;
-      // check if any pay was Purc to apply cd adjustment
       const hasPurc = s.pays.some(p => p.type === 'Purc');
       return hasPurc ? raw + c.cd : raw;
     });
@@ -826,7 +944,7 @@ function analyse(name, cosData, c) {
     stdDevDays = Math.sqrt(variance);
   }
 
-  // ── Consecutive recent overdue invoices (last 90 days) ──
+  // Consecutive recent overdue invoices (last 90 days)
   const ninetyAgo = Date.now() - 90 * 864e5;
   const recentInvs = allSett
     .filter(s => s.date >= ninetyAgo)
@@ -840,8 +958,7 @@ function analyse(name, cosData, c) {
     else break;
   }
 
-  // ── Purc haircut on limit ──
-  // Cash-only days used as limit input when dealer is Purc-heavy; haircut applied on top
+  // Purc haircut on limit
   const limitInputDays = purcPct > 30 ? (cashAvgDays ?? avgDays) : avgDays;
   const purcHaircut = purcPct > 60 ? 0.70 : purcPct > 30 ? 0.85 : 1.0;
   const rfAdj = getRF(limitInputDays, c);
@@ -891,13 +1008,11 @@ function sgRowData() {
 
 function sgFilterAndSort(rows) {
   let f = [...rows];
-  // Search
   if (sgState.search) {
     const q = sgState.search.toLowerCase();
     f = f.filter(r => r.dealer.toLowerCase().includes(q) || r._turnoverFmt.toLowerCase().includes(q)
       || r._daysFmt.includes(q) || r._limitFmt.toLowerCase().includes(q) || r.risk.toLowerCase().includes(q));
   }
-  // Column filters
   for (const [col, val] of Object.entries(sgState.filters)) {
     if (!val) continue;
     f = f.filter(r => {
@@ -905,7 +1020,6 @@ function sgFilterAndSort(rows) {
       return String(r[col]) === val;
     });
   }
-  // Sort
   if (sgState.sortCol) {
     const dir = sgState.sortDir === 'asc' ? 1 : -1;
     const col = sgState.sortCol;
@@ -923,7 +1037,6 @@ function renderSummaryGrid() {
   const filtered = sgFilterAndSort(allRows);
   const c = cfg();
 
-  // Unique values for filters
   const uniques = {};
   for (const col of sgCols) {
     if (col.type === 'cat') {
@@ -933,13 +1046,11 @@ function renderSummaryGrid() {
     }
   }
 
-  // Active filters as chips
   const chipHtml = Object.entries(sgState.filters).filter(([,v]) => v).map(([col, val]) => {
     const label = sgCols.find(c => c.key === col)?.label || col;
     return `<span class="sg-chip">${label}: ${val}<span class="sg-chip-x" onclick="sgClearFilter('${col}')">×</span></span>`;
   }).join('');
 
-  // Header row
   const thRow = sgCols.map((col, ci) => {
     const isSorted = sgState.sortCol === col.key;
     const arrow = isSorted ? (sgState.sortDir === 'asc' ? '▲' : '▼') : '⇅';
@@ -954,7 +1065,6 @@ function renderSummaryGrid() {
     </th>`;
   }).join('');
 
-  // Filter row
   const filterRow = sgCols.map(col => {
     const w = sgState.colWidths[col.key];
     const wStyle = w ? `width:${w}px;min-width:${w}px;max-width:${w}px` : '';
@@ -968,7 +1078,6 @@ function renderSummaryGrid() {
     return `<th style="${wStyle}"></th>`;
   }).join('');
 
-  // Body rows
   const bodyRows = filtered.map(r => {
     return `<tr onclick="sgGoToDealer('${r.name.replace(/'/g,"\\'")}')" data-dealer="${r.name}">
       <td style="text-align:left"><span class="sg-dlr">${r.dealer}<span class="sg-arrow">→</span></span></td>
@@ -979,7 +1088,6 @@ function renderSummaryGrid() {
     </tr>`;
   }).join('');
 
-  // Footer
   const totalTurnover = filtered.reduce((a, r) => a + r.turnover, 0);
   const totalLimit = filtered.reduce((a, r) => a + r.limit, 0);
   const avgDaysAll = filtered.length > 0 ? filtered.reduce((a, r) => a + r.days, 0) / filtered.length : 0;
@@ -1042,7 +1150,6 @@ function sgSearch(q) {
   renderSummaryGrid();
 }
 
-// Click dealer → jump to detail card
 function sgGoToDealer(name) {
   switchTab('detail');
   setTimeout(() => {
@@ -1072,11 +1179,9 @@ function sgStartResize(e, colIdx, colKey) {
     const diff = ev.clientX - sgResizeStart;
     const newW = Math.max(60, sgResizeW + diff);
     sgState.colWidths[sgResizeCol] = newW;
-    // Live resize via colgroup
     const cols = document.querySelectorAll('.sg-table col');
     const idx = sgCols.findIndex(c => c.key === sgResizeCol);
     if (cols[idx]) cols[idx].style.width = newW + 'px';
-    // Also resize th
     const ths = document.querySelectorAll('.sg-table thead tr:first-child th');
     if (ths[idx]) { ths[idx].style.width = newW+'px'; ths[idx].style.minWidth = newW+'px'; ths[idx].style.maxWidth = newW+'px'; }
     const fths = document.querySelectorAll('.sg-table .sg-filter-row th');
@@ -1124,7 +1229,6 @@ document.addEventListener('touchstart', e => {
 async function runAnalysis() {
   if (!files.length) return;
   loader(true, 'Reading ledgers…');
-  // Group by dealer
   const grouped = {};
   for (const f of files) {
     if (!grouped[f.dealer]) grouped[f.dealer] = {};
@@ -1142,11 +1246,13 @@ async function runAnalysis() {
   }
   recalc();
   loader(false);
-  toast('✅ Analysis complete');
+  toast('✅ Analysis complete — saved for all users');
 }
 
 function recalc() {
   if (!Object.keys(rawData).length) return;
+  // Skip re-analysis if data was restored from storage (no raw txns available)
+  if (rawData.__restored) { render(); return; }
   const c = cfg();
   results = [];
   for (const [dealer, cosData] of Object.entries(rawData)) {
@@ -1154,6 +1260,7 @@ function recalc() {
   }
   results.sort((a, b) => b.recommended - a.recommended);
   render();
+  saveToStorage();  // persist after every recalc
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1179,7 +1286,6 @@ function render() {
   document.getElementById('results').style.display = '';
   const c = cfg();
 
-  // Summary
   const totalLimit = results.reduce((a, r) => a + (overrides[r.name]?.limit ?? r.recommended), 0);
   const totalPeak = results.reduce((a, r) => a + r.peak, 0);
   const avgD = results.reduce((a, r) => a + r.avgDays, 0) / results.length;
@@ -1194,10 +1300,8 @@ function render() {
       <div class="s-label">Avg Payment Days</div><div class="s-val">${avgD.toFixed(1)}</div>
       <div class="s-sub">${avgD<21?'✓ Below terms':avgD<35?'⚠ Slightly over':'⚠ Over terms'}</div></div>`;
 
-  // Summary grid (Excel-like)
   renderSummaryGrid();
 
-  // Dealer cards
   const grid = document.getElementById('dealerGrid');
   grid.innerHTML = '';
   Object.values(charts).forEach(ch => ch?.destroy());
@@ -1212,26 +1316,20 @@ function render() {
     const coPills = Object.entries(r.breakdown).map(([co, d]) =>
       `<span class="co-pill" style="background:${co==='SMTC'?'var(--g7)':'var(--b)'}">${co} ${fmt(d.sales)}</span>`).join('');
 
-    // Invoice rows — Days = days from sale to FINAL settlement (not weighted avg of partials)
     const invRows = r.allSett.map(s => {
       let hasPurc = false;
       for (const p of s.pays) { if (p.type === 'Purc') hasPurc = true; }
-      // Use days from sale date to the settlement date (last payment that closed the invoice)
-      // For partially settled invoices, use days to the last payment received so far
       let effDays = null;
       if (s.settlementDate) {
-        // Fully settled: days from sale to final payment date
         effDays = (s.settlementDate - s.date) / 864e5;
-        if (hasPurc) effDays += c.cd; // commodity buyback adjustment
+        if (hasPurc) effDays += c.cd;
       } else if (s.pays.length > 0) {
-        // Partially settled: show days to last payment received
         const lastPay = s.pays.reduce((a, p) => p.payDate > a ? p.payDate : a, s.pays[0].payDate);
         effDays = (lastPay - s.date) / 864e5;
       }
       const dc = effDays === null ? '' : effDays < c.cd ? 'df' : effDays <= 30 ? 'do' : effDays <= 45 ? 'ds' : 'db';
       const dt = effDays === null ? '—' : effDays.toFixed(1) + 'd' + (hasPurc ? ' 🔄' : '');
       const co = Object.entries(r.breakdown).find(([, d]) => d.settlements.find(x => x.vch === s.vch))?.[0] || '?';
-      // Settlement type: Cash / Buyback / Mixed / Partial
       const hasCash = s.pays.some(p => p.type === 'Rcpt');
       let settleType, settleTypeClr;
       if (s.outstanding > 0 && s.pays.length === 0) { settleType = '—'; settleTypeClr = 'var(--t5)'; }
@@ -1380,10 +1478,10 @@ function onLimitEdit(el) {
     el.classList.add('changed');
     el.closest('.limit-pill')?.querySelector('.e-reset')?.classList.add('visible');
   }
-  // Update summary strip + grid
   const totalLimit = results.reduce((a, r) => a + (overrides[r.name]?.limit ?? r.recommended), 0);
   document.querySelectorAll('.s-card')[1].querySelector('.s-val').textContent = fmt(totalLimit);
   if (document.getElementById('tabSummary').querySelector('.sg-wrap')) renderSummaryGrid();
+  saveToStorage();  // persist override changes immediately
 }
 
 function resetLimit(btn, dealer) {
@@ -1394,6 +1492,7 @@ function resetLimit(btn, dealer) {
   const totalLimit = results.reduce((a, r) => a + (overrides[r.name]?.limit ?? r.recommended), 0);
   document.querySelectorAll('.s-card')[1].querySelector('.s-val').textContent = fmt(totalLimit);
   if (document.getElementById('tabSummary').querySelector('.sg-wrap')) renderSummaryGrid();
+  saveToStorage();  // persist reset
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1524,7 +1623,6 @@ function analyse(name, cosData) {
     combined += txns.filter(t=>t.type==='Sale'&&t.account==='Sales').reduce((a,t)=>a+t.debit,0);
     allTxns.push(...txns);
   }
-  // Simplified avg days
   const monthly={};
   allTxns.filter(t=>t.type==='Sale'&&t.account==='Sales').forEach(t=>{
     const k=Utilities.formatDate(t.date,'Asia/Kolkata','yyyy-MM');
@@ -1567,6 +1665,13 @@ function fmtD(d) { return d ? d.getDate() + '-' + ['Jan','Feb','Mar','Apr','May'
 function fmtMK(k) { const [y,m] = k.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + "'" + y.slice(2); }
 function loader(on, txt) { document.getElementById('loader').classList.toggle('on', on); if (txt) document.getElementById('loaderTxt').textContent = txt; }
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+
+// ══════════════════════════════════════════════════════════
+// INIT — restore saved analysis on page load
+// ══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadFromStorage();
+});
 </script>
 </body>
 </html>
