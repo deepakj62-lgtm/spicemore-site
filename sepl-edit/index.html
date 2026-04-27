@@ -316,19 +316,24 @@ Now, here's what I want to change:
   };
 
   // ---------- One-tap deeplinks ----------
-  // Pattern: claude.ai/new?q=<encoded short prompt>
+  // Pattern: claude.ai/new?q=<encoded prompt>
   // Universal link → on iPhone/iPad opens the Claude app, on desktop opens browser.
-  // Prompt is short (fits in URL). Claude fetches the system rules + current source from public URLs.
-  const SYSTEM_PROMPT_URL = 'https://spicemore.com/sepl-edit/system-prompt.txt';
+  // We embed the FULL SYSTEM_PROMPT (defined above) directly into the URL so Claude is
+  // guaranteed to have the rules in context, even if it can't fetch external URLs.
+  // Only the file source is fetched — instructed clearly so Claude does it.
 
   function buildOneTapPrompt(filename, fileUrl) {
-    return `Please help me edit the Spicemore SEPL ${filename} page.
+    return `${SYSTEM_PROMPT}
 
-First, fetch the system rules from ${SYSTEM_PROMPT_URL} so you know how to behave.
+---
 
-Then fetch the current source from ${fileUrl}.
+I want to edit the **${filename}** page on the Spicemore SEPL site. The current production source is at:
+${fileUrl}
 
-Once you've read both, just say "Got it — what would you like to change?" and wait for my next message. Don't make any changes yet — I'll tell you what I want next.`;
+Step 1 — fetch that URL right now and read the file so you have the current state.
+Step 2 — once you've read it, say exactly: "Got it — what would you like to change?" and wait. Don't make any changes yet.
+
+I'll describe my change in the next message.`;
   }
 
   function buildClaudeLink(filename, fileUrl) {
