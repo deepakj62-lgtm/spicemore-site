@@ -99,7 +99,7 @@
         <div class="lbl" id="balance_lbl">Balance receivable</div>
         <div class="val" id="o_balance">—</div>
       </div>
-      <div class="fine" id="fine_text">Final settlement subject to actual sale price and SEPL approval. Figures above are indicative, computed using the advance, holding rate, and tenure recorded at intake.</div>
+      <div class="fine" id="fine_text">Final settlement subject to actual sale price and Management approval. Figures above are indicative, computed using the advance, holding rate, and tenure recorded at intake.</div>
     </div>
   </div>
 
@@ -234,7 +234,7 @@
     document.getElementById('balance_lbl').textContent = isBuyback ? 'Amount to repay for release' : 'Balance receivable';
     document.getElementById('fine_text').textContent = isBuyback
       ? 'Amount to repay = advance disbursed + accrued holding charges to the expected exit date. Final figure subject to SEPL confirmation.'
-      : 'Final settlement subject to actual sale price and SEPL approval. Figures above are indicative, computed using the advance, holding rate, and tenure recorded at intake.';
+      : 'Final settlement subject to actual sale price and Management approval. Figures above are indicative, computed using the advance, holding rate, and tenure recorded at intake.';
   }
 
   ['exitDate','salePrice','exitType'].forEach(id => {
