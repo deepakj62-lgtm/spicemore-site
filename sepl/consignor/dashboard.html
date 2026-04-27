@@ -139,12 +139,15 @@
     try {
       const [txnResp, priceResp] = await Promise.all([
         fetch('/api/sepl/transactions?consignorPhone=me', { headers: { 'Authorization': 'Bearer ' + token } }),
-        fetch('/api/sepl/daily-price')
+        fetch('/api/sepl/daily-price?resource=cardamom-rate')
       ]);
       if (txnResp.status === 401) { location.href = 'login.html'; return; }
       const txnData = await txnResp.json();
       txns = (txnData.transactions || []).sort((a,b) => (b.intakeDate||'').localeCompare(a.intakeDate||''));
-      try { const pd = await priceResp.json(); dailyPrice = pd.latest; } catch (_) {}
+      try {
+        const pd = await priceResp.json();
+        dailyPrice = (pd && pd.rate) ? pd.rate : null;
+      } catch (_) {}
       renderList();
     } catch (e) {
       document.getElementById('txnList').innerHTML = '<div class="err">Could not load. Please refresh.</div>';
@@ -225,8 +228,8 @@
     document.getElementById('o_adv').textContent = inr(advance);
     document.getElementById('o_daily').textContent = inr(dailyHold);
     document.getElementById('o_hold').textContent = inr(totalHolding);
-    document.getElementById('o_comm').textContent = isBuyback ? '— (buyback)' : inr(commission) + ' (1% + 18% GST)';
-    document.getElementById('o_ded').textContent = isBuyback ? '— (buyback)' : inr(totalDed);
+    document.getElementById('o_comm').textContent = isBuyback ? '—' : inr(commission) + ' (1% + 18% GST)';
+    document.getElementById('o_ded').textContent = isBuyback ? '—' : inr(totalDed);
     document.getElementById('o_balance').textContent = inr(balance);
     document.getElementById('balance_lbl').textContent = isBuyback ? 'Amount to repay for release' : 'Balance receivable';
     document.getElementById('fine_text').textContent = isBuyback
