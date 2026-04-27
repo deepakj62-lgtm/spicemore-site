@@ -193,9 +193,11 @@ module.exports = async function handler(req, res) {
       const netWeightKg = Number(b.netWeightKg);
       const benchmarkPricePerKg = Number(b.benchmarkPricePerKg);
       const grossStockValue = netWeightKg * benchmarkPricePerKg;
-      const uncapped = grossStockValue * SETTINGS.standardAdvanceRate;
+      const standardAdvance = grossStockValue * SETTINGS.standardAdvanceRate;
       const maxAdvance = grossStockValue * SETTINGS.maxAdvanceRate;
-      const advanceAmount = Math.min(uncapped, maxAdvance);
+      const requestedAdvance = (b.requestedAdvance != null && Number(b.requestedAdvance) > 0)
+        ? Number(b.requestedAdvance) : standardAdvance;
+      const advanceAmount = Math.min(requestedAdvance, maxAdvance);
       const rate = consignor.rateAssigned || SETTINGS.annualHoldingRate;
       const dailyHoldingCharge = advanceAmount * rate / SETTINGS.daysBasis;
       const intakeDate = new Date().toISOString().slice(0, 10);
@@ -220,7 +222,7 @@ module.exports = async function handler(req, res) {
         cardamomRate: Number(b.cardamomRate) || null,
         samplePhotoUrl: b.samplePhotoUrl || null,
         grossStockValue,
-        advanceRateUsed: SETTINGS.standardAdvanceRate,
+        advanceRateUsed: grossStockValue > 0 ? advanceAmount / grossStockValue : SETTINGS.standardAdvanceRate,
         advanceAmount,
         annualRateUsed: rate,
         dailyHoldingCharge,

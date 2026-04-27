@@ -54,8 +54,6 @@
     <div class="nav-sub">
       <a href="intake.html" class="active">Intake</a> ·
       <a href="portfolio.html">Portfolio</a> ·
-      <a href="daily-price.html">Daily price</a> ·
-      <a href="settings.html">Settings</a> ·
       <a href="https://deepak-finance-tracker.vercel.app" target="_blank" rel="noopener">Finance Tracker</a> ·
       <a href="#" id="logout">Logout</a>
     </div>
@@ -68,6 +66,11 @@
         <div>Cardamom Avg Rate <span id="rateMeta" style="font-size:11px; opacity:.85; display:block;">loading…</span></div>
         <div><b id="rateValue">—</b>/kg</div>
         <button id="refreshRate" type="button">Refresh now</button>
+      </div>
+      <div id="gradeBench" style="display:flex; gap:20px; flex-wrap:wrap; font-size:12px; color:var(--tan); margin-bottom:14px; padding:4px 2px;">
+        <span>8mm Bold: <b id="gb_bold" style="color:var(--green-dark);">—</b>/kg</span>
+        <span>7-8mm: <b id="gb_mid" style="color:var(--green-dark);">—</b>/kg</span>
+        <span>Rejection: <b id="gb_rej" style="color:var(--green-dark);">—</b>/kg</span>
       </div>
 
       <!-- 1. INTAKE DETAILS -->
@@ -113,8 +116,12 @@
         <div class="calc">
           <div class="calc-row"><span>Estimated price per kg</span><b id="c_weighted">—</b></div>
           <div class="calc-row"><span>Gross stock value</span><b id="c_gross">₹0</b></div>
-          <div class="calc-row"><span>Advance offer (65%)</span><b id="c_adv">₹0</b></div>
-          <div class="calc-row"><span>Daily charge (₹60 per ₹1L of Advance availed)</span><b id="c_daily">₹0</b></div>
+          <div class="calc-row"><span>Advance offer (70%)</span><b id="c_adv">₹0</b></div>
+          <div class="calc-row" style="align-items:center;">
+            <span>Client Requirement <span style="font-size:11px; color:var(--tan);">(if different from above)</span></span>
+            <input id="c_req" type="number" min="0" step="1000" placeholder="blank = use advance" style="width:150px; padding:5px 8px; border:1px solid var(--light-gray); border-radius:6px; font:inherit; font-size:13px; text-align:right; margin-bottom:0;">
+          </div>
+          <div class="calc-row"><span>Daily charge (₹60 per ₹1L of amount availed)</span><b id="c_daily">₹0</b></div>
         </div>
       </div>
 
@@ -232,11 +239,12 @@
       } else {
         cardamomRate = 0;
         $('rateValue').textContent = '—';
-        $('rateMeta').textContent = 'no rate yet — set on Daily price tab';
+        $('rateMeta').textContent = 'no rate yet — save via daily-price.html';
       }
     } catch (e) {
       $('rateMeta').textContent = 'error: ' + e.message;
     }
+    updateGradeBench();
     calc();
   }
   $('refreshRate').onclick = () => loadRate(true);
@@ -334,9 +342,30 @@
              pBold: total ? bold/total : 0, pMid: total ? mid/total : 0, pRej: total ? rej/total : 0 };
   }
 
+  const PF_KEY = 'sepl_price_rates_v2';
+  function getEffectiveRates() {
+    const boardAvg = cardamomRate || 0;
+    let ro = null;
+    try { ro = JSON.parse(localStorage.getItem(PF_KEY) || 'null'); } catch(e) {}
+    return {
+      bold: ro && ro.bold ? Number(ro.bold) : boardAvg * 1.15,
+      mid:  ro && ro.mid  ? Number(ro.mid)  : boardAvg * 1.05,
+      rej:  ro && ro.rej  ? Number(ro.rej)  : boardAvg * 0.80
+    };
+  }
+
+  function updateGradeBench() {
+    if (!cardamomRate) return;
+    const r = getEffectiveRates();
+    $('gb_bold').textContent = inr(r.bold);
+    $('gb_mid').textContent  = inr(r.mid);
+    $('gb_rej').textContent  = inr(r.rej);
+  }
+
   function weightedBenchmark(stats) {
     if (!stats.valid || !cardamomRate) return 0;
-    return cardamomRate * (stats.pBold*1.15 + stats.pMid*1.05 + stats.pRej*0.80);
+    const r = getEffectiveRates();
+    return stats.pBold * r.bold + stats.pMid * r.mid + stats.pRej * r.rej;
   }
 
   function calc() {
@@ -344,16 +373,18 @@
     const stats = sampleStats();
     const wb = weightedBenchmark(stats);
     const gross = w*wb;
-    const adv = gross*0.65;
-    const daily = adv * 60 / 100000;
+    const adv = gross*0.70;
+    const reqAmt = Number($('c_req') ? $('c_req').value : 0)||0;
+    const dailyBase = reqAmt > 0 ? reqAmt : adv;
+    const daily = dailyBase * 60 / 100000;
 
     $('c_weighted').textContent = wb ? inr(wb) : '—';
     $('c_gross').textContent = inrInt(gross);
     $('c_adv').textContent = inrInt(adv);
     $('c_daily').textContent = inr(daily);
   }
-  ['netWeightKg','s_total','s_bold','s_mid','s_rej'].forEach(id => {
-    $(id).addEventListener('input', calc);
+  ['netWeightKg','s_total','s_bold','s_mid','s_rej','c_req'].forEach(id => {
+    const el = $(id); if (el) el.addEventListener('input', calc);
   });
 
   // ---------- photo — mandatory, reveals calc ----------
@@ -424,6 +455,8 @@
     catch (e) { $('subMsg').innerHTML = '<span class="err">Photo upload failed: ' + e.message + '</span>'; $('submit').disabled = false; return; }
 
     const wb = weightedBenchmark(stats);
+    const rates = getEffectiveRates();
+    const reqAmt = Number($('c_req') ? $('c_req').value : 0)||0;
     const body = {
       consignorId: $('clientId').value,
       netWeightKg: Number($('netWeightKg').value),
@@ -434,7 +467,12 @@
         totalG: stats.total, bold8mmG: stats.bold, mid7to8G: stats.mid, rejectionG: stats.rej,
         pctBold: stats.pBold, pctMid: stats.pMid, pctRej: stats.pRej
       },
-      priceFactors: { bold: 1.15, mid: 1.05, rej: 0.80 },
+      priceFactors: {
+        bold: cardamomRate ? rates.bold / cardamomRate : 1.15,
+        mid:  cardamomRate ? rates.mid  / cardamomRate : 1.05,
+        rej:  cardamomRate ? rates.rej  / cardamomRate : 0.80
+      },
+      requestedAdvance: reqAmt > 0 ? reqAmt : undefined,
       samplePhotoUrl: photoUrl
     };
     const r = await fetch('/api/sepl/transactions', { method:'POST', headers:hdr, body:JSON.stringify(body) });
