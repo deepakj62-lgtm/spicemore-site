@@ -6,6 +6,7 @@
 <title>SMTC · Credit Limit Assessor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ─── RESET & BASE ──────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -333,11 +334,11 @@ header .right{font-size:12px;opacity:.5;text-align:right}
 (function(){
   const KEY='smtc_auth', HASH='a3c2f8b1';
   function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return(h>>>0).toString(16).slice(0,8);}
-  if(sessionStorage.getItem(KEY)===HASH){document.getElementById('authGate').style.display='none';}
+  if(localStorage.getItem(KEY)===HASH){document.getElementById('authGate').style.display='none';}
   window.authCheck=function(){
     const v=document.getElementById('authPwd').value;
-    if(simpleHash(v)==='87afac64'){
-      sessionStorage.setItem(KEY,HASH);
+    if(simpleHash(v)==='56760663'){
+      localStorage.setItem(KEY,HASH);
       document.getElementById('authGate').style.display='none';
     } else {
       document.getElementById('authErr').style.display='block';
@@ -491,13 +492,28 @@ document.getElementById('hDate').innerHTML =
   new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + '<br>FY 2025–26';
 
 // ══════════════════════════════════════════════════════════
-// PERSISTENT STORAGE  (window.storage API)
-// Saves computed results so any team member opening the page
-// sees the last run analysis — no re-upload needed.
-// shared=true → all users share the same saved state.
-// ══════════════════════════════════════════════════════════
-const STORAGE_KEY = 'smtc_credit_v1';
+// SUPABASE REALTIME SYNC
+// ──────────────────────────────────────────────────────────
+// SQL — run once in Supabase SQL editor:
+//
+// CREATE TABLE IF NOT EXISTS credit_assessor_cache (
+//   id       TEXT        PRIMARY KEY,
+//   payload  JSONB       NOT NULL,
+//   saved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+//   saved_by TEXT        NOT NULL DEFAULT 'SMTC Team'
+// );
+// ALTER TABLE credit_assessor_cache ENABLE ROW LEVEL SECURITY;
+// CREATE POLICY "anon_all" ON credit_assessor_cache
+//   FOR ALL TO anon USING (true) WITH CHECK (true);
+// ALTER PUBLICATION supabase_realtime ADD TABLE credit_assessor_cache;
+//
+// ──────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://azmzxtgvhiztzepyflgy.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6bXp4dGd2aGl6dHplcHlmbGd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwOTcxODAsImV4cCI6MjA5MjY3MzE4MH0.lb1v5lwaEqD5L0RP3rQZvLvMX7VxvtvgkErdYsSYj68';
+const CACHE_ROW_ID  = 'smtc_credit_v1';
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ── Serialisation helpers ───────────────────────────────────
 function serDate(d) { return d ? d.toISOString() : null; }
 function revDate(s) { return s ? new Date(s) : null; }
 
@@ -556,48 +572,92 @@ function restorePayload(payload) {
   }));
 }
 
+// ── Save (upsert) ───────────────────────────────────────────
 async function saveToStorage() {
   if (!results.length) return;
   try {
-    const payload = JSON.stringify(buildPayload());
-    await window.storage.set(STORAGE_KEY, payload, true);
-    console.log('Credit Assessor: analysis saved to storage');
+    _realtimeSkipNext = true;  // suppress self-echo from Realtime
+    const savedBy = sessionStorage.getItem('smtc_user') || 'SMTC Team';
+    const { error } = await _sb.from('credit_assessor_cache').upsert({
+      id:       CACHE_ROW_ID,
+      payload:  buildPayload(),
+      saved_at: new Date().toISOString(),
+      saved_by: savedBy
+    }, { onConflict: 'id' });
+    if (error) throw error;
+    console.log('Credit Assessor: analysis saved to Supabase');
   } catch(e) {
-    console.warn('Credit Assessor: storage save failed', e);
+    console.warn('Credit Assessor: Supabase save failed', e);
   }
 }
 
+// ── Load (select) ───────────────────────────────────────────
 async function loadFromStorage() {
   try {
-    const stored = await window.storage.get(STORAGE_KEY, true);
-    if (!stored?.value) return false;
-    const payload = JSON.parse(stored.value);
-    if (!payload.results?.length) return false;
-    overrides = payload.overrides || {};
-    results   = restorePayload(payload);
+    const { data, error } = await _sb
+      .from('credit_assessor_cache')
+      .select('*')
+      .eq('id', CACHE_ROW_ID)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data?.payload?.results?.length) return false;
+    overrides = data.payload.overrides || {};
+    results   = restorePayload(data.payload);
     rawData   = { __restored: true };  // sentinel — data exists, no re-upload needed
-    showCacheBanner(payload.savedAt);
+    showCacheBanner(data.saved_at, data.saved_by);
     render();
     return true;
   } catch(e) {
-    console.warn('Credit Assessor: storage load failed', e);
+    console.warn('Credit Assessor: Supabase load failed', e);
     return false;
   }
 }
 
+// ── Clear ───────────────────────────────────────────────────
 async function clearStorage() {
   try {
-    await window.storage.delete(STORAGE_KEY, true);
+    const { error } = await _sb
+      .from('credit_assessor_cache')
+      .delete()
+      .eq('id', CACHE_ROW_ID);
+    if (error) throw error;
   } catch(e) {
-    console.warn('Credit Assessor: storage clear failed', e);
+    console.warn('Credit Assessor: Supabase clear failed', e);
   }
 }
 
-function showCacheBanner(iso) {
+// ── Realtime subscription ───────────────────────────────────
+// When another user saves, this tab auto-refreshes without reload.
+let _realtimeSkipNext = false;  // prevents self-echo on the saving tab
+function subscribeRealtime() {
+  _sb.channel('credit-cache-changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'credit_assessor_cache',
+      filter: `id=eq.${CACHE_ROW_ID}`
+    }, evt => {
+      if (evt.eventType === 'DELETE') return;
+      if (_realtimeSkipNext) { _realtimeSkipNext = false; return; }
+      const row = evt.new;
+      if (!row?.payload?.results?.length) return;
+      overrides = row.payload.overrides || {};
+      results   = restorePayload(row.payload);
+      rawData   = { __restored: true };
+      showCacheBanner(row.saved_at, row.saved_by);
+      render();
+      toast('🔄 Results updated by ' + (row.saved_by || 'another user'));
+    })
+    .subscribe();
+}
+
+// ── Cache banner ────────────────────────────────────────────
+function showCacheBanner(iso, savedBy) {
   document.getElementById('cacheBanner')?.remove();
   const d   = new Date(iso);
   const lbl = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
               + ' at ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  const by  = savedBy || 'SMTC Team';
   const b = document.createElement('div');
   b.id = 'cacheBanner';
   b.style.cssText = [
@@ -607,7 +667,7 @@ function showCacheBanner(iso) {
   ].join(';');
   b.innerHTML =
     '<span style="font-size:16px">📂</span>' +
-    '<span style="flex:1">Showing <strong>saved analysis</strong> from ' + lbl + '. ' +
+    '<span style="flex:1">Loaded from cache — saved on <strong>' + lbl + '</strong> by <strong>' + by + '</strong>. ' +
     'Upload new files and click <strong>⚡ Analyse</strong> to update.</span>' +
     '<button onclick="this.parentElement.remove()" style="background:none;border:none;' +
     'font-size:16px;cursor:pointer;color:#9A7B0A;padding:0 4px;line-height:1">×</button>';
@@ -1671,6 +1731,7 @@ function toast(msg) { const t = document.getElementById('toast'); t.textContent 
 // ══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   loadFromStorage();
+  subscribeRealtime();
 });
 </script>
 </body>
