@@ -298,12 +298,15 @@
     const d = await r.json();
     if (!r.ok) { $('newMsg').innerHTML = '<span class="err">'+d.error+'</span>'; return; }
         const newId = d.consignor.consignorId;
+        const newId = d.consignor.consignorId;
     $('newMsg').innerHTML = '<span class="ok">Saved '+newId+'</span>';
-    await loadClients();
-    // Small delay to ensure DOM is updated before setting value
-    setTimeout(() => {
-      $('clientId').value = newId;
-    }, 50);
+    // Immediately append new client to dropdown without re-fetching
+    const sel = $('clientId');
+    const o = document.createElement('option');
+    o.value = newId;
+    o.textContent = newId + ' · ' + d.consignor.name + ' (' + d.consignor.type + ')';
+    sel.appendChild(o);
+    sel.value = newId;
     $('newForm').classList.add('hidden');
   };
 
