@@ -841,6 +841,29 @@ function clearAll() {
 // ══════════════════════════════════════════════════════════
 // LEDGER PARSER
 // ══════════════════════════════════════════════════════════
+
+// Handles Indian text date formats that Tally may export.
+// new Date() silently returns Invalid Date for DD/MM/YYYY etc.,
+// causing those receipt rows to be skipped and inflating settlement days.
+function parseTextDate(s) {
+  const MON = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  let m;
+  // DD/MM/YYYY or DD-MM-YYYY
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  // DD-MMM-YYYY or DD/MMM/YYYY  (e.g. 18-Aug-2025)
+  m = s.match(/^(\d{1,2})[\/\-]([A-Za-z]{3})[\/\-](\d{4})$/);
+  if (m && MON[m[2].toLowerCase()] !== undefined)
+    return new Date(+m[3], MON[m[2].toLowerCase()], +m[1]);
+  // DD-MMM-YY or DD/MMM/YY  (e.g. 18-Aug-25)
+  m = s.match(/^(\d{1,2})[\/\-]([A-Za-z]{3})[\/\-](\d{2})$/);
+  if (m && MON[m[2].toLowerCase()] !== undefined)
+    return new Date(2000 + +m[3], MON[m[2].toLowerCase()], +m[1]);
+  // ISO or other JS-parseable formats — use UTC fields to avoid timezone shift
+  const pd = new Date(s);
+  if (!isNaN(pd.getTime())) return new Date(pd.getUTCFullYear(), pd.getUTCMonth(), pd.getUTCDate());
+  return null;
+}
 function parseLedger(fileObj) {
   const actualFile = fileObj.file || fileObj;
   return new Promise((res, rej) => {
@@ -870,9 +893,8 @@ function parseLedger(fileObj) {
           } else if (raw instanceof Date) {
             d = new Date(raw.getUTCFullYear(), raw.getUTCMonth(), raw.getUTCDate());
           } else if (typeof raw === 'string' && raw.trim()) {
-            const pd = new Date(raw);
-            if (isNaN(pd.getTime())) continue;
-            d = new Date(pd.getUTCFullYear(), pd.getUTCMonth(), pd.getUTCDate());
+            d = parseTextDate(raw.trim());
+            if (!d) continue;
           } else { continue; }
           if (!d || isNaN(d.getTime())) continue;
           const type = String(row[1] || '').trim();
@@ -1440,7 +1462,7 @@ function render() {
     const coPills = Object.entries(r.breakdown).map(([co, d]) =>
       `<span class="co-pill" style="background:${co==='SMTC'?'var(--g7)':'var(--b)'}">${co} ${fmt(d.sales)}</span>`).join('');
 
-    const invRows = r.allSett.map(s => {
+    const invRows = r.allSett.map((s, si) => {
       let hasPurc = false;
       for (const p of s.pays) { if (p.type === 'Purc') hasPurc = true; }
       let effDays = null;
@@ -1466,14 +1488,46 @@ function render() {
       else if (hasPurc && hasCash) { settleType = '⚡ Mixed'; settleTypeClr = '#7C3AED'; }
       else if (hasPurc) { settleType = '🔄 Buyback'; settleTypeClr = '#D97706'; }
       else { settleType = '💵 Cash'; settleTypeClr = '#16A34A'; }
-      return `<tr class="${s.outstanding > 0 ? 'outstanding' : ''}">
-        <td>${s.vch}</td><td>${co}</td><td>${fmtD(s.date)}</td>
-        <td style="text-align:right">${fmtN(s.amount)}</td>
-        <td style="text-align:right">${fmtN(s.settled)}</td>
-        <td><span class="${dc}">${dt}</span></td>
-        <td style="font-weight:600;color:${settleTypeClr}">${settleType}</td>
-        <td style="color:${s.settlementDate ? '#16A34A' : 'var(--a)'}; font-weight:600">${s.settlementDate ? fmtD(s.settlementDate) : (s.outstanding > 0 ? '⏳ Pending' : '—')}</td>
-        <td style="text-align:right">${s.outstanding > 0 ? '⚠ ' + fmtN(s.outstanding) : '✓'}</td></tr>`;
+      const pdId = `pd_${idx}_${si}`;
+      const payToggle = s.pays.length > 0
+        ? ` <span data-pdtoggle="${pdId}" onclick="togglePayDetail('${pdId}')"
+              style="cursor:pointer;font-size:9px;color:var(--g7);margin-left:4px;user-select:none"
+              title="Show individual receipts">▸</span>`
+        : '';
+      const payDetailRow = s.pays.length > 0 ? `
+        <tr id="${pdId}" style="display:none">
+          <td colspan="9" style="padding:0 14px 8px 40px;background:#FAFAF8;border-bottom:1px solid var(--t1)">
+            <table style="font-size:11px;border-collapse:collapse">
+              <thead><tr style="color:var(--t5)">
+                <th style="padding:3px 12px 3px 0;font-weight:600;text-align:left">Receipt Date</th>
+                <th style="padding:3px 12px 3px 0;font-weight:600;text-align:right">Amount Applied</th>
+                <th style="padding:3px 12px 3px 0;font-weight:600;text-align:right">Days</th>
+                <th style="padding:3px 12px 3px 0;font-weight:600">Type</th>
+                <th style="padding:3px 0;font-weight:600;color:var(--t5)">Voucher Ref</th>
+              </tr></thead>
+              <tbody>${s.pays.map(p => `<tr>
+                <td style="padding:2px 12px 2px 0;font-weight:600">${fmtD(p.payDate)}</td>
+                <td style="padding:2px 12px 2px 0;text-align:right;font-family:var(--mono)">${fmtN(p.amount)}</td>
+                <td style="padding:2px 12px 2px 0;text-align:right;font-family:var(--mono);
+                  color:${p.days < c.cd ? '#16A34A' : p.days <= 45 ? 'var(--a)' : 'var(--r)'}">${p.days.toFixed(1)}d</td>
+                <td style="padding:2px 12px 2px 0">${p.type}</td>
+                <td style="padding:2px 0;color:var(--t5)">${p.vch}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </td>
+        </tr>` : '';
+      return [
+        `<tr class="${s.outstanding > 0 ? 'outstanding' : ''}">
+          <td>${s.vch}</td><td>${co}</td><td>${fmtD(s.date)}</td>
+          <td style="text-align:right">${fmtN(s.amount)}</td>
+          <td style="text-align:right">${fmtN(s.settled)}</td>
+          <td><span class="${dc}">${dt}</span>${payToggle}</td>
+          <td style="font-weight:600;color:${settleTypeClr}">${settleType}</td>
+          <td style="color:${s.settlementDate ? '#16A34A' : 'var(--a)'}; font-weight:600">${s.settlementDate ? fmtD(s.settlementDate) : (s.outstanding > 0 ? '⏳ Pending' : '—')}</td>
+          <td style="text-align:right">${s.outstanding > 0 ? '⚠ ' + fmtN(s.outstanding) : '✓'}</td>
+        </tr>`,
+        payDetailRow
+      ].join('');
     }).join('');
 
     const card = document.createElement('div');
@@ -1788,6 +1842,15 @@ function copyScriptText() { navigator.clipboard.writeText(GAS).then(() => { toas
 // ══════════════════════════════════════════════════════════
 // UTILITIES
 // ══════════════════════════════════════════════════════════
+function togglePayDetail(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : '';
+  const btn = document.querySelector(`[data-pdtoggle="${id}"]`);
+  if (btn) btn.textContent = open ? '▸' : '▾';
+}
+
 function fmt(n) { return n >= 1e7 ? '₹' + (n/1e7).toFixed(2) + 'Cr' : '₹' + (n/1e5).toFixed(1) + 'L'; }
 function fmtN(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
 function fmtD(d) { return d ? d.getDate() + '-' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + '-' + d.getFullYear() : ''; }
