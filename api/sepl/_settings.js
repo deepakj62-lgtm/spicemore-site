@@ -4,8 +4,8 @@
 
 module.exports = {
   // Advance / finance
-  standardAdvanceRate: 0.65,     // 65%
-  maxAdvanceRate: 0.70,          // hard cap
+  standardAdvanceRate: 0.70,     // 70%
+  maxAdvanceRate: 0.75,          // hard cap
   annualHoldingRate: 0.219,      // 21.9% p.a. = Rs60 per Rs1,00,000 advance per day (Edwin's standard)
   daysBasis: 365,
 

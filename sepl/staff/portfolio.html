@@ -73,8 +73,6 @@
     <div class="nav-sub">
       <a href="intake.html">Intake</a> ·
       <a href="portfolio.html" class="active">Portfolio</a> ·
-      <a href="daily-price.html">Daily price</a> ·
-      <a href="settings.html">Settings</a> ·
       <a href="https://deepak-finance-tracker.vercel.app" target="_blank" rel="noopener">Finance Tracker</a>
     </div>
 
@@ -117,6 +115,7 @@
       <table id="posTbl"><thead><tr>
         <th data-k="txnId">Txn</th>
         <th data-k="consignorName">Client</th>
+        <th data-k="clientType">Type</th>
         <th data-k="depot">Depot</th>
         <th data-k="netWeightKg" class="num">Weight</th>
         <th data-k="advanceAmount" class="num">Advance</th>
@@ -127,7 +126,7 @@
         <th data-k="expectedExitDate">Exit by</th>
         <th data-k="daysToExit" class="num">Days left</th>
         <th data-k="status">Status</th>
-      </tr></thead><tbody id="posBody"><tr><td colspan="12" style="color:var(--tan)">Loading…</td></tr></tbody></table>
+      </tr></thead><tbody id="posBody"><tr><td colspan="13" style="color:var(--tan)">Loading…</td></tr></tbody></table>
       </div>
     </div>
   </div>
@@ -157,7 +156,7 @@
 
   // ₹/kg rate overrides stored locally
   const PF_KEY = 'sepl_price_rates_v2';
-  let state = { txns: [], price: null, sortK: 'ltv', sortDir: -1, rateOverrides: null, consignors: {} };
+  let state = { txns: [], price: null, sortK: 'ltv', sortDir: -1, rateOverrides: null, consignors: {}, consignorTypeMap: {} };
 
   function loadRateOverrides() {
     try {
@@ -193,12 +192,20 @@
   }
 
   async function load() {
-    const [tRes, cardamom] = await Promise.all([
+    const [tRes, cardamom, cRes] = await Promise.all([
       fetch('/api/sepl/transactions', { headers: hdr }),
-      fetchCardamomRate()
+      fetchCardamomRate(),
+      fetch('/api/sepl/consignors', { headers: hdr })
     ]);
-    const tData = await tRes.json();
+    const [tData, cData] = await Promise.all([tRes.json(), cRes.json()]);
     state.txns = tData.transactions || [];
+
+    // Build consignorId → type lookup
+    state.consignorTypeMap = {};
+    (cData.consignors || []).forEach(c => {
+      state.consignorTypeMap[c.consignorId] = c.type || '';
+    });
+
     if (cardamom) {
       state.price = cardamom;
     } else {
@@ -247,7 +254,8 @@
     const accruedHolding = t.dailyHoldingCharge * days;
     const ltv = currentStockValue > 0 ? (t.advanceAmount + accruedHolding) / currentStockValue : 0;
     const daysToExit = daysBetween(today(), t.expectedExitDate);
-    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx: effectivePx };
+    const clientType = state.consignorTypeMap[t.consignorId] || '';
+    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx: effectivePx, clientType };
   }
 
   function render() {
@@ -313,6 +321,7 @@
       return `<tr>
         <td><b>${t.txnId}</b></td>
         <td><button type="button" class="client-link" data-cid="${t.consignorId || ''}" data-txnid="${t.txnId}">${safeName}</button></td>
+        <td>${t.clientType || '—'}</td>
         <td>${t.depot}</td>
         <td class="num">${t.netWeightKg.toLocaleString('en-IN')}</td>
         <td class="num">${inr(t.advanceAmount)}</td>
@@ -324,7 +333,7 @@
         <td class="num" style="color:${t.daysToExit<0?'#c00':t.daysToExit<14?'#b26a00':''}">${t.daysToExit}</td>
         <td>${statusCell}</td>
       </tr>`;
-    }).join('') || `<tr><td colspan="12" style="color:var(--tan)">No positions.</td></tr>`;
+    }).join('') || `<tr><td colspan="13" style="color:var(--tan)">No positions.</td></tr>`;
 
     document.querySelectorAll('#posBody .client-link').forEach(btn => {
       btn.addEventListener('click', () => {
