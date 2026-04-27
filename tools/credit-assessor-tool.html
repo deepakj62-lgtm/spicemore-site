@@ -274,8 +274,8 @@ header .right{font-size:12px;opacity:.5;text-align:right}
 .sg-risk-HIGH{background:#FFEDD5;color:#C2410C}.sg-risk-CRITICAL{background:#FEE2E2;color:#DC2626}
 
 /* Column widths */
-.sg-col-dealer{width:28%}.sg-col-turnover{width:20%}.sg-col-days{width:18%}
-.sg-col-limit{width:20%}.sg-col-risk{width:14%}
+.sg-col-dealer{width:22%}.sg-col-turnover{width:15%}.sg-col-days{width:13%}
+.sg-col-limit{width:15%}.sg-col-final{width:21%}.sg-col-risk{width:14%}
 
 /* Toast */
 .toast{position:fixed;bottom:20px;right:20px;background:var(--g8);color:var(--w);
@@ -1069,11 +1069,12 @@ function analyse(name, cosData, c) {
 // ══════════════════════════════════════════════════════════
 const sgState = { sortCol: null, sortDir: 'asc', filters: {}, search: '', colWidths: {} };
 const sgCols = [
-  { key: 'dealer',   label: 'Dealer',               cls: 'sg-col-dealer',   align: 'left',  type: 'text' },
-  { key: 'turnover', label: 'Combined Turnover (FY)',cls: 'sg-col-turnover', align: 'right', type: 'num' },
-  { key: 'days',     label: 'Avg Payment Days',      cls: 'sg-col-days',     align: 'right', type: 'num' },
-  { key: 'limit',    label: 'Recommended Limit',     cls: 'sg-col-limit',    align: 'right', type: 'num' },
-  { key: 'risk',     label: 'Risk',                  cls: 'sg-col-risk',     align: 'right', type: 'cat' }
+  { key: 'dealer',     label: 'Dealer',               cls: 'sg-col-dealer',   align: 'left',  type: 'text' },
+  { key: 'turnover',   label: 'Combined Turnover (FY)',cls: 'sg-col-turnover', align: 'right', type: 'num' },
+  { key: 'days',       label: 'Avg Payment Days',      cls: 'sg-col-days',     align: 'right', type: 'num' },
+  { key: 'limit',      label: 'Recommended Limit',     cls: 'sg-col-limit',    align: 'right', type: 'num' },
+  { key: 'finalLimit', label: 'Final Manual Limit',    cls: 'sg-col-final',    align: 'right', type: 'manual' },
+  { key: 'risk',       label: 'Risk',                  cls: 'sg-col-risk',     align: 'right', type: 'cat' }
 ];
 
 function sgRowData() {
@@ -1084,6 +1085,7 @@ function sgRowData() {
     turnover: r.combined,
     days: r.avgDays,
     limit: overrides[r.name]?.limit ?? r.recommended,
+    finalLimit: overrides[r.name]?.finalLimit ?? null,
     risk: r.rl,
     _turnoverFmt: '₹' + (r.combined / 1e7).toFixed(2) + ' Cr',
     _daysFmt: r.avgDays.toFixed(1) + ' days',
@@ -1165,17 +1167,35 @@ function renderSummaryGrid() {
   }).join('');
 
   const bodyRows = filtered.map(r => {
-    return `<tr onclick="sgGoToDealer('${r.name.replace(/'/g,"\\'")}')" data-dealer="${r.name}">
+    const esc = r.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const fl  = r.finalLimit;
+    const flInp = `<td onclick="event.stopPropagation()" style="padding:6px 12px;text-align:right">
+      <div style="display:inline-flex;align-items:center;gap:3px">
+        <span style="font-size:11px;color:var(--t5)">₹</span>
+        <input type="number" min="0"
+          style="width:54px;padding:3px 5px;border:1px solid ${fl?'var(--g7)':'var(--t2)'};border-radius:4px;
+          font-size:11px;font-family:var(--mono);text-align:right;
+          background:${fl?'#F0FDF4':'var(--t1)'};outline:none;color:${fl?'var(--g8)':'var(--t7)'};font-weight:${fl?700:400}"
+          value="${fl ? Math.round(fl/100000) : ''}"
+          placeholder="—"
+          onchange="sgSetFinalLimit('${esc}',this.value)"
+          onclick="event.stopPropagation()">
+        <span style="font-size:10px;color:var(--t5)">L</span>
+      </div>
+    </td>`;
+    return `<tr onclick="sgGoToDealer('${esc}')" data-dealer="${r.name}">
       <td style="text-align:left"><span class="sg-dlr">${r.dealer}<span class="sg-arrow">→</span></span></td>
       <td>${r._turnoverFmt}</td>
       <td style="color:${r._daysClr};font-weight:600">${r._daysFmt}</td>
       <td style="font-weight:700">${r._limitFmt}</td>
+      ${flInp}
       <td><span class="sg-risk sg-risk-${r.risk}">${r.risk}</span></td>
     </tr>`;
   }).join('');
 
-  const totalTurnover = filtered.reduce((a, r) => a + r.turnover, 0);
-  const totalLimit = filtered.reduce((a, r) => a + r.limit, 0);
+  const totalTurnover    = filtered.reduce((a, r) => a + r.turnover, 0);
+  const totalLimit       = filtered.reduce((a, r) => a + r.limit, 0);
+  const totalFinalLimit  = filtered.reduce((a, r) => r.finalLimit ? a + r.finalLimit : a, 0);
   const avgDaysAll = filtered.length > 0 ? filtered.reduce((a, r) => a + r.days, 0) / filtered.length : 0;
 
   document.getElementById('tabSummary').innerHTML = `
@@ -1196,12 +1216,13 @@ function renderSummaryGrid() {
             <tr>${thRow}</tr>
             <tr class="sg-filter-row">${filterRow}</tr>
           </thead>
-          <tbody>${bodyRows || '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--t5)">No dealers match your filters</td></tr>'}</tbody>
+          <tbody>${bodyRows || '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t5)">No dealers match your filters</td></tr>'}</tbody>
           <tfoot><tr>
             <td style="text-align:left">${filtered.length === allRows.length ? 'TOTAL' : 'FILTERED'} (${filtered.length} dealer${filtered.length!==1?'s':''})</td>
             <td>₹${(totalTurnover / 1e7).toFixed(2)} Cr</td>
             <td>${avgDaysAll.toFixed(1)} days</td>
             <td style="font-weight:700">${fmt(totalLimit)}</td>
+            <td style="font-weight:700;color:var(--g8)">${totalFinalLimit > 0 ? fmt(totalFinalLimit) : '—'}</td>
             <td>—</td>
           </tr></tfoot>
         </table>
@@ -1234,6 +1255,23 @@ function sgClearFilter(col) {
 function sgSearch(q) {
   sgState.search = q;
   renderSummaryGrid();
+}
+
+function sgSetFinalLimit(dealer, val) {
+  if (!overrides[dealer]) overrides[dealer] = {};
+  const n = parseFloat(val);
+  if (!val || isNaN(n) || n <= 0) {
+    delete overrides[dealer].finalLimit;
+  } else {
+    overrides[dealer].finalLimit = n * 100000;  // input in lakhs, store in rupees
+  }
+  // Update footer total without full re-render (keeps input focus)
+  const allRows = sgRowData();
+  const filtered = sgFilterAndSort(allRows);
+  const total = filtered.reduce((a, r) => r.finalLimit ? a + r.finalLimit : a, 0);
+  const tfoot = document.querySelector('.sg-table tfoot tr td:nth-child(5)');
+  if (tfoot) { tfoot.textContent = total > 0 ? fmt(total) : '—'; tfoot.style.color = total > 0 ? 'var(--g8)' : ''; }
+  saveToStorage();
 }
 
 function sgGoToDealer(name) {
