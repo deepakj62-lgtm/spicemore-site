@@ -235,12 +235,13 @@
     render();
   }
 
-  // Sync inputs: if overrides saved use them, otherwise leave blank (placeholder shows hint)
+  // Sync inputs: show computed default (board×factor) unless a manual override is stored
   function syncRateInputs() {
+    const rates = effectiveRates();
     const ro = state.rateOverrides;
-    document.getElementById('pfBold').value = ro ? (ro.bold || '') : '';
-    document.getElementById('pfMid').value  = ro ? (ro.mid  || '') : '';
-    document.getElementById('pfRej').value  = ro ? (ro.rej  || '') : '';
+    document.getElementById('pfBold').value = Math.round(ro && ro.bold ? ro.bold : rates.bold);
+    document.getElementById('pfMid').value  = Math.round(ro && ro.mid  ? ro.mid  : rates.mid);
+    document.getElementById('pfRej').value  = Math.round(ro && ro.rej  ? ro.rej  : rates.rej);
   }
 
   // Get effective per-grade ₹/kg rates
@@ -373,18 +374,18 @@
     document.getElementById(id).addEventListener(id === 'search' ? 'input' : 'change', render);
   });
 
-  // Rate override inputs
+  // Rate override inputs — only save when value differs from the computed default
   function rateChange() {
+    const boardAvg = state.price ? state.price.pricePerKg : 0;
+    const defaults = { bold: boardAvg * 1.15, mid: boardAvg * 1.05, rej: boardAvg * 0.80 };
     const bold = parseFloat(document.getElementById('pfBold').value);
     const mid  = parseFloat(document.getElementById('pfMid').value);
     const rej  = parseFloat(document.getElementById('pfRej').value);
-    const hasAny = !isNaN(bold) || !isNaN(mid) || !isNaN(rej);
-    if (hasAny) {
-      state.rateOverrides = {
-        bold: isNaN(bold) ? null : bold,
-        mid:  isNaN(mid)  ? null : mid,
-        rej:  isNaN(rej)  ? null : rej
-      };
+    const ovBold = !isNaN(bold) && Math.round(bold) !== Math.round(defaults.bold) ? bold : null;
+    const ovMid  = !isNaN(mid)  && Math.round(mid)  !== Math.round(defaults.mid)  ? mid  : null;
+    const ovRej  = !isNaN(rej)  && Math.round(rej)  !== Math.round(defaults.rej)  ? rej  : null;
+    if (ovBold !== null || ovMid !== null || ovRej !== null) {
+      state.rateOverrides = { bold: ovBold, mid: ovMid, rej: ovRej };
       saveRateOverrides(state.rateOverrides);
     } else {
       state.rateOverrides = null;
