@@ -969,15 +969,19 @@ function analyse(name, cosData, c) {
   let cashWeighted = 0, cashTotal = 0;
   let purcWeighted = 0, purcTotal = 0;
   for (const s of allSett) {
+    // Cap any tail payment's days at the effective settlement date so rounding
+    // residuals cleared weeks later don't inflate the weighted average.
+    const sdays = s.settlementDate ? (s.settlementDate - s.date) / 864e5 : null;
     for (const p of s.pays) {
+      const pd = sdays !== null ? Math.min(p.days, sdays) : p.days;
       if (p.type === 'Purc') {
-        const effDays = p.days + c.cd;
+        const effDays = pd + c.cd;
         effWeighted += effDays * p.amount;
-        purcWeighted += p.days * p.amount;
+        purcWeighted += pd * p.amount;
         purcTotal += p.amount;
       } else {
-        effWeighted += p.days * p.amount;
-        cashWeighted += p.days * p.amount;
+        effWeighted += pd * p.amount;
+        cashWeighted += pd * p.amount;
         cashTotal += p.amount;
       }
       effTotal += p.amount;
@@ -1031,8 +1035,10 @@ function analyse(name, cosData, c) {
   const sixMonthsAgo = Date.now() - 180 * 864e5;
   for (const s of allSett) {
     if (s.date < sixMonthsAgo) continue;
+    const sdays = s.settlementDate ? (s.settlementDate - s.date) / 864e5 : null;
     for (const p of s.pays) {
-      const ed = p.type === 'Purc' ? p.days + c.cd : p.days;
+      const pd = sdays !== null ? Math.min(p.days, sdays) : p.days;
+      const ed = p.type === 'Purc' ? pd + c.cd : pd;
       recentEffW += ed * p.amount;
       recentEffT += p.amount;
     }
