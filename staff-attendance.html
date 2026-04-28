@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Attendance | Spice More</title>
+  <meta name="description" content="SMTC Staff Attendance Roster - Internal tool for daily attendance tracking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .attend-wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 60px; }
+    .attend-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--light-gray); margin-bottom: 28px; }
+    .tab-btn {
+      font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+      background: none; border: none; padding: 10px 22px; cursor: pointer;
+      color: var(--mid-gray); border-bottom: 2px solid transparent; margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .tab-btn.active { color: var(--green-dark); border-bottom-color: var(--green-primary); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .roster-header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+    .date-input-wrap label { font-size: 0.8rem; color: var(--tan); display: block; margin-bottom: 4px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+    .date-input-wrap input[type="date"] {
+      font-family: var(--font-body); font-size: 0.95rem; border: 1px solid var(--light-gray);
+      border-radius: 6px; padding: 8px 12px; background: var(--white); color: var(--dark-text);
+      outline: none;
+    }
+    .date-input-wrap input[type="date"]:focus { border-color: var(--green-primary); }
+
+    .day-summary { margin-left: auto; text-align: right; font-size: 0.82rem; color: var(--tan); }
+    .day-summary strong { color: var(--green-dark); font-size: 1rem; }
+
+    .roster-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.06); }
+    .roster-table thead { background: var(--green-dark); color: var(--white); }
+    .roster-table th { padding: 12px 14px; text-align: left; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+    .roster-table td { padding: 10px 14px; border-bottom: 1px solid var(--light-gray); font-size: 0.88rem; vertical-align: middle; }
+    .roster-table tr:last-child td { border-bottom: none; }
+    .roster-table tbody tr:hover { background: #f7f5f1; }
+
+    .emp-name-cell { font-weight: 500; color: var(--dark-text); }
+    .status-radios { display: flex; gap: 8px; flex-wrap: wrap; }
+    .status-radio { display: none; }
+    .status-label {
+      font-size: 0.78rem; font-weight: 500; padding: 4px 10px; border-radius: 20px;
+      border: 1.5px solid var(--light-gray); cursor: pointer; transition: all 0.15s;
+      user-select: none; white-space: nowrap;
+    }
+    .status-radio:checked + .status-label { border-color: transparent; }
+    .status-radio[value="present"]:checked + .status-label { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+    .status-radio[value="absent"]:checked + .status-label { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+    .status-radio[value="halfday"]:checked + .status-label { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .status-radio[value="leave"]:checked + .status-label { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; }
+
+    .remarks-input {
+      font-family: var(--font-body); font-size: 0.82rem; border: 1px solid var(--light-gray);
+      border-radius: 5px; padding: 5px 8px; width: 130px; background: var(--white);
+      color: var(--dark-text); outline: none;
+    }
+    .remarks-input:focus { border-color: var(--green-primary); }
+
+    .del-emp-btn {
+      background: none; border: none; cursor: pointer; color: var(--mid-gray);
+      font-size: 1rem; padding: 2px 6px; border-radius: 4px; transition: color 0.15s;
+    }
+    .del-emp-btn:hover { color: #dc2626; }
+
+    .add-emp-row { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
+    .add-emp-input {
+      font-family: var(--font-body); font-size: 0.9rem; border: 1px solid var(--light-gray);
+      border-radius: 6px; padding: 8px 12px; flex: 1; max-width: 280px;
+      background: var(--white); color: var(--dark-text); outline: none;
+    }
+    .add-emp-input:focus { border-color: var(--green-primary); }
+    .btn-add-emp {
+      font-family: var(--font-body); font-size: 0.85rem; font-weight: 500;
+      background: var(--green-primary); color: var(--white); border: none;
+      border-radius: 6px; padding: 8px 16px; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-add-emp:hover { background: var(--green-dark); }
+
+    .roster-actions { display: flex; gap: 12px; margin-top: 24px; align-items: center; flex-wrap: wrap; }
+    .btn-save {
+      font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+      background: var(--green-dark); color: var(--white); border: none;
+      border-radius: 8px; padding: 10px 28px; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-save:hover { background: var(--green-darkest); }
+    .save-msg { font-size: 0.85rem; color: var(--green-primary); font-weight: 500; opacity: 0; transition: opacity 0.3s; }
+    .save-msg.visible { opacity: 1; }
+
+    .no-emp-msg { text-align: center; padding: 40px 20px; color: var(--mid-gray); font-size: 0.9rem; }
+    .no-emp-msg p { margin-bottom: 8px; }
+
+    /* History tab */
+    .history-header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+    .month-input-wrap label { font-size: 0.8rem; color: var(--tan); display: block; margin-bottom: 4px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+    .month-input-wrap input[type="month"] {
+      font-family: var(--font-body); font-size: 0.95rem; border: 1px solid var(--light-gray);
+      border-radius: 6px; padding: 8px 12px; background: var(--white); color: var(--dark-text); outline: none;
+    }
+    .month-input-wrap input[type="month"]:focus { border-color: var(--green-primary); }
+
+    .btn-export {
+      font-family: var(--font-body); font-size: 0.85rem; font-weight: 500; margin-left: auto;
+      background: var(--white); color: var(--green-dark); border: 1.5px solid var(--green-primary);
+      border-radius: 6px; padding: 8px 16px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-export:hover { background: var(--green-primary); color: var(--white); }
+
+    .history-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.06); font-size: 0.85rem; }
+    .history-table th { background: var(--green-dark); color: var(--white); padding: 10px 12px; text-align: left; font-size: 0.76rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+    .history-table td { padding: 8px 12px; border-bottom: 1px solid var(--light-gray); vertical-align: middle; }
+    .history-table tr:last-child td { border-bottom: none; }
+    .history-table tbody tr:hover { background: #f7f5f1; }
+
+    .badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 9px;
+      border-radius: 20px; letter-spacing: 0.03em;
+    }
+    .badge-present { background: #d1fae5; color: #065f46; }
+    .badge-absent { background: #fee2e2; color: #991b1b; }
+    .badge-halfday { background: #fef3c7; color: #92400e; }
+    .badge-leave { background: #e0e7ff; color: #3730a3; }
+    .badge-none { background: var(--light-gray); color: var(--tan); }
+
+    .no-history { text-align: center; padding: 40px; color: var(--mid-gray); font-size: 0.9rem; }
+
+    /* Gate override */
+    #attendanceGate .gate-card { max-width: 400px; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-logo">
+        <img src="images/logo.png" alt="Spice More Trading Company">
+      </a>
+      <button class="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <div class="nav-dropdown">
+          <a href="smtc-portal.html" class="dropdown-trigger active">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
+          <div class="dropdown-menu">
+            <a href="credit-assessor.html">Credit Assessor</a>
+            <a href="reconciliation.html">Bank Reconciliation</a>
+            <a href="staff-attendance.html" class="active">Staff Attendance - Login</a>
+            <a href="sepl/staff/login.html">Stock Advance - Staff Login</a>
+            <a href="sepl/consignor/login.html">Stock Advance - Client Login</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ACCESS GATE -->
+  <div id="attendanceGate" class="portal-gate">
+    <div class="gate-card">
+      <div class="gate-icon">&#128203;</div>
+      <h2>Staff Attendance</h2>
+      <p>Enter the access code to continue</p>
+      <form id="attendanceGateForm" class="gate-form">
+        <input type="password" id="attendCode" placeholder="Access Code" autocomplete="off" required>
+        <button type="submit" class="btn-submit">Enter</button>
+        <div id="attendGateError" class="gate-error">Incorrect access code. Please try again.</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ATTENDANCE CONTENT -->
+  <div id="attendanceContent" style="display:none">
+    <section class="page-hero">
+      <h1>Staff Attendance Roster</h1>
+      <p class="hero-subtitle">Daily attendance tracking for SMTC staff</p>
+    </section>
+
+    <section class="section" style="padding-top:32px">
+      <div class="attend-wrap">
+
+        <div class="attend-tabs">
+          <button class="tab-btn active" data-tab="roster">Today's Roster</button>
+          <button class="tab-btn" data-tab="history">History</button>
+        </div>
+
+        <!-- ROSTER TAB -->
+        <div class="tab-panel active" id="tab-roster">
+          <div class="roster-header">
+            <div class="date-input-wrap">
+              <label>Date</label>
+              <input type="date" id="rosterDate">
+            </div>
+            <div class="day-summary" id="daySummary"></div>
+          </div>
+
+          <div id="rosterTableWrap"></div>
+
+          <div class="add-emp-row">
+            <input type="text" class="add-emp-input" id="newEmpName" placeholder="New employee name&hellip;">
+            <button class="btn-add-emp" id="addEmpBtn">+ Add Employee</button>
+          </div>
+
+          <div class="roster-actions">
+            <button class="btn-save" id="saveRosterBtn">Save Attendance</button>
+            <span class="save-msg" id="saveMsg">Saved &#10003;</span>
+          </div>
+        </div>
+
+        <!-- HISTORY TAB -->
+        <div class="tab-panel" id="tab-history">
+          <div class="history-header">
+            <div class="month-input-wrap">
+              <label>Month</label>
+              <input type="month" id="historyMonth">
+            </div>
+            <button class="btn-export" id="exportBtn">Export CSV</button>
+          </div>
+          <div id="historyTableWrap"></div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Billing Address</h4>
+        <p>SPICE MORE TRADING COMPANY</p>
+        <p>KPXIV 11, 12, 13, 14</p>
+        <p>VATTATHARA BUILDINGS</p>
+        <p>KUMILY MUNNAR ROAD</p>
+        <p>KUMILY, Idukki, Kerala, 685509</p>
+        <p>GSTIN 32ABYFS2267G1ZS</p>
+      </div>
+      <div class="footer-col">
+        <h4>Bank Information</h4>
+        <p>Axis Bank, Bodinayakanur Branch</p>
+        <p>Account Number: 918020093385758</p>
+        <p>IFSC: UTIB0002671</p>
+      </div>
+      <div class="footer-col">
+        <h4>Licenses</h4>
+        <p>Auctioneer: MKT Auc/CS/S2069/0013/2018</p>
+        <p>Exporter: ML/REG/S2069/2017</p>
+        <p>Dealer: C.S./S2069/136/2017</p>
+        <p style="margin-top:12px"><a href="https://drive.google.com/file/d/1f55b2SeUfF0G3m8NOM3nBvcl_BXpgJSD/view" target="_blank" style="color:var(--green-primary)">View ISO Certificate</a></p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 Spice More Trading Company. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function () {
+    const ACCESS_CODE = '123456';
+    const STORAGE_KEY = 'smtc_attendance';
+    const EMPLOYEES_KEY = 'smtc_attendance_employees';
+    const AUTH_KEY = 'smtc_attend_auth';
+
+    const gate = document.getElementById('attendanceGate');
+    const content = document.getElementById('attendanceContent');
+    const gateForm = document.getElementById('attendanceGateForm');
+    const codeInput = document.getElementById('attendCode');
+    const gateError = document.getElementById('attendGateError');
+
+    function unlock() {
+      gate.style.display = 'none';
+      content.style.display = 'block';
+      init();
+    }
+
+    if (sessionStorage.getItem(AUTH_KEY) === 'true') {
+      unlock();
+    }
+
+    gateForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (codeInput.value === ACCESS_CODE) {
+        sessionStorage.setItem(AUTH_KEY, 'true');
+        gateError.style.display = 'none';
+        unlock();
+      } else {
+        gateError.style.display = 'block';
+        codeInput.value = '';
+        codeInput.focus();
+      }
+    });
+
+    // ---- Data helpers ----
+    function loadEmployees() {
+      try { return JSON.parse(localStorage.getItem(EMPLOYEES_KEY)) || []; } catch { return []; }
+    }
+    function saveEmployees(list) {
+      localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(list));
+    }
+    function loadRecords() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+    }
+    function saveRecords(obj) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+    }
+
+    function todayStr() {
+      return new Date().toISOString().slice(0, 10);
+    }
+    function fmtDate(str) {
+      if (!str) return '';
+      const [y, m, d] = str.split('-');
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+    }
+
+    // ---- Tab handling ----
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'history') renderHistory();
+      });
+    });
+
+    // ---- Roster tab ----
+    const rosterDate = document.getElementById('rosterDate');
+    rosterDate.value = todayStr();
+    rosterDate.addEventListener('change', renderRoster);
+
+    document.getElementById('addEmpBtn').addEventListener('click', function () {
+      const nameInput = document.getElementById('newEmpName');
+      const name = nameInput.value.trim();
+      if (!name) return;
+      const emps = loadEmployees();
+      if (emps.includes(name)) { nameInput.select(); return; }
+      emps.push(name);
+      saveEmployees(emps);
+      nameInput.value = '';
+      renderRoster();
+    });
+    document.getElementById('newEmpName').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addEmpBtn').click(); }
+    });
+
+    document.getElementById('saveRosterBtn').addEventListener('click', saveRoster);
+
+    function renderRoster() {
+      const date = rosterDate.value;
+      const emps = loadEmployees();
+      const records = loadRecords();
+      const dayData = (records[date] || {});
+      const wrap = document.getElementById('rosterTableWrap');
+
+      if (!emps.length) {
+        wrap.innerHTML = '<div class="no-emp-msg"><p>No employees added yet.</p><p>Use the field below to add staff members.</p></div>';
+        updateDaySummary(date, {}, 0);
+        return;
+      }
+
+      const statusOptions = [
+        { val: 'present', label: 'Present' },
+        { val: 'absent', label: 'Absent' },
+        { val: 'halfday', label: 'Half Day' },
+        { val: 'leave', label: 'Leave' },
+      ];
+
+      let rows = emps.map((emp, idx) => {
+        const rec = dayData[emp] || { status: 'present', remarks: '' };
+        const radios = statusOptions.map(opt => {
+          const id = `s_${idx}_${opt.val}`;
+          const checked = rec.status === opt.val ? 'checked' : '';
+          return `<input type="radio" class="status-radio" name="status_${idx}" id="${id}" value="${opt.val}" ${checked}>
+                  <label class="status-label" for="${id}">${opt.label}</label>`;
+        }).join('');
+
+        return `<tr data-emp="${encodeURIComponent(emp)}">
+          <td class="emp-name-cell">${escHtml(emp)}</td>
+          <td><div class="status-radios">${radios}</div></td>
+          <td><input type="text" class="remarks-input" placeholder="Remarks" value="${escHtml(rec.remarks || '')}"></td>
+          <td><button class="del-emp-btn" title="Remove employee" onclick="removeEmp('${encodeURIComponent(emp)}')">&#x2715;</button></td>
+        </tr>`;
+      }).join('');
+
+      wrap.innerHTML = `<table class="roster-table">
+        <thead><tr>
+          <th style="width:200px">Employee</th>
+          <th>Status</th>
+          <th style="width:160px">Remarks</th>
+          <th style="width:40px"></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+      updateDaySummary(date, dayData, emps.length);
+    }
+
+    function updateDaySummary(date, dayData, total) {
+      const el = document.getElementById('daySummary');
+      if (!total) { el.innerHTML = ''; return; }
+      const present = Object.values(dayData).filter(r => r.status === 'present').length;
+      const absent = Object.values(dayData).filter(r => r.status === 'absent').length;
+      const halfday = Object.values(dayData).filter(r => r.status === 'halfday').length;
+      const leave = Object.values(dayData).filter(r => r.status === 'leave').length;
+      el.innerHTML = `<strong>${present}</strong> Present &nbsp;|&nbsp; <strong>${absent}</strong> Absent &nbsp;|&nbsp; <strong>${halfday}</strong> Half Day &nbsp;|&nbsp; <strong>${leave}</strong> Leave`;
+    }
+
+    window.removeEmp = function (encodedName) {
+      const name = decodeURIComponent(encodedName);
+      if (!confirm(`Remove "${name}" from the roster?`)) return;
+      const emps = loadEmployees().filter(e => e !== name);
+      saveEmployees(emps);
+      renderRoster();
+    };
+
+    function saveRoster() {
+      const date = rosterDate.value;
+      const records = loadRecords();
+      records[date] = records[date] || {};
+
+      document.querySelectorAll('#rosterTableWrap tbody tr[data-emp]').forEach(row => {
+        const emp = decodeURIComponent(row.dataset.emp);
+        const statusEl = row.querySelector('input[type="radio"]:checked');
+        const remarksEl = row.querySelector('.remarks-input');
+        records[date][emp] = {
+          status: statusEl ? statusEl.value : 'present',
+          remarks: remarksEl ? remarksEl.value.trim() : ''
+        };
+      });
+
+      saveRecords(records);
+      const msg = document.getElementById('saveMsg');
+      msg.classList.add('visible');
+      setTimeout(() => msg.classList.remove('visible'), 2500);
+      updateDaySummary(date, records[date], loadEmployees().length);
+    }
+
+    // ---- History tab ----
+    const historyMonth = document.getElementById('historyMonth');
+    historyMonth.value = todayStr().slice(0, 7);
+    historyMonth.addEventListener('change', renderHistory);
+
+    document.getElementById('exportBtn').addEventListener('click', exportCSV);
+
+    function renderHistory() {
+      const month = historyMonth.value;
+      const emps = loadEmployees();
+      const records = loadRecords();
+      const wrap = document.getElementById('historyTableWrap');
+
+      const days = Object.keys(records).filter(d => d.startsWith(month)).sort();
+
+      if (!days.length || !emps.length) {
+        wrap.innerHTML = '<div class="no-history">No attendance records for this month.</div>';
+        return;
+      }
+
+      const statusBadge = (s) => {
+        if (!s) return '<span class="badge badge-none">—</span>';
+        const map = { present: 'badge-present', absent: 'badge-absent', halfday: 'badge-halfday', leave: 'badge-leave' };
+        const labels = { present: 'Present', absent: 'Absent', halfday: 'Half Day', leave: 'Leave' };
+        return `<span class="badge ${map[s] || 'badge-none'}">${labels[s] || s}</span>`;
+      };
+
+      const headCols = days.map(d => `<th>${fmtDate(d)}</th>`).join('');
+      const bodyRows = emps.map(emp => {
+        const cols = days.map(d => {
+          const rec = (records[d] || {})[emp];
+          return `<td>${statusBadge(rec ? rec.status : null)}</td>`;
+        }).join('');
+        return `<tr><td style="font-weight:500;white-space:nowrap">${escHtml(emp)}</td>${cols}</tr>`;
+      }).join('');
+
+      wrap.innerHTML = `<div style="overflow-x:auto"><table class="history-table">
+        <thead><tr><th>Employee</th>${headCols}</tr></thead>
+        <tbody>${bodyRows}</tbody>
+      </table></div>`;
+    }
+
+    function exportCSV() {
+      const month = historyMonth.value;
+      const emps = loadEmployees();
+      const records = loadRecords();
+      const days = Object.keys(records).filter(d => d.startsWith(month)).sort();
+      if (!days.length || !emps.length) return;
+
+      const header = ['Employee', ...days].join(',');
+      const rows = emps.map(emp => {
+        const cols = days.map(d => {
+          const rec = (records[d] || {})[emp];
+          return rec ? rec.status : '';
+        });
+        return ['"' + emp.replace(/"/g, '""') + '"', ...cols].join(',');
+      });
+
+      const csv = [header, ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance_${month}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function init() {
+      renderRoster();
+    }
+  })();
+  </script>
+</body>
+</html>
