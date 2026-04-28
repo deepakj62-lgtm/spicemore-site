@@ -1228,8 +1228,8 @@ function renderSummaryGrid() {
       <td style="text-align:left">
         <div style="display:flex;align-items:center;gap:6px">
           <button onclick="event.stopPropagation();sgHideDealer('${esc}')" title="Hide dealer"
-            style="border:none;background:none;cursor:pointer;padding:0 3px;font-size:15px;color:#ccc;line-height:1;flex-shrink:0;font-family:inherit"
-            onmouseenter="this.style.color='#DC2626'" onmouseleave="this.style.color='#ccc'">×</button>
+            style="border:none;background:none;cursor:pointer;padding:0;font-size:16px;color:#999;line-height:1;flex-shrink:0;font-family:inherit;font-weight:400"
+            onmouseenter="this.style.color='#DC2626';this.style.fontWeight='700'" onmouseleave="this.style.color='#999';this.style.fontWeight='400'">&#215;</button>
           <span class="sg-dlr">${r.dealer}<span class="sg-arrow">→</span></span>
         </div>
       </td>
