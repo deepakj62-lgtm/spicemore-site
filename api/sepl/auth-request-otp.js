@@ -61,10 +61,11 @@ module.exports = async function handler(req, res) {
       cacheControlMaxAge: 0
     });
 
-    await sendWhatsAppText(cleanPhone, `Your SEPL verification code is ${otp}. Valid for 5 minutes.`);
+    const waResult = await sendWhatsAppText(cleanPhone, `Your SEPL verification code is ${otp}. Valid for 5 minutes.`);
 
     const resp = { ok: true };
-    if (process.env.SEPL_DEV_MODE === '1') resp.devOtp = otp;
+    // Return OTP in response when WhatsApp delivery failed (bridge offline) so staff can relay it verbally
+    if (process.env.SEPL_DEV_MODE === '1' || waResult.stubbed || !waResult.ok) resp.devOtp = otp;
     return res.status(200).json(resp);
   } catch (e) {
     console.error('auth-request-otp error', e);

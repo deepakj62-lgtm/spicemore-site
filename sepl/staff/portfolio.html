@@ -63,6 +63,17 @@
     .close-btn:disabled { opacity:.5; cursor:not-allowed; }
     .status-closed { display:inline-block; background:#eee; color:#666; border-radius:10px; padding:3px 9px; font-size:11px; font-weight:600; }
     @media (max-width:480px) { .drawer { width:100vw; } }
+    .photo-grid-sm { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
+    .photo-grid-sm .pt { border-radius:8px; overflow:hidden; border:1px solid var(--light-gray); cursor:pointer; transition:border-color .15s; }
+    .photo-grid-sm .pt:hover { border-color:var(--green-dark); }
+    .photo-grid-sm .pt img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+    .photo-grid-sm .pt .pc { font-size:10px; color:var(--tan); padding:4px 7px; }
+    .photo-lb { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
+    .photo-lb.open { display:flex; }
+    .photo-lb img { max-width:100%; max-height:80vh; object-fit:contain; border-radius:6px; }
+    .photo-lb .plb-cap { color:rgba(255,255,255,0.8); font-size:12px; margin-top:10px; text-align:center; }
+    .photo-lb .plb-close { position:fixed; top:14px; right:18px; background:none; border:none; color:#fff; font-size:30px; cursor:pointer; line-height:1; opacity:.75; }
+    .photo-lb .plb-close:hover { opacity:1; }
   </style>
 </head>
 <body>
@@ -72,10 +83,7 @@
   <div class="wrap">
     <div class="nav-sub">
       <a href="intake.html">Intake</a> ·
-      <a href="portfolio.html" class="active">Portfolio</a> ·
-      <a href="daily-price.html">Daily price</a> ·
-      <a href="settings.html">Settings</a> ·
-      <a href="https://deepak-finance-tracker.vercel.app" target="_blank" rel="noopener">Finance Tracker</a>
+      <a href="portfolio.html" class="active">Portfolio</a>
     </div>
 
     <div class="card">
@@ -117,6 +125,7 @@
       <table id="posTbl"><thead><tr>
         <th data-k="txnId">Txn</th>
         <th data-k="consignorName">Client</th>
+        <th data-k="clientType">Type</th>
         <th data-k="depot">Depot</th>
         <th data-k="netWeightKg" class="num">Weight</th>
         <th data-k="advanceAmount" class="num">Advance</th>
@@ -127,7 +136,7 @@
         <th data-k="expectedExitDate">Exit by</th>
         <th data-k="daysToExit" class="num">Days left</th>
         <th data-k="status">Status</th>
-      </tr></thead><tbody id="posBody"><tr><td colspan="12" style="color:var(--tan)">Loading…</td></tr></tbody></table>
+      </tr></thead><tbody id="posBody"><tr><td colspan="13" style="color:var(--tan)">Loading…</td></tr></tbody></table>
       </div>
     </div>
   </div>
@@ -137,6 +146,12 @@
     <button type="button" class="close" id="drawerClose" aria-label="Close">&times;</button>
     <div id="drawerBody"><div class="meta">Loading…</div></div>
   </aside>
+
+  <div class="photo-lb" id="photoLb">
+    <button class="plb-close" id="photoLbClose">✕</button>
+    <img id="photoLbImg" src="" alt="">
+    <div class="plb-cap" id="photoLbCap"></div>
+  </div>
 
 <script>
   const token = sessionStorage.sepl_token;
@@ -157,7 +172,7 @@
 
   // ₹/kg rate overrides stored locally
   const PF_KEY = 'sepl_price_rates_v2';
-  let state = { txns: [], price: null, sortK: 'ltv', sortDir: -1, rateOverrides: null, consignors: {} };
+  let state = { txns: [], price: null, sortK: 'ltv', sortDir: -1, rateOverrides: null, consignors: {}, consignorTypeMap: {} };
 
   function loadRateOverrides() {
     try {
@@ -193,12 +208,20 @@
   }
 
   async function load() {
-    const [tRes, cardamom] = await Promise.all([
+    const [tRes, cardamom, cRes] = await Promise.all([
       fetch('/api/sepl/transactions', { headers: hdr }),
-      fetchCardamomRate()
+      fetchCardamomRate(),
+      fetch('/api/sepl/consignors', { headers: hdr })
     ]);
-    const tData = await tRes.json();
+    const [tData, cData] = await Promise.all([tRes.json(), cRes.json()]);
     state.txns = tData.transactions || [];
+
+    // Build consignorId → type lookup
+    state.consignorTypeMap = {};
+    (cData.consignors || []).forEach(c => {
+      state.consignorTypeMap[c.consignorId] = c.type || '';
+    });
+
     if (cardamom) {
       state.price = cardamom;
     } else {
@@ -212,12 +235,13 @@
     render();
   }
 
-  // Sync inputs: if overrides saved use them, otherwise leave blank (placeholder shows hint)
+  // Sync inputs: show computed default (board×factor) unless a manual override is stored
   function syncRateInputs() {
+    const rates = effectiveRates();
     const ro = state.rateOverrides;
-    document.getElementById('pfBold').value = ro ? (ro.bold || '') : '';
-    document.getElementById('pfMid').value  = ro ? (ro.mid  || '') : '';
-    document.getElementById('pfRej').value  = ro ? (ro.rej  || '') : '';
+    document.getElementById('pfBold').value = Math.round(ro && ro.bold ? ro.bold : rates.bold);
+    document.getElementById('pfMid').value  = Math.round(ro && ro.mid  ? ro.mid  : rates.mid);
+    document.getElementById('pfRej').value  = Math.round(ro && ro.rej  ? ro.rej  : rates.rej);
   }
 
   // Get effective per-grade ₹/kg rates
@@ -247,7 +271,8 @@
     const accruedHolding = t.dailyHoldingCharge * days;
     const ltv = currentStockValue > 0 ? (t.advanceAmount + accruedHolding) / currentStockValue : 0;
     const daysToExit = daysBetween(today(), t.expectedExitDate);
-    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx: effectivePx };
+    const clientType = state.consignorTypeMap[t.consignorId] || '';
+    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx: effectivePx, clientType };
   }
 
   function render() {
@@ -313,6 +338,7 @@
       return `<tr>
         <td><b>${t.txnId}</b></td>
         <td><button type="button" class="client-link" data-cid="${t.consignorId || ''}" data-txnid="${t.txnId}">${safeName}</button></td>
+        <td>${t.clientType || '—'}</td>
         <td>${t.depot}</td>
         <td class="num">${t.netWeightKg.toLocaleString('en-IN')}</td>
         <td class="num">${inr(t.advanceAmount)}</td>
@@ -324,7 +350,7 @@
         <td class="num" style="color:${t.daysToExit<0?'#c00':t.daysToExit<14?'#b26a00':''}">${t.daysToExit}</td>
         <td>${statusCell}</td>
       </tr>`;
-    }).join('') || `<tr><td colspan="12" style="color:var(--tan)">No positions.</td></tr>`;
+    }).join('') || `<tr><td colspan="13" style="color:var(--tan)">No positions.</td></tr>`;
 
     document.querySelectorAll('#posBody .client-link').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -348,18 +374,18 @@
     document.getElementById(id).addEventListener(id === 'search' ? 'input' : 'change', render);
   });
 
-  // Rate override inputs
+  // Rate override inputs — only save when value differs from the computed default
   function rateChange() {
+    const boardAvg = state.price ? state.price.pricePerKg : 0;
+    const defaults = { bold: boardAvg * 1.15, mid: boardAvg * 1.05, rej: boardAvg * 0.80 };
     const bold = parseFloat(document.getElementById('pfBold').value);
     const mid  = parseFloat(document.getElementById('pfMid').value);
     const rej  = parseFloat(document.getElementById('pfRej').value);
-    const hasAny = !isNaN(bold) || !isNaN(mid) || !isNaN(rej);
-    if (hasAny) {
-      state.rateOverrides = {
-        bold: isNaN(bold) ? null : bold,
-        mid:  isNaN(mid)  ? null : mid,
-        rej:  isNaN(rej)  ? null : rej
-      };
+    const ovBold = !isNaN(bold) && Math.round(bold) !== Math.round(defaults.bold) ? bold : null;
+    const ovMid  = !isNaN(mid)  && Math.round(mid)  !== Math.round(defaults.mid)  ? mid  : null;
+    const ovRej  = !isNaN(rej)  && Math.round(rej)  !== Math.round(defaults.rej)  ? rej  : null;
+    if (ovBold !== null || ovMid !== null || ovRej !== null) {
+      state.rateOverrides = { bold: ovBold, mid: ovMid, rej: ovRej };
       saveRateOverrides(state.rateOverrides);
     } else {
       state.rateOverrides = null;
@@ -466,6 +492,19 @@
           </div>`;
         }).join('') || '<div class="meta">None.</div>'}
       </div>
+      ${(() => {
+        const photos = txns.filter(t => t.samplePhotoUrl);
+        if (!photos.length) return '';
+        return `<h3>Sample photos (${photos.length})</h3>
+        <div class="photo-grid-sm">
+          ${photos.map(t =>
+            `<div class="pt" data-src="${t.samplePhotoUrl}" data-cap="${t.txnId} · ${t.intakeDate}">
+              <img src="${t.samplePhotoUrl}" alt="Sample" loading="lazy">
+              <div class="pc">${t.txnId} · ${t.intakeDate}</div>
+            </div>`
+          ).join('')}
+        </div>`;
+      })()}
     `;
 
     // Attach close button handlers
@@ -474,7 +513,27 @@
       const msgEl = drawerBody.querySelector(`.close-msg[data-txnid="${txnId}"]`);
       btn.addEventListener('click', () => closePosition(txnId, btn, msgEl));
     });
+
+    // Photo lightbox
+    const lb = document.getElementById('photoLb');
+    drawerBody.querySelectorAll('.pt').forEach(el => {
+      el.addEventListener('click', () => {
+        document.getElementById('photoLbImg').src = el.dataset.src;
+        document.getElementById('photoLbCap').textContent = el.dataset.cap;
+        lb.classList.add('open');
+      });
+    });
   }
+
+  document.getElementById('photoLbClose').addEventListener('click', () =>
+    document.getElementById('photoLb').classList.remove('open'));
+  document.getElementById('photoLb').addEventListener('click', e => {
+    if (e.target === document.getElementById('photoLb'))
+      document.getElementById('photoLb').classList.remove('open');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById('photoLb').classList.remove('open');
+  });
 
   load();
 </script>
