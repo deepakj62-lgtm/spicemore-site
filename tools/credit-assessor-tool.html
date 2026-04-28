@@ -975,8 +975,7 @@ function analyse(name, cosData, c) {
     for (const p of s.pays) {
       const pd = sdays !== null ? Math.min(p.days, sdays) : p.days;
       if (p.type === 'Purc') {
-        const effDays = pd + c.cd;
-        effWeighted += effDays * p.amount;
+        effWeighted += pd * p.amount;
         purcWeighted += pd * p.amount;
         purcTotal += p.amount;
       } else {
@@ -1038,7 +1037,7 @@ function analyse(name, cosData, c) {
     const sdays = s.settlementDate ? (s.settlementDate - s.date) / 864e5 : null;
     for (const p of s.pays) {
       const pd = sdays !== null ? Math.min(p.days, sdays) : p.days;
-      const ed = p.type === 'Purc' ? pd + c.cd : pd;
+      const ed = pd;
       recentEffW += ed * p.amount;
       recentEffT += p.amount;
     }
@@ -1059,8 +1058,7 @@ function analyse(name, cosData, c) {
     .filter(s => s.settlementDate)
     .map(s => {
       const raw = (s.settlementDate - s.date) / 864e5;
-      const hasPurc = s.pays.some(p => p.type === 'Purc');
-      return hasPurc ? raw + c.cd : raw;
+      return raw;
     });
   let stdDevDays = 0;
   if (settledInvDays.length > 1) {
@@ -1497,7 +1495,6 @@ function render() {
       let isPendingUnpaid = false;
       if (s.settlementDate) {
         effDays = (s.settlementDate - s.date) / 864e5;
-        if (hasPurc) effDays += c.cd;
       } else if (s.pays.length > 0) {
         const lastPay = s.pays.reduce((a, p) => p.payDate > a ? p.payDate : a, s.pays[0].payDate);
         effDays = (lastPay - s.date) / 864e5;
@@ -1590,8 +1587,8 @@ function render() {
           ${r.purcPct > 0 ? `
           <div class="m-row"><span class="m-lbl">💵 Cash-Only Days <small style="color:var(--t5)">(used for limit)</small></span>
             <span class="m-val" style="color:${(r.cashAvgDays??99)<c.cd?'#16A34A':(r.cashAvgDays??99)<35?'var(--a)':'var(--r);font-weight:800'}">${r.cashAvgDays !== null ? r.cashAvgDays.toFixed(1) + 'd' : '—'}</span></div>
-          <div class="m-row"><span class="m-lbl">🔄 Buyback Days <small style="color:var(--t5)">(raw + ${c.cd}d cycle)</small></span>
-            <span class="m-val">${r.purcRawDays !== null ? r.purcRawDays.toFixed(1) + 'd → eff. ' + (r.purcRawDays + c.cd).toFixed(1) + 'd' : '—'}</span></div>
+          <div class="m-row"><span class="m-lbl">🔄 Buyback Days <small style="color:var(--t5)">(avg days to settlement)</small></span>
+            <span class="m-val">${r.purcRawDays !== null ? r.purcRawDays.toFixed(1) + 'd' : '—'}</span></div>
           <div class="m-row"><span class="m-lbl">Buyback % of Value</span>
             <span class="m-val" style="color:${r.purcPct>60?'var(--r)':r.purcPct>30?'var(--a)':'var(--t7)'}">${r.purcPct.toFixed(0)}% ${r.purcPct>60?'⚠ HIGH':r.purcPct>30?'⚠ MODERATE':''}</span></div>
           <div class="m-row"><span class="m-lbl">Limit Haircut</span>
