@@ -1,22 +1,14 @@
-const { put, list } = require('@vercel/blob');
+import { getJSON, putJSON, json, preflight } from './_blob.js';
 
 const DATA_PATH = 'attendance/data.json';
 
 function defaultData() {
   return {
-    managerEmail: '',
-    fy: 'FY27',
-    fy_start: '2026-04-01',
-    fy_end: '2027-03-31',
-    employees: [],
-    work_types: {},
-    balances: {},
-    ot_credits: [],
-    leave_applications: []
+    managerEmail: '', fy: 'FY27', fy_start: '2026-04-01', fy_end: '2027-03-31',
+    employees: [], work_types: {}, balances: {}, ot_credits: [], leave_applications: []
   };
 }
 
-// FY27 seed data from Spicemore Staff Attendance Roster
 function fy27Seed() {
   const employees = [
     'A VELMURUGAN','ABHIRAMI','AKHIL VS','BINCY LIJO','JOSHY JOSEPH',
@@ -28,7 +20,6 @@ function fy27Seed() {
     'M RAJAMANICKAM': 'Auction', 'M SURESH': 'Auction', 'M THARIQ AKRAM': 'Auction',
     'S GOWSIK': 'Auction', 'SANOOP T S': 'Auction', 'SHAJI K SEBASTIAN': 'Auction'
   };
-  // PL & RL used as of end of April 2026
   const balances = {
     'A VELMURUGAN':     { pl_used: 0,   rl_used: 0 },
     'ABHIRAMI':         { pl_used: 0,   rl_used: 1 },
@@ -48,7 +39,6 @@ function fy27Seed() {
     'SANOOP T S':       { pl_used: 0,   rl_used: 1 },
     'SHAJI K SEBASTIAN':{ pl_used: 2,   rl_used: 0 },
   };
-  // OT credits from April 2026 (hours/7 rounded to nearest 0.5). Expire May 28.
   const ot_credits = [
     { id:'seed_avm', employee:'A VELMURUGAN',    date_worked:'2026-04-28', hours:24, days_earned:3.5, days_availed:0, expires_on:'2026-05-28', logged_by:'Supervisor', logged_on:'2026-04-28T00:00:00.000Z', notes:'April OT' },
     { id:'seed_avs', employee:'AKHIL VS',        date_worked:'2026-04-28', hours:15, days_earned:2.0, days_availed:1, expires_on:'2026-05-28', logged_by:'Supervisor', logged_on:'2026-04-28T00:00:00.000Z', notes:'April OT' },
@@ -60,7 +50,6 @@ function fy27Seed() {
     { id:'seed_sts', employee:'SANOOP T S',      date_worked:'2026-04-28', hours:23, days_earned:3.5, days_availed:0, expires_on:'2026-05-28', logged_by:'Supervisor', logged_on:'2026-04-28T00:00:00.000Z', notes:'April OT' },
     { id:'seed_sks', employee:'SHAJI K SEBASTIAN',date_worked:'2026-04-28',hours:11, days_earned:1.5, days_availed:1, expires_on:'2026-05-28', logged_by:'Supervisor', logged_on:'2026-04-28T00:00:00.000Z', notes:'April OT' },
   ];
-  // Historical approved leave records from April 2026
   const leave_applications = [
     { id:'h_avs_pl', token:'hist', employee:'AKHIL VS',         type:'pl', from_date:'2026-04-01', to_date:'2026-04-01', days:1,   reason:'Personal (April)', status:'approved', applied_on:'2026-04-01T00:00:00.000Z', action_comment:'', action_date:'2026-04-01T00:00:00.000Z', action_by:'Manager', employee_email:'' },
     { id:'h_blj_pl', token:'hist', employee:'BINCY LIJO',       type:'pl', from_date:'2026-04-01', to_date:'2026-04-02', days:2,   reason:'Personal (April)', status:'approved', applied_on:'2026-04-01T00:00:00.000Z', action_comment:'', action_date:'2026-04-01T00:00:00.000Z', action_by:'Manager', employee_email:'' },
@@ -82,93 +71,68 @@ function fy27Seed() {
   return { ...defaultData(), employees, work_types, balances, ot_credits, leave_applications, fy:'FY27', fy_start:'2026-04-01', fy_end:'2027-03-31' };
 }
 
-async function loadData() {
-  try {
-    const { blobs } = await list({ prefix: 'attendance/' });
-    const blob = blobs.find(b => b.pathname === DATA_PATH);
-    if (!blob) return defaultData();
-    const resp = await fetch(blob.url + '?nocache=' + Date.now());
-    return await resp.json();
-  } catch (e) {
-    return defaultData();
-  }
+async function loadData(bucket) {
+  return await getJSON(bucket, DATA_PATH, defaultData());
 }
 
-async function saveData(data) {
+async function saveData(bucket, data) {
   data.updatedAt = new Date().toISOString();
-  await put(DATA_PATH, JSON.stringify(data), {
-    access: 'public', contentType: 'application/json',
-    addRandomSuffix: false, cacheControlMaxAge: 0
-  });
+  await putJSON(bucket, DATA_PATH, data);
   return data;
 }
 
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+export async function onRequest(context) {
+  const { request, env } = context;
+  if (request.method === 'OPTIONS') return preflight();
+  const bucket = env.ATTENDANCE_BUCKET || env.BLOB_BUCKET;
 
   try {
-    if (req.method === 'GET') {
-      return res.status(200).json(await loadData());
+    if (request.method === 'GET') {
+      return json(await loadData(bucket));
     }
-
-    if (req.method === 'POST') {
-      const { action, payload } = req.body;
-      let data = await loadData();
+    if (request.method === 'POST') {
+      const { action, payload } = await request.json();
+      let data = await loadData(bucket);
 
       if (action === 'seed_fy27') {
         data = fy27Seed();
         if (payload && payload.managerEmail) data.managerEmail = payload.managerEmail;
-        await saveData(data);
-        return res.status(200).json({ ok: true, data });
+        await saveData(bucket, data);
+        return json({ ok: true, data });
       }
-
       if (action === 'add_employee') {
-        if (!data.employees.includes(payload.name)) {
-          data.employees.push(payload.name);
-        }
+        if (!data.employees.includes(payload.name)) data.employees.push(payload.name);
         if (payload.work_type !== undefined) {
           data.work_types = data.work_types || {};
           data.work_types[payload.name] = payload.work_type;
         }
-        if (!data.balances[payload.name]) {
-          data.balances[payload.name] = { pl_used: 0, rl_used: 0 };
-        }
+        if (!data.balances[payload.name]) data.balances[payload.name] = { pl_used: 0, rl_used: 0 };
       }
-
       if (action === 'remove_employee') {
         data.employees = data.employees.filter(e => e !== payload.name);
       }
-
       if (action === 'update_settings') {
         if (payload.managerEmail !== undefined) data.managerEmail = payload.managerEmail;
       }
-
       if (action === 'log_ot') {
         const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
         const hours = parseFloat(payload.hours) || 0;
-        // Round to nearest 0.5 day (7 hrs = 1 day)
         const daysEarned = Math.round((hours / 7) * 2) / 2;
         const expires = new Date(payload.date);
         expires.setDate(expires.getDate() + 30);
         data.ot_credits = data.ot_credits || [];
         data.ot_credits.push({
           id, employee: payload.employee,
-          date_worked: payload.date, hours, days_earned: daysEarned,
-          days_availed: 0,
+          date_worked: payload.date, hours, days_earned: daysEarned, days_availed: 0,
           expires_on: expires.toISOString().slice(0, 10),
           logged_by: payload.logged_by || 'Supervisor',
           logged_on: new Date().toISOString(),
           notes: payload.notes || ''
         });
       }
-
       if (action === 'delete_ot') {
         data.ot_credits = (data.ot_credits || []).filter(o => o.id !== payload.id);
       }
-
       if (action === 'approve_leave') {
         const app = (data.leave_applications || []).find(a => a.id === payload.id);
         if (app && app.status === 'pending') {
@@ -192,7 +156,6 @@ module.exports = async function handler(req, res) {
           }
         }
       }
-
       if (action === 'reject_leave') {
         const app = (data.leave_applications || []).find(a => a.id === payload.id);
         if (app && app.status === 'pending') {
@@ -202,19 +165,16 @@ module.exports = async function handler(req, res) {
           app.action_by = 'Manager';
         }
       }
-
       if (action === 'add_application') {
         data.leave_applications = data.leave_applications || [];
         data.leave_applications.push(payload);
       }
-
-      await saveData(data);
-      return res.status(200).json({ ok: true, data });
+      await saveData(bucket, data);
+      return json({ ok: true, data });
     }
-
-    return res.status(405).json({ error: 'Method not allowed' });
+    return json({ error: 'Method not allowed' }, { status: 405 });
   } catch (err) {
     console.error('attend-data error:', err);
-    return res.status(500).json({ error: err.message });
+    return json({ error: err.message }, { status: 500 });
   }
-};
+}

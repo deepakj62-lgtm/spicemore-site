@@ -1,3 +1,7 @@
 .vercel
 node_modules
 .env*.local
+.wrangler
+.dev.vars
+.env.prod
+.claude/

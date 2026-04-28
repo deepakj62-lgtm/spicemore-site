@@ -1,0 +1,55 @@
+# Cloudflare Pages config for spicemore-site.
+# Run `wrangler pages deploy .` (after `wrangler login`) to deploy.
+
+name = "spicemore-site"
+compatibility_date = "2026-04-28"
+
+# Static HTML lives at the repo root; Pages Functions live in ./functions.
+pages_build_output_dir = "."
+
+# nodejs_compat lets us use `Buffer`, Node `crypto`, etc. inside Pages Functions
+# (pdf-lib, resend, and a couple of helpers expect Node-style globals).
+compatibility_flags = ["nodejs_compat"]
+
+# R2 bucket binding. Replaces @vercel/blob — every key the old blob store used
+# (attendance/, requests/, payouts/, sepl-*/, suggestions/, whatsapp-outbox/, …)
+# now lives under this single bucket.
+[[r2_buckets]]
+binding = "BLOB_BUCKET"
+bucket_name = "spicemore-blob"
+
+# Convenience alias used by the attend-* handlers per the migration brief.
+# Points at the same physical bucket — no separate data store needed.
+[[r2_buckets]]
+binding = "ATTENDANCE_BUCKET"
+bucket_name = "spicemore-blob"
+
+# ── Secrets — set after first deploy via:
+#   wrangler pages secret put RESEND_API_KEY            --project-name=spicemore-site
+#   wrangler pages secret put ANTHROPIC_API_KEY         --project-name=spicemore-site
+#   wrangler pages secret put GROQ_API_KEY              --project-name=spicemore-site
+#   wrangler pages secret put SEPL_SESSION_SECRET       --project-name=spicemore-site
+#   wrangler pages secret put ERPNEXT_API_KEY           --project-name=spicemore-site
+#   wrangler pages secret put ERPNEXT_API_SECRET        --project-name=spicemore-site
+#   wrangler pages secret put ERPNEXT_URL               --project-name=spicemore-site
+#   wrangler pages secret put ERP_PROXY_SECRET          --project-name=spicemore-site
+#   wrangler pages secret put WHATSAPP_BRIDGE_URL       --project-name=spicemore-site
+#   wrangler pages secret put WHATSAPP_BRIDGE_SECRET    --project-name=spicemore-site
+#   wrangler pages secret put SEPL_DEV_MODE             --project-name=spicemore-site
+#   # Bank adapters (set whichever you have):
+#   wrangler pages secret put AXIS_API_BASE             --project-name=spicemore-site
+#   wrangler pages secret put AXIS_CLIENT_ID            --project-name=spicemore-site
+#   wrangler pages secret put AXIS_CLIENT_SECRET        --project-name=spicemore-site
+#   wrangler pages secret put AXIS_CORP_CODE            --project-name=spicemore-site
+#   wrangler pages secret put AXIS_CORP_USER_ID         --project-name=spicemore-site
+#   wrangler pages secret put AXIS_DEBIT_ACCOUNT        --project-name=spicemore-site
+#   wrangler pages secret put SBI_API_BASE              --project-name=spicemore-site
+#   wrangler pages secret put SBI_CLIENT_ID             --project-name=spicemore-site
+#   wrangler pages secret put SBI_CLIENT_SECRET         --project-name=spicemore-site
+#   wrangler pages secret put SBI_CORP_ID               --project-name=spicemore-site
+#   wrangler pages secret put SBI_DEBIT_ACCOUNT         --project-name=spicemore-site
+#   wrangler pages secret put SIB_API_BASE              --project-name=spicemore-site
+#   wrangler pages secret put SIB_CLIENT_ID             --project-name=spicemore-site
+#   wrangler pages secret put SIB_CLIENT_SECRET         --project-name=spicemore-site
+#   wrangler pages secret put SIB_CORP_ID               --project-name=spicemore-site
+#   wrangler pages secret put SIB_DEBIT_ACCOUNT         --project-name=spicemore-site

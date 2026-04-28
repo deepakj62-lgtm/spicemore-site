@@ -1,23 +1,7 @@
-const { put, list } = require('@vercel/blob');
+import { getJSON, putJSON, html, preflight } from './_blob.js';
 
 const DATA_PATH = 'attendance/data.json';
 const SITE_URL = 'https://spicemore.com';
-
-async function loadData() {
-  const { blobs } = await list({ prefix: 'attendance/' });
-  const blob = blobs.find(b => b.pathname === DATA_PATH);
-  if (!blob) throw new Error('No attendance data found');
-  const resp = await fetch(blob.url + '?nocache=' + Date.now());
-  return await resp.json();
-}
-
-async function saveData(data) {
-  data.updatedAt = new Date().toISOString();
-  await put(DATA_PATH, JSON.stringify(data), {
-    access: 'public', contentType: 'application/json',
-    addRandomSuffix: false, cacheControlMaxAge: 0
-  });
-}
 
 function page(icon, title, body, link = true) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -29,36 +13,38 @@ a{display:inline-block;margin-top:20px;background:#2D5016;color:#fff;padding:11p
 <body><div class="card"><div class="icon">${icon}</div><h2>${title}</h2>${body}${link ? `<a href="${SITE_URL}/staff-attendance.html">Go to Dashboard →</a>` : ''}</div></body></html>`;
 }
 
-module.exports = async function handler(req, res) {
-  const { id, action, token } = req.query;
+export async function onRequest(context) {
+  const { request, env } = context;
+  if (request.method === 'OPTIONS') return preflight();
+  const bucket = env.ATTENDANCE_BUCKET || env.BLOB_BUCKET;
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
+  const action = url.searchParams.get('action');
+  const token = url.searchParams.get('token');
+  const comment = url.searchParams.get('comment') || '';
 
   if (!id || !action || !token) {
-    return res.status(400).send(page('⚠️', 'Missing Parameters', '<p>This link is incomplete. Please use the link from your email.</p>', false));
+    return html(page('!', 'Missing Parameters', '<p>This link is incomplete. Please use the link from your email.</p>', false), { status: 400 });
   }
 
   try {
-    const data = await loadData();
+    const data = await getJSON(bucket, DATA_PATH);
+    if (!data) return html(page('!', 'No Data', '<p>No attendance data found.</p>'), { status: 404 });
     const app = (data.leave_applications || []).find(a => a.id === id);
-
-    if (!app) {
-      return res.status(404).send(page('❓', 'Not Found', '<p>This leave request could not be found.</p>'));
-    }
-    if (app.token !== token) {
-      return res.status(403).send(page('🔒', 'Invalid Link', '<p>This approval link is not valid.</p>'));
-    }
+    if (!app) return html(page('?', 'Not Found', '<p>This leave request could not be found.</p>'), { status: 404 });
+    if (app.token !== token) return html(page('!', 'Invalid Link', '<p>This approval link is not valid.</p>'), { status: 403 });
     if (app.status !== 'pending') {
-      return res.status(200).send(page('ℹ️', `Already ${app.status.charAt(0).toUpperCase() + app.status.slice(1)}`,
+      return html(page('i', `Already ${app.status.charAt(0).toUpperCase() + app.status.slice(1)}`,
         `<p><strong>${app.employee}</strong>'s leave has already been <strong>${app.status}</strong>.</p>
          ${app.action_comment ? `<p style="margin-top:8px;color:#888;font-style:italic">"${app.action_comment}"</p>` : ''}`));
     }
 
     if (action === 'approve') {
       app.status = 'approved';
-      app.action_comment = req.query.comment || '';
+      app.action_comment = comment;
       app.action_date = new Date().toISOString();
       app.action_by = 'Manager (email)';
 
-      // Deduct balance
       const bal = data.balances[app.employee] = data.balances[app.employee] || {};
       if (app.type === 'pl') bal.pl_used = (bal.pl_used || 0) + app.days;
       if (app.type === 'rl') bal.rl_used = (bal.rl_used || 0) + app.days;
@@ -78,19 +64,18 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      await saveData(data);
+      data.updatedAt = new Date().toISOString();
+      await putJSON(bucket, DATA_PATH, data);
 
       const typeLabel = { pl: 'Paid Leave', ot: 'OT / Comp-off Leave', rl: 'Regional Leave', lop: 'Loss of Pay' }[app.type] || app.type;
-      return res.status(200).send(page('✅', 'Leave Approved',
+      return html(page('✓', 'Leave Approved',
         `<p><strong>${app.employee}</strong>'s ${typeLabel} has been approved.</p>
          <p style="margin-top:6px;color:#888">${app.from_date} to ${app.to_date} &nbsp;·&nbsp; ${app.days} day${app.days !== 1 ? 's' : ''}</p>`));
     }
 
-    // For reject, redirect to manager dashboard with the request highlighted
-    return res.status(302).setHeader('Location', `${SITE_URL}/staff-attendance.html?reject=${id}&token=${token}`).end();
-
+    return Response.redirect(`${SITE_URL}/staff-attendance.html?reject=${id}&token=${token}`, 302);
   } catch (err) {
     console.error('attend-action error:', err);
-    return res.status(500).send(page('⚠️', 'Error', `<p>Something went wrong. Please go to the dashboard to take action manually.</p>`));
+    return html(page('!', 'Error', '<p>Something went wrong. Please go to the dashboard to take action manually.</p>'), { status: 500 });
   }
-};
+}
