@@ -24,7 +24,7 @@ module.exports = async function handler(req, res) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const emailData = {
-      from: 'SMTC Tools <onboarding@resend.dev>',
+      from: 'Spicemore Tools <onboarding@resend.dev>',
       to: Array.isArray(to) ? to : [to],
       subject,
     };

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMTC Daily Sales Summary</title>
+<title>Spicemore Daily Sales Summary</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f5f6fa;--card:#fff;--border:#dde1e6;--primary:#2563eb;--primary-dark:#1d4ed8;--green:#16a34a;--green-bg:#dcfce7;--yellow:#ca8a04;--yellow-bg:#fef9c3;--red:#dc2626;--red-bg:#fee2e2;--blue-bg:#dbeafe;--text:#1e293b;--text-light:#64748b;--shadow:0 1px 3px rgba(0,0,0,.1);--mono:'SF Mono','Menlo','Consolas',monospace}
@@ -126,7 +126,7 @@ tr.grand-total td{border-top:2px solid var(--primary);font-size:13px}
 <!-- PASSWORD GATE -->
 <div id="authGate" class="auth-gate">
   <div class="auth-box">
-    <h2>SMTC Daily Sales Summary</h2>
+    <h2>Spicemore Daily Sales Summary</h2>
     <p>Enter password to continue</p>
     <input id="authPwd" type="password" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')authCheck()">
     <button onclick="authCheck()">Unlock</button>
@@ -156,7 +156,7 @@ tr.grand-total td{border-top:2px solid var(--primary);font-size:13px}
 <header>
   <img class="logo" src="https://static.wixstatic.com/media/71d97b_23c088d0bc674ca4a1e591210b43af92~mv2.png/v1/fill/w_120,h_86,al_c,q_85,enc_avif,quality_auto/Spice-More-smaller-1030x741.png" alt="SpiceMore" onerror="this.style.display='none'">
   <div>
-    <h1>SMTC Daily Sales Summary</h1>
+    <h1>Spicemore Daily Sales Summary</h1>
     <div class="subtitle">Spice More Trading Company &mdash; Dealer-wise Sales Analysis</div>
   </div>
 </header>
@@ -689,7 +689,7 @@ function exportToExcel() {
 
   // Summary sheet
   const summaryData = [
-    ['SMTC DAILY SALES SUMMARY'],
+    ['Spicemore DAILY SALES SUMMARY'],
     ['Generated', new Date().toLocaleString('en-IN')],
     ['Date Range', (document.getElementById('dateFrom').value || 'All') + ' to ' + (document.getElementById('dateTo').value || 'All')],
     ['GST', includeGST ? 'Included' : 'Excluded'],
@@ -747,7 +747,7 @@ function exportToExcel() {
   XLSX.utils.book_append_sheet(wb, wsRaw, 'Transaction Details');
 
   const now = new Date();
-  XLSX.writeFile(wb, 'SMTC_Sales_Summary_' + now.getFullYear() + '_' + String(now.getMonth() + 1).padStart(2, '0') + '_' + String(now.getDate()).padStart(2, '0') + '.xlsx');
+  XLSX.writeFile(wb, 'Spicemore_Sales_Summary_' + now.getFullYear() + '_' + String(now.getMonth() + 1).padStart(2, '0') + '_' + String(now.getDate()).padStart(2, '0') + '.xlsx');
   showToast('Excel file downloaded');
 }
 

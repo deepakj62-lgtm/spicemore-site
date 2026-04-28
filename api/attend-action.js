@@ -21,7 +21,7 @@ async function saveData(data) {
 
 function page(icon, title, body, link = true) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} | SMTC</title>
+<title>${title} | Spicemore</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;background:#f5f1ed;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
 .card{background:#fff;border-radius:14px;padding:44px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.10)}
 .icon{font-size:52px;margin-bottom:16px}h2{color:#2D5016;font-size:22px;margin-bottom:12px}p{color:#666;line-height:1.6;margin-bottom:8px}

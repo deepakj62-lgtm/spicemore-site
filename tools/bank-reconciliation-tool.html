@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SMTC Bank Reconciliation Tool</title>
+<title>Spicemore Bank Reconciliation Tool</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f5f6fa;--card:#fff;--border:#dde1e6;--primary:#2563eb;--primary-dark:#1d4ed8;--green:#16a34a;--green-bg:#dcfce7;--yellow:#ca8a04;--yellow-bg:#fef9c3;--red:#dc2626;--red-bg:#fee2e2;--blue-bg:#dbeafe;--text:#1e293b;--text-light:#64748b;--shadow:0 1px 3px rgba(0,0,0,.1)}
@@ -91,7 +91,7 @@ tr.unmatched{background:var(--red-bg)}
 <!-- PASSWORD GATE -->
 <div id="authGate" class="auth-gate">
   <div class="auth-box">
-    <h2>SMTC Bank Reconciliation</h2>
+    <h2>Spicemore Bank Reconciliation</h2>
     <p>Enter password to continue</p>
     <input id="authPwd" type="password" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')authCheck()">
     <button onclick="authCheck()">Unlock</button>
@@ -120,7 +120,7 @@ tr.unmatched{background:var(--red-bg)}
 <header>
 <img class="logo" src="https://static.wixstatic.com/media/71d97b_23c088d0bc674ca4a1e591210b43af92~mv2.png/v1/fill/w_120,h_86,al_c,q_85,enc_avif,quality_auto/Spice-More-smaller-1030x741.png" alt="SpiceMore" onerror="this.style.display='none'">
 <div>
-<h1>SMTC Bank Reconciliation Tool</h1>
+<h1>Spicemore Bank Reconciliation Tool</h1>
 <div class="subtitle">Spice More Trading Company — Axis Bank Cash Credit Account Reconciliation</div>
 </div>
 </header>
@@ -525,7 +525,7 @@ function resetAll(){
 function downloadResults(){
   let wb=XLSX.utils.book_new();
   let summaryData=[
-    ['SMTC BANK RECONCILIATION'],
+    ['Spicemore BANK RECONCILIATION'],
     ['Account',bankMeta.acctNo||'AXIS BANK LTD - CD - 918020093385758'],
     ['Period',bankMeta.period||''],
     [],
@@ -567,7 +567,7 @@ function downloadResults(){
   XLSX.utils.book_append_sheet(wb,wsUmLedger,'Unmatched Ledger');
 
   let now=new Date();
-  XLSX.writeFile(wb,'SMTC_Bank_Reconciliation_'+now.getFullYear()+'_'+String(now.getMonth()+1).padStart(2,'0')+'_'+String(now.getDate()).padStart(2,'0')+'.xlsx');
+  XLSX.writeFile(wb,'Spicemore_Bank_Reconciliation_'+now.getFullYear()+'_'+String(now.getMonth()+1).padStart(2,'0')+'_'+String(now.getDate()).padStart(2,'0')+'.xlsx');
 }
 
 function downloadCorrected(){
@@ -585,7 +585,7 @@ function downloadCorrected(){
   XLSX.utils.book_append_sheet(wb,wsLd,'Ledger Annotated');
 
   let now=new Date();
-  XLSX.writeFile(wb,'SMTC_Annotated_Reconciliation_'+now.getFullYear()+'_'+String(now.getMonth()+1).padStart(2,'0')+'_'+String(now.getDate()).padStart(2,'0')+'.xlsx');
+  XLSX.writeFile(wb,'Spicemore_Annotated_Reconciliation_'+now.getFullYear()+'_'+String(now.getMonth()+1).padStart(2,'0')+'_'+String(now.getDate()).padStart(2,'0')+'.xlsx');
 }
 </script>
 </body>

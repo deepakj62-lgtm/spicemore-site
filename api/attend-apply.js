@@ -3,7 +3,7 @@ const { Resend } = require('resend');
 
 const DATA_PATH = 'attendance/data.json';
 const SITE_URL = 'https://spicemore.com';
-const FROM_EMAIL = 'SMTC Attendance <onboarding@resend.dev>';
+const FROM_EMAIL = 'Spicemore Attendance <onboarding@resend.dev>';
 
 const TYPE_LABELS = {
   pl: 'Paid Leave (PL)',
@@ -81,7 +81,7 @@ module.exports = async function handler(req, res) {
         html: `
 <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f1ed;padding:24px">
   <div style="background:#2D5016;padding:20px 24px;border-radius:10px 10px 0 0">
-    <h1 style="color:#fff;margin:0;font-size:20px">SMTC Leave Request</h1>
+    <h1 style="color:#fff;margin:0;font-size:20px">Spicemore Leave Request</h1>
     <p style="color:#8FBC6F;margin:6px 0 0;font-size:13px">Spice More Trading Company — Staff Attendance</p>
   </div>
   <div style="background:#fff;padding:28px;border-radius:0 0 10px 10px;border:1px solid #ddd;border-top:none">

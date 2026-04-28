@@ -38,7 +38,7 @@ naming the path above, and pausing the loop until Deepak takes over.
 - [x] (d) Transactions tab removed from staff nav
 - [x] (e) SEPL Stock Advance added to /smtc-portal.html dropdown **and** as
         a portal card
-- [x] (h) spice123 access code unlocks the SMTC corporate gate
+- [x] (h) spice123 access code unlocks the Spicemore corporate gate
         (simpleHash === 87afac64, verified live)
 - [x] Server-side 250 kg minimum lot enforcement in api/sepl/transactions.js
 - [x] Sample field renamed grams (was percent)

@@ -37,5 +37,5 @@ module.exports = {
   // Programme
   programme: 'SEPL Cardamom Consignment Programme',
   issuer: 'Spicemore Exim Pvt Ltd (SEPL)',
-  auctioneer: 'Spice More Trading Company (SMTC)'
+  auctioneer: 'Spice More Trading Company (Spicemore)'
 };

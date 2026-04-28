@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Advanced Request Form | SMTC Corporate</title>
+  <title>Advanced Request Form | Spicemore Corporate</title>
   <meta name="description" content="Submit a request for new custom functionality for Spice More Trading Company.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet">
@@ -317,7 +317,7 @@
         <a href="about.html">About Us</a>
         <a href="contact.html">Contact</a>
         <div class="nav-dropdown">
-          <a href="smtc-portal.html" class="dropdown-trigger active">SMTC Corporate <span class="dropdown-arrow">&#9662;</span></a>
+          <a href="smtc-portal.html" class="dropdown-trigger active">Spicemore Corporate <span class="dropdown-arrow">&#9662;</span></a>
           <div class="dropdown-menu">
             <a href="credit-assessor.html">Credit Assessor</a>
             <a href="reconciliation.html">Bank Reconciliation</a>
@@ -335,7 +335,7 @@
     <div class="gate-card">
       <div class="gate-icon">&#128274;</div>
       <h2>Authentication Required</h2>
-      <p>Please sign in through the SMTC Corporate portal first.</p>
+      <p>Please sign in through the Spicemore Corporate portal first.</p>
       <a href="smtc-portal.html" class="btn-submit" style="display:inline-block;text-align:center;margin-top:16px;text-decoration:none">Go to Portal</a>
     </div>
   </div>
@@ -847,7 +847,7 @@
         console.error('API error:', err);
         progress.innerHTML = '<p style="color:#ca8a04">Could not save to server. You can download the request and email it instead.</p>';
 
-        const summary = 'SMTC FUNCTIONALITY REQUEST\n==========================\n\n' +
+        const summary = 'Spicemore FUNCTIONALITY REQUEST\n==========================\n\n' +
           'Requested By: ' + payload.requesterName + ' (' + email + ')\n' +
           'Priority: ' + payload.priority + '\n' +
           'Date: ' + new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) + '\n\n' +
@@ -857,7 +857,7 @@
         const blob = new Blob([summary], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'SMTC-Request-' + new Date().toISOString().slice(0,10) + '.txt';
+        a.download = 'Spicemore-Request-' + new Date().toISOString().slice(0,10) + '.txt';
 
         const downloadBtn = document.createElement('button');
         downloadBtn.className = 'btn-submit btn-outline-dark';
@@ -872,7 +872,7 @@
         emailBtn.style.marginTop = '12px';
         emailBtn.style.marginLeft = '12px';
         emailBtn.onclick = () => {
-          const subject = encodeURIComponent('SMTC Feature Request');
+          const subject = encodeURIComponent('Spicemore Feature Request');
           const body = encodeURIComponent(summary + '\n\nIMPORTANT: Please attach the files to this email.');
           window.location.href = 'mailto:deepak@spicemore.com?subject=' + subject + '&body=' + body;
         };

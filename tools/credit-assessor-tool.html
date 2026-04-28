@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMTC · Credit Limit Assessor</title>
+<title>Spicemore · Credit Limit Assessor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -317,7 +317,7 @@ header .right{font-size:12px;opacity:.5;text-align:right}
   <div style="background:#fff;border-radius:12px;padding:40px 36px;max-width:360px;width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)">
     <img src="https://static.wixstatic.com/media/71d97b_23c088d0bc674ca4a1e591210b43af92~mv2.png/v1/fill/w_120,h_86,al_c,q_85,enc_avif,quality_auto/Spice-More-smaller-1030x741.png"
       alt="SpiceMore" style="height:50px;margin-bottom:16px" onerror="this.style.display='none'">
-    <h2 style="font-size:18px;color:#37250D;margin:0 0 4px">SMTC Credit Assessor</h2>
+    <h2 style="font-size:18px;color:#37250D;margin:0 0 4px">Spicemore Credit Assessor</h2>
     <p style="font-size:12px;color:#6B7280;margin:0 0 24px">Enter password to continue</p>
     <input id="authPwd" type="password" placeholder="Password" autocomplete="off"
       style="width:100%;padding:12px 14px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;
@@ -354,7 +354,7 @@ header .right{font-size:12px;opacity:.5;text-align:right}
   <div class="logo-wrap">
     <img class="logo-img" src="https://static.wixstatic.com/media/71d97b_23c088d0bc674ca4a1e591210b43af92~mv2.png/v1/fill/w_120,h_86,al_c,q_85,enc_avif,quality_auto/Spice-More-smaller-1030x741.png" alt="SpiceMore" onerror="this.style.display='none'">
     <div>
-      <h1>SMTC · Credit Limit Assessor</h1>
+      <h1>Spicemore · Credit Limit Assessor</h1>
       <div class="sub">Spice More Trading Company — Dealer Risk Management</div>
     </div>
   </div>
@@ -444,7 +444,7 @@ header .right{font-size:12px;opacity:.5;text-align:right}
   <div class="empty" id="emptyState">
     <div class="icon">📂</div>
     <h3>Upload ledger files to begin</h3>
-    <p style="font-size:12px">Drop SMTC &amp; SEPL .xlsx files in the sidebar, then click Analyse</p>
+    <p style="font-size:12px">Drop Spicemore &amp; SEPL .xlsx files in the sidebar, then click Analyse</p>
   </div>
 
   <div id="results" style="display:none">
@@ -483,7 +483,7 @@ header .right{font-size:12px;opacity:.5;text-align:right}
 // STATE
 // ══════════════════════════════════════════════════════════
 let files = [];          // {file, name, company, dealer}
-let rawData = {};        // {dealerName: {SMTC: [...txns], SEPL: [...txns]}}
+let rawData = {};        // {dealerName: {Spicemore: [...txns], SEPL: [...txns]}}
 let results = [];        // analysis results per dealer
 let overrides = {};      // {dealerName: {limit: number|null, ...}}
 let charts = {};
@@ -500,7 +500,7 @@ document.getElementById('hDate').innerHTML =
 //   id       TEXT        PRIMARY KEY,
 //   payload  JSONB       NOT NULL,
 //   saved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-//   saved_by TEXT        NOT NULL DEFAULT 'SMTC Team'
+//   saved_by TEXT        NOT NULL DEFAULT 'Spicemore Team'
 // );
 // ALTER TABLE credit_assessor_cache ENABLE ROW LEVEL SECURITY;
 // CREATE POLICY "anon_all" ON credit_assessor_cache
@@ -577,7 +577,7 @@ async function saveToStorage() {
   if (!results.length) return;
   try {
     _realtimeSkipNext = true;  // suppress self-echo from Realtime
-    const savedBy = sessionStorage.getItem('smtc_user') || 'SMTC Team';
+    const savedBy = sessionStorage.getItem('smtc_user') || 'Spicemore Team';
     const { error } = await _sb.from('credit_assessor_cache').upsert({
       id:       CACHE_ROW_ID,
       payload:  buildPayload(),
@@ -657,7 +657,7 @@ function showCacheBanner(iso, savedBy) {
   const d   = new Date(iso);
   const lbl = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
               + ' at ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
-  const by  = savedBy || 'SMTC Team';
+  const by  = savedBy || 'Spicemore Team';
   const b = document.createElement('div');
   b.id = 'cacheBanner';
   b.style.cssText = [
@@ -796,12 +796,12 @@ function sniff(file) {
       const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: false });
       const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: null, raw: true });
       let co = '', dl = '';
-      if (file.name.startsWith('SMTC')) co = 'SMTC';
+      if (file.name.startsWith('Spicemore')) co = 'Spicemore';
       if (file.name.startsWith('SEPL')) co = 'SEPL';
       for (const row of data.slice(0, 12)) {
         if (!row?.[0]) continue;
         const s = String(row[0]);
-        if (!co && (s.includes('SPICE MORE') || s.includes('SMTC'))) co = 'SMTC';
+        if (!co && (s.includes('SPICE MORE') || s.includes('Spicemore'))) co = 'Spicemore';
         if (!co && (s.includes('SPICE EMPORIUM') || s.includes('SEPL'))) co = 'SEPL';
         if (s.includes('Account :')) dl = s.replace('Account :', '').trim();
       }
@@ -1497,7 +1497,7 @@ function render() {
     const trend = r.recentAvg < r.avgDays ? '↓ improving' : r.recentAvg > r.avgDays ? '↑ worsening' : '→ stable';
     const tClr = r.recentAvg < r.avgDays ? '#16A34A' : r.recentAvg > r.avgDays ? '#DC2626' : '#6B7280';
     const coPills = Object.entries(r.breakdown).map(([co, d]) =>
-      `<span class="co-pill" style="background:${co==='SMTC'?'var(--g7)':'var(--b)'}">${co} ${fmt(d.sales)}</span>`).join('');
+      `<span class="co-pill" style="background:${co==='Spicemore'?'var(--g7)':'var(--b)'}">${co} ${fmt(d.sales)}</span>`).join('');
 
     const invRows = r.allSett.map((s, si) => {
       let hasPurc = false;
@@ -1659,10 +1659,10 @@ function render() {
       const ctx = document.getElementById(`ch_${idx}`);
       if (!ctx) return;
       const labels = r.months.map(fmtMK);
-      const smtc = r.months.map(k => (r.monthly[k]?.byCo?.SMTC || 0) / 1e5);
+      const smtc = r.months.map(k => (r.monthly[k]?.byCo?.Spicemore || 0) / 1e5);
       const sepl = r.months.map(k => (r.monthly[k]?.byCo?.SEPL || 0) / 1e5);
       const hasSepl = sepl.some(v => v > 0);
-      const ds = [{ label: 'SMTC', data: smtc, backgroundColor: 'rgba(46,125,50,.8)', borderRadius: 3 }];
+      const ds = [{ label: 'Spicemore', data: smtc, backgroundColor: 'rgba(46,125,50,.8)', borderRadius: 3 }];
       if (hasSepl) ds.push({ label: 'SEPL', data: sepl, backgroundColor: 'rgba(59,130,246,.7)', borderRadius: 3 });
       charts[idx] = new Chart(ctx, { type: 'bar', data: { labels, datasets: ds }, options: {
         responsive: true, maintainAspectRatio: false,
@@ -1715,12 +1715,12 @@ function resetLimit(btn, dealer) {
 function copyForSheets() {
   if (!results.length) return;
   const c = cfg();
-  const hdr = ['Dealer','SMTC Sales','SEPL Sales','Combined','Active Mo','Monthly Avg',
+  const hdr = ['Dealer','Spicemore Sales','SEPL Sales','Combined','Active Mo','Monthly Avg',
     'Avg Days','vs Terms','Risk Factor','Base Limit','Pre-Final','Formula Limit',
     'WK Cap','Final Limit','Manual?','Peak','Risk'].join('\t');
   const rows = results.map(r => {
     const fl = overrides[r.name]?.limit ?? r.recommended;
-    return [r.name, Math.round(r.breakdown['SMTC']?.sales||0), Math.round(r.breakdown['SEPL']?.sales||0),
+    return [r.name, Math.round(r.breakdown['Spicemore']?.sales||0), Math.round(r.breakdown['SEPL']?.sales||0),
       Math.round(r.combined), r.active.length, Math.round(r.mAvg), +r.avgDays.toFixed(1),
       +(r.avgDays-c.cd).toFixed(1), r.rf, Math.round(r.base), Math.round(r.preFinal),
       r.formulaLimit, Math.round(r.wkCap), fl, overrides[r.name]?.limit!=null?'Yes':'', Math.round(r.peak), r.rl
@@ -1733,13 +1733,13 @@ function downloadXlsx() {
   if (!results.length) return;
   const c = cfg();
   const wb = XLSX.utils.book_new();
-  const sData = [['Dealer','SMTC Sales','SEPL Sales','Combined','Active Months','Monthly Avg',
+  const sData = [['Dealer','Spicemore Sales','SEPL Sales','Combined','Active Months','Monthly Avg',
     'Avg Days','vs Terms','Risk Factor','Base Limit','Pre-Final','Formula Limit','WK Cap',
     'Final Limit','Manual Override','Peak Exposure','Risk']];
   const iData = [['Dealer','Company','Invoice','Date','Amount','Settled','Days','Settled On','Outstanding']];
   results.forEach(r => {
     const fl = overrides[r.name]?.limit ?? r.recommended;
-    sData.push([r.name, Math.round(r.breakdown['SMTC']?.sales||0), Math.round(r.breakdown['SEPL']?.sales||0),
+    sData.push([r.name, Math.round(r.breakdown['Spicemore']?.sales||0), Math.round(r.breakdown['SEPL']?.sales||0),
       Math.round(r.combined), r.active.length, Math.round(r.mAvg), +r.avgDays.toFixed(1),
       +(r.avgDays-c.cd).toFixed(1), r.rf, Math.round(r.base), Math.round(r.preFinal),
       r.formulaLimit, Math.round(r.wkCap), fl, overrides[r.name]?.limit!=null?'Yes':'',
@@ -1752,14 +1752,14 @@ function downloadXlsx() {
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sData), 'Credit Limits');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(iData), 'Invoice Detail');
-  XLSX.writeFile(wb, `SMTC_CreditLimit_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `Spicemore_CreditLimit_${new Date().toISOString().slice(0,10)}.xlsx`);
   toast('📥 Excel downloaded');
 }
 
 // ══════════════════════════════════════════════════════════
 // GOOGLE APPS SCRIPT
 // ══════════════════════════════════════════════════════════
-const GAS = `// SMTC Credit Limit Analyser — Google Apps Script
+const GAS = `// Spicemore Credit Limit Analyser — Google Apps Script
 // ────────────────────────────────────────────────
 // 1. Extensions → Apps Script → paste this → Save
 // 2. Enable Drive API: Services → Drive API → Add
@@ -1807,11 +1807,11 @@ function runCreditLimitAnalysis() {
 }
 
 function parseLedger(data, name) {
-  let co = name.startsWith('SMTC')?'SMTC':name.startsWith('SEPL')?'SEPL':'';
+  let co = name.startsWith('Spicemore')?'Spicemore':name.startsWith('SEPL')?'SEPL':'';
   let dealer = '', hdr = -1;
   for (let i=0;i<data.length;i++) {
     const s = String(data[i][0]||'');
-    if (!co && s.includes('SPICE MORE')) co='SMTC';
+    if (!co && s.includes('SPICE MORE')) co='Spicemore';
     if (!co && s.includes('SPICE EMPORIUM')) co='SEPL';
     if (s.includes('Account :')) dealer=s.replace('Account :','').trim();
     if (data[i][0]==='Date'&&data[i][1]==='Type') hdr=i;

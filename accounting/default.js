@@ -50,7 +50,7 @@
   // ---- Utilities ----
   function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function fmtN(n) { if (n === null || n === undefined || n === '') return ''; const x = Number(n); return isNaN(x) ? n : x.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  function abbr() { return state.company === 'Spice More Trading Company' ? 'SMTC' : 'SEPL'; }
+  function abbr() { return state.company === 'Spice More Trading Company' ? 'Spicemore' : 'SEPL'; }
   function todayISO() { return new Date().toISOString().slice(0,10); }
   function labelize(f) { return f.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()); }
   const $ = (id) => document.getElementById(id);
@@ -143,7 +143,7 @@
     ],
     help: [
       { t: 'Keyboard Shortcuts',  hk: '',      act: () => show('welcome') },
-      { t: 'About',               hk: '',      act: () => alert('Spicemore Books — Phase 1 traditional view.\nBackend: ERPNext (Frappe Cloud).\nBuilt for SMTC + SEPL.') },
+      { t: 'About',               hk: '',      act: () => alert('Spicemore Books — Phase 1 traditional view.\nBackend: ERPNext (Frappe Cloud).\nBuilt for Spicemore + SEPL.') },
     ],
   };
 

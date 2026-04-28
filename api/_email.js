@@ -5,7 +5,7 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
-const FROM_EMAIL = 'SMTC Tools <onboarding@resend.dev>';
+const FROM_EMAIL = 'Spicemore Tools <onboarding@resend.dev>';
 const SITE_URL = 'https://spicemore-site.vercel.app';
 
 async function sendRequestConfirmation(request) {
@@ -16,11 +16,11 @@ async function sendRequestConfirmation(request) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: request.requesterEmail,
-      subject: `SMTC Request Received: ${request.toolName}`,
+      subject: `Spicemore Request Received: ${request.toolName}`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 24px;">
           <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: #4ecca3; margin: 0; font-size: 22px;">SMTC Corporate Tools</h1>
+            <h1 style="color: #4ecca3; margin: 0; font-size: 22px;">Spicemore Corporate Tools</h1>
             <p style="color: #a0a0b0; margin: 8px 0 0;">Spice More Trading Company</p>
           </div>
           <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #e0e0e0; border-top: none;">
@@ -38,7 +38,7 @@ async function sendRequestConfirmation(request) {
             <div style="text-align: center; margin: 24px 0;">
               <a href="${SITE_URL}/smtc-requests-view.html" style="display: inline-block; background: #4ecca3; color: #1a1a2e; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">Track Your Request</a>
             </div>
-            <p style="color: #999; font-size: 12px; margin-bottom: 0;">This is an automated message from SMTC Corporate Tools.</p>
+            <p style="color: #999; font-size: 12px; margin-bottom: 0;">This is an automated message from Spicemore Corporate Tools.</p>
           </div>
         </div>
       `
@@ -72,7 +72,7 @@ async function sendStatusUpdate(request, newStatus, note) {
   const liveLinkSection = newStatus === 'live' ? `
     <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 16px; margin: 16px 0;">
       <p style="margin: 0 0 8px; font-weight: 600; color: #155724;">Your tool is now live!</p>
-      <p style="margin: 0; color: #155724;">The tool has been deployed and is available in the SMTC Corporate portal. Access it anytime through the portal.</p>
+      <p style="margin: 0; color: #155724;">The tool has been deployed and is available in the Spicemore Corporate portal. Access it anytime through the portal.</p>
     </div>
   ` : '';
 
@@ -80,11 +80,11 @@ async function sendStatusUpdate(request, newStatus, note) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: request.requesterEmail,
-      subject: `SMTC Update: ${request.toolName} - ${statusInfo.label}`,
+      subject: `Spicemore Update: ${request.toolName} - ${statusInfo.label}`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f9fa; padding: 24px;">
           <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: #4ecca3; margin: 0; font-size: 22px;">SMTC Corporate Tools</h1>
+            <h1 style="color: #4ecca3; margin: 0; font-size: 22px;">Spicemore Corporate Tools</h1>
             <p style="color: #a0a0b0; margin: 8px 0 0;">Status Update</p>
           </div>
           <div style="background: white; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #e0e0e0; border-top: none;">
@@ -100,7 +100,7 @@ async function sendStatusUpdate(request, newStatus, note) {
             <div style="text-align: center; margin: 24px 0;">
               <a href="${SITE_URL}/smtc-requests-view.html" style="display: inline-block; background: #4ecca3; color: #1a1a2e; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Request Details</a>
             </div>
-            <p style="color: #999; font-size: 12px; margin-bottom: 0;">This is an automated message from SMTC Corporate Tools.</p>
+            <p style="color: #999; font-size: 12px; margin-bottom: 0;">This is an automated message from Spicemore Corporate Tools.</p>
           </div>
         </div>
       `

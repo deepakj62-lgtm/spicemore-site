@@ -1,6 +1,6 @@
-# SMTC Feature Builder Agent Loop
+# Spicemore Feature Builder Agent Loop
 
-This document describes the automated agent loop for processing feature requests submitted to the SMTC Corporate Tools portal.
+This document describes the automated agent loop for processing feature requests submitted to the Spicemore Corporate Tools portal.
 
 ## API Endpoints
 
