@@ -1225,11 +1225,11 @@ function renderSummaryGrid() {
       </div>
     </td>`;
     return `<tr onclick="sgGoToDealer('${esc}')" data-dealer="${r.name}">
-      <td style="text-align:left">
+      <td style="text-align:left;padding-left:6px">
         <div style="display:flex;align-items:center;gap:6px">
           <button onclick="event.stopPropagation();sgHideDealer('${esc}')" title="Hide dealer"
-            style="border:none;background:none;cursor:pointer;padding:0;font-size:16px;color:#999;line-height:1;flex-shrink:0;font-family:inherit;font-weight:400"
-            onmouseenter="this.style.color='#DC2626';this.style.fontWeight='700'" onmouseleave="this.style.color='#999';this.style.fontWeight='400'">&#215;</button>
+            style="border:none;background:none;cursor:pointer;padding:2px 4px;font-size:14px;color:#DC2626;line-height:1;flex-shrink:0;opacity:0.35"
+            onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.35'">&#10005;</button>
           <span class="sg-dlr">${r.dealer}<span class="sg-arrow">→</span></span>
         </div>
       </td>
