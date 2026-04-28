@@ -1081,13 +1081,14 @@ function analyse(name, cosData, c) {
     else break;
   }
 
-  // Purc haircut on limit
-  const limitInputDays = purcPct > 30 ? (cashAvgDays ?? avgDays) : avgDays;
-  const purcHaircut = purcPct > 60 ? 0.70 : purcPct > 30 ? 0.85 : 1.0;
+  // Buyback is an agreed settlement channel (interest recovered via labour charges),
+  // so no haircut and no cash-only-days switch — blended days drive the risk factor.
+  const limitInputDays = avgDays;
+  const purcHaircut = 1.0;
   const rfAdj = getRF(limitInputDays, c);
   const rlAdj = riskLabel(limitInputDays, c);
   const baseAdj = mAvg * (c.cd / 30);
-  const preFinalAdj = baseAdj * rfAdj * purcHaircut;
+  const preFinalAdj = baseAdj * rfAdj;
   const formulaLimitAdj = Math.round(preFinalAdj / c.round) * c.round;
   const recommendedAdj = Math.min(formulaLimitAdj, wkCap);
 
@@ -1578,21 +1579,15 @@ function render() {
       <div class="d-body">
         <div class="d-sec">
           <h4>Payment Behaviour</h4>
-          ${r.purcPct > 30 ? `
-          <div style="background:#FFF8E1;border:1px solid #FFD54F;border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#854D0E">
-            🔄 Commodity Buyback dealer — limit uses <strong>cash-only days</strong> + ${r.purcHaircut < 1 ? (r.purcHaircut*100).toFixed(0)+'% haircut' : 'no haircut'}
-          </div>` : ''}
           <div class="m-row"><span class="m-lbl">${r.purcPct > 30 ? '🔄 Blended Avg Days' : 'Effective Avg Days'}</span>
             <span class="m-val" style="color:${r.avgDays<c.cd?'#16A34A':r.avgDays<35?'var(--a)':'var(--r)'}">${r.avgDays.toFixed(1)}d</span></div>
           ${r.purcPct > 0 ? `
-          <div class="m-row"><span class="m-lbl">💵 Cash-Only Days <small style="color:var(--t5)">(used for limit)</small></span>
+          <div class="m-row"><span class="m-lbl">💵 Cash-Only Days</span>
             <span class="m-val" style="color:${(r.cashAvgDays??99)<c.cd?'#16A34A':(r.cashAvgDays??99)<35?'var(--a)':'var(--r);font-weight:800'}">${r.cashAvgDays !== null ? r.cashAvgDays.toFixed(1) + 'd' : '—'}</span></div>
-          <div class="m-row"><span class="m-lbl">🔄 Buyback Days <small style="color:var(--t5)">(avg days to settlement)</small></span>
+          <div class="m-row"><span class="m-lbl">🔄 Buyback Days</span>
             <span class="m-val">${r.purcRawDays !== null ? r.purcRawDays.toFixed(1) + 'd' : '—'}</span></div>
           <div class="m-row"><span class="m-lbl">Buyback % of Value</span>
-            <span class="m-val" style="color:${r.purcPct>60?'var(--r)':r.purcPct>30?'var(--a)':'var(--t7)'}">${r.purcPct.toFixed(0)}% ${r.purcPct>60?'⚠ HIGH':r.purcPct>30?'⚠ MODERATE':''}</span></div>
-          <div class="m-row"><span class="m-lbl">Limit Haircut</span>
-            <span class="m-val" style="color:${r.purcHaircut<1?'var(--a)':'#16A34A'}">${r.purcHaircut < 1 ? '×' + r.purcHaircut + ' (' + (r.purcPct>60?'>60%':'>30%') + ' buyback)' : 'None'}</span></div>
+            <span class="m-val" style="color:${r.purcPct>60?'var(--t7)':r.purcPct>30?'var(--t7)':'var(--t7)'}">${r.purcPct.toFixed(0)}%</span></div>
           ${r.labourTotal > 0 ? `
           <div class="m-row"><span class="m-lbl">💰 Interest Recovered (Labour)</span>
             <span class="m-val" style="color:#16A34A">${fmtN(r.labourTotal)} <small style="color:var(--t5)">(${r.labourTxnCount} entries)</small></span></div>
@@ -1622,8 +1617,7 @@ function render() {
             <div class="f-line"><span>Monthly Avg</span><span>${fmtN(r.mAvg)}</span></div>
             <div class="f-line"><span>× (${c.cd}d ÷ 30)</span><span>× ${(c.cd/30).toFixed(3)}</span></div>
             <div class="f-line"><span>= Base Limit</span><span>${fmtN(r.base)}</span></div>
-            <div class="f-line"><span>Risk Factor (${r.purcPct>30?'cash days ':''}${r.limitInputDays.toFixed(1)}d → ${r.rf}×)</span><span>× ${r.rf}</span></div>
-            ${r.purcHaircut < 1 ? `<div class="f-line" style="color:var(--a)"><span>🔄 Buyback Haircut (${r.purcPct.toFixed(0)}% via Purc${r.purcPct>60?' >60%':' >30%'})</span><span>× ${r.purcHaircut}</span></div>` : ''}
+            <div class="f-line"><span>Risk Factor (${r.limitInputDays.toFixed(1)}d → ${r.rf}×)</span><span>× ${r.rf}</span></div>
             <div class="f-line"><span>Pre-Final</span><span>${fmtN(r.preFinal)}</span></div>
             <div class="f-line"><span>Rounded</span><span>${fmt(r.formulaLimit)}</span></div>
             <div class="f-line"><span>WK Cap (${c.wkCapPct}%)</span><span>${fmt(r.wkCap)}</span></div>
