@@ -11,7 +11,7 @@ const PROGRAMME_TERMS = [
   ['Margin Monitoring',
     'The Company shall monitor the ratio of advance disbursed plus accrued holding charges against the prevailing market value of the deposited stock on a continuous basis. Should this ratio approach or breach the Company\'s internal threshold, the Company may issue a margin notice requiring partial repayment of the advance or partial release of deposited stock. In cases of material margin breach, the Company reserves the right to exercise its lien over the deposited stock without further notice to the client.'],
   ['Stock Custody',
-    'The deposited stock shall be held at the Company\'s designated depot under standard storage conditions. The Company shall not be liable for natural quality deterioration inherent to the commodity or arising from its characteristics. The Company reserves the right to conduct physical verification of the deposited stock at any time without prior notice to the client.'],
+    'The deposited stock shall be held at the Company\'s designated depot under standard storage conditions. The Company shall not be liable for natural quality deterioration inherent to the commodity or arising from its characteristics. The Company reserves the right to conduct physical verification of the deposited stock at any time without prior notice to the client. A representative sample of 100 grams drawn at intake shall be retained by the Company for grading records and may be retrieved by the client upon successful release of the deposited stock, upon request.'],
   ['Settlement & Release',
     'Release of the deposited stock or any balance proceeds is strictly conditional upon full and final settlement of all accrued holding charges, applicable commissions, taxes, and any other amounts due to the Company. The Company\'s computation of all amounts due shall be final and binding absent manifest error, and no stock or proceeds shall be released pending such settlement.'],
 ];
@@ -31,27 +31,57 @@ function wrap(text, max) {
   return out;
 }
 
-async function buildPdf(txn, consignor) {
-  const pdf    = await PDFDocument.create();
-  const font   = await pdf.embedFont(StandardFonts.TimesRoman);
-  const bold   = await pdf.embedFont(StandardFonts.TimesRomanBold);
-  const italic = await pdf.embedFont(StandardFonts.TimesRomanItalic);
+async function loadFontBytes(origin, path) {
+  try {
+    const r = await fetch(origin + path);
+    if (r.ok) return new Uint8Array(await r.arrayBuffer());
+  } catch (_) {}
+  return null;
+}
+
+async function buildPdf(txn, consignor, origin) {
+  const pdf = await PDFDocument.create();
+
+  // Try to load EB Garamond; fall back to Times Roman if unavailable
+  let font, bold, italic;
+  const [regBytes, boldBytes, italBytes] = await Promise.all([
+    loadFontBytes(origin, '/fonts/EBGaramond-Regular.ttf'),
+    loadFontBytes(origin, '/fonts/EBGaramond-Bold.ttf'),
+    loadFontBytes(origin, '/fonts/EBGaramond-Italic.ttf'),
+  ]);
+  if (regBytes && boldBytes && italBytes) {
+    [font, bold, italic] = await Promise.all([
+      pdf.embedFont(regBytes),
+      pdf.embedFont(boldBytes),
+      pdf.embedFont(italBytes),
+    ]);
+  } else {
+    [font, bold, italic] = await Promise.all([
+      pdf.embedFont(StandardFonts.TimesRoman),
+      pdf.embedFont(StandardFonts.TimesRomanBold),
+      pdf.embedFont(StandardFonts.TimesRomanItalic),
+    ]);
+  }
+
   const inr = n => 'Rs.' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
   const fmtDate = iso => {
     if (!iso) return '—';
     const [y, m, d] = iso.split('-');
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    return `${parseInt(d, 10)} ${months[parseInt(m,10)-1]} ${y}`;
+    return `${parseInt(d, 10)} ${months[parseInt(m, 10) - 1]} ${y}`;
   };
-  const W = 595, H = 842, lm = 55, rm = 545;
+
+  const W = 595, H = 842, lm = 44, rm = 560;
   const green = rgb(0.12, 0.30, 0.16);
   const gray  = rgb(0.42, 0.42, 0.42);
   const labelCol = rgb(0.32, 0.32, 0.32);
 
-  const page = pdf.addPage([W, H]);
+  const addPage = () => pdf.addPage([W, H]);
+  let page = addPage();
   let y = 790;
 
-  const line = (txt, f = font, sz = 10, col = rgb(0,0,0), x = lm) => {
+  const line = (txt, f = font, sz = 10, col = rgb(0, 0, 0), x = lm) => {
+    if (y < 72) { page = addPage(); y = 790; }
     page.drawText(String(txt), { x, y, size: sz, font: f, color: col });
     y -= sz + 5;
   };
@@ -60,13 +90,14 @@ async function buildPdf(txn, consignor) {
     line(txt, f, sz, col, Math.max(lm, (W - tw) / 2));
   };
   const rule = (thickness = 0.5, col = rgb(0.65, 0.65, 0.65)) => {
-    page.drawLine({ start: { x: lm, y: y+4 }, end: { x: rm, y: y+4 }, thickness, color: col });
+    if (y < 72) { page = addPage(); y = 790; }
+    page.drawLine({ start: { x: lm, y: y + 4 }, end: { x: rm, y: y + 4 }, thickness, color: col });
     y -= 9;
   };
   const gap = n => { y -= n; };
-  const section = txt => { gap(5); line(txt, bold, 10, green); rule(0.4, rgb(0.7,0.7,0.7)); };
+  const section = txt => { gap(5); line(txt, bold, 10, green); rule(0.4, rgb(0.7, 0.7, 0.7)); };
 
-  // Compute value column x from widest label so all values align perfectly
+  // Compute value column x from the widest label (ensures all values align)
   const kvLabels = [
     'Name', 'Type', 'Phone', 'PAN', 'GST Reg', 'Spices Board Reg',
     'Net Weight', 'Depot', 'Date of Intake', 'Price at Intake', 'Gross Stock Value',
@@ -76,8 +107,9 @@ async function buildPdf(txn, consignor) {
   const vx = lm + Math.max(...kvLabels.map(l => font.widthOfTextAtSize(l + ':', 10))) + 10;
 
   const kv = (label, value) => {
+    if (y < 72) { page = addPage(); y = 790; }
     page.drawText(label + ':', { x: lm, y, size: 10, font, color: labelCol });
-    page.drawText(String(value ?? '—'), { x: vx, y, size: 10, font, color: rgb(0,0,0) });
+    page.drawText(String(value ?? '—'), { x: vx, y, size: 10, font, color: rgb(0, 0, 0) });
     y -= 15;
   };
 
@@ -87,7 +119,7 @@ async function buildPdf(txn, consignor) {
   center('CARDAMOM STOCK ADVANCE', bold, 11, green);
   center('Acknowledgement Receipt', italic, 10, gray);
   gap(5);
-  rule(0.8, rgb(0.3,0.3,0.3));
+  rule(0.8, rgb(0.3, 0.3, 0.3));
   gap(2);
   line(`Transaction Reference: ${txn.txnId}   |   Date of Issue: ${fmtDate(txn.intakeDate)}`, font, 9, gray);
   gap(5);
@@ -125,19 +157,19 @@ async function buildPdf(txn, consignor) {
   for (let i = 0; i < PROGRAMME_TERMS.length; i++) {
     const [title, body] = PROGRAMME_TERMS[i];
     line(`${i + 1}.  ${title}`, bold, 10);
-    for (const ln of wrap(body, 85)) line('    ' + ln, font, 10);
+    for (const ln of wrap(body, 100)) line('    ' + ln, font, 9);
     gap(2);
   }
 
   // ── Footer ──
   gap(4);
-  rule(0.8, rgb(0.3,0.3,0.3));
+  rule(0.8, rgb(0.3, 0.3, 0.3));
   gap(2);
   for (const fl of wrap(
     'This is a computer-generated acknowledgement receipt issued by SpiceMore Group. It is not a negotiable instrument ' +
-    'and does not require a physical signature. The terms above govern the stock advance extended to the client named in ' +
-    'this document. All disputes are subject to the jurisdiction of Peerumedu Court. ' +
-    'For queries reach us at sales@spicemore.com', 105
+    'and does not require a physical signature. The terms above govern the stock advance extended to the client named ' +
+    'in this document. All disputes are subject to the jurisdiction of Peerumedu Court. ' +
+    'For queries reach us at sales@spicemore.com', 115
   )) line(fl, italic, 8.5, gray);
 
   return await pdf.save();
@@ -157,6 +189,7 @@ export async function onRequest(context) {
   if (request.method === 'OPTIONS') return preflight();
   const bucket = env.BLOB_BUCKET;
   const url = new URL(request.url);
+  const origin = url.origin;
 
   if (request.method === 'GET') {
     try {
@@ -167,7 +200,7 @@ export async function onRequest(context) {
       if (!txn) return json({ error: 'Transaction not found' }, { status: 404 });
       const consignor = await getJSON(bucket, `sepl-consignors/${txn.consignorId}.json`);
       if (!consignor) return json({ error: 'Consignor not found' }, { status: 404 });
-      const buf = await buildPdf(txn, consignor);
+      const buf = await buildPdf(txn, consignor, origin);
       return new Response(buf, {
         status: 200,
         headers: {
@@ -197,7 +230,7 @@ export async function onRequest(context) {
     const consignor = await getJSON(bucket, `sepl-consignors/${txn.consignorId}.json`);
     if (!consignor) return json({ error: 'Consignor not found' }, { status: 404 });
 
-    const buf = await buildPdf(txn, consignor);
+    const buf = await buildPdf(txn, consignor, origin);
 
     let whatsappResult = null;
     if (sendWhatsApp !== false) {
