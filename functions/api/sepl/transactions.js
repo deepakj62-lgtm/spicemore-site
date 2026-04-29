@@ -77,32 +77,26 @@ export async function onRequest(context) {
     catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
     if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
 
-    const { filename, contentType, base64, consignorId, depot } = await request.json().catch(() => ({}));
+    const { filename, contentType, base64, consignorId, depot, tag } = await request.json().catch(() => ({}));
     if (!filename || !contentType || !base64) return json({ error: 'filename, contentType, base64 required' }, { status: 400 });
     try {
       const buf = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
       if (buf.length === 0) return json({ error: 'Empty payload' }, { status: 400 });
       if (buf.length > 6_000_000) return json({ error: 'Photo too large (max 6 MB)' }, { status: 413 });
 
-      const ext = (() => {
-        const m = String(filename).match(/\.([a-zA-Z0-9]{1,6})$/);
-        if (m) return m[1].toLowerCase();
-        if (contentType === 'image/jpeg') return 'jpg';
-        if (contentType === 'image/png') return 'png';
-        return 'jpg';
-      })();
+      const ext = 'jpg';
       const safe = (s) => String(s || '').trim().replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'unknown';
-      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); // seconds precision
+      const tagSuffix = tag ? '-' + safe(tag) : '';
 
       let key;
       if (consignorId && depot) {
         const consignor = await loadConsignor(bucket, consignorId);
         const clientName = safe(consignor?.name) || safe(consignorId);
         const depotSafe = safe(depot);
-        key = `sepl-sample-photos/${depotSafe}/${clientName}-${stamp}.${ext}`;
+        key = `sepl-sample-photos/${depotSafe}/${clientName}-${stamp}${tagSuffix}.${ext}`;
       } else {
-        const safeName = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80);
-        key = `sepl-sample-photos/${Date.now()}-${safeName}`;
+        key = `sepl-sample-photos/${stamp}${tagSuffix}-${safe(filename)}`;
       }
       await putObject(bucket, key, buf, contentType);
       return json({ url: keyToUrl(key), key });
@@ -232,7 +226,8 @@ export async function onRequest(context) {
         sample: b.sample || null,
         priceFactors: b.priceFactors || null,
         cardamomRate: Number(b.cardamomRate) || null,
-        samplePhotoUrl: b.samplePhotoUrl || null,
+        samplePhotos: b.samplePhotos || null,
+        samplePhotoUrl: (b.samplePhotos && b.samplePhotos.bold) || b.samplePhotoUrl || null,
         grossStockValue,
         advanceRateUsed: grossStockValue > 0 ? advanceAmount / grossStockValue : SETTINGS.standardAdvanceRate,
         advanceAmount,

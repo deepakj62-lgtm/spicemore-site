@@ -35,6 +35,10 @@
     .commit-warning { background:#fff3cd; border:1px solid #ffe69c; color:#7a5b00; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:10px; }
     .photo-preview { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
     .photo-preview img { width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid var(--light-gray); }
+    .grade-photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:4px; }
+    @media (max-width:520px) { .grade-photo-grid { grid-template-columns:1fr; } }
+    .grade-photo-slot label { font-size:12px; color:var(--brown); font-weight:600; display:block; margin-bottom:4px; }
+    .grade-photo-slot input[type=file] { width:100%; font-size:12px; }
     .rate-banner { background:var(--green-dark); color:#fff; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:13px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
     .rate-banner b { font-size:16px; }
     .rate-banner button { background:#fff; color:var(--green-dark); padding:6px 12px; font-size:12px; }
@@ -106,9 +110,24 @@
       </div>
       <div id="sumCheck" class="sum-check" style="display:none;"></div>
 
-      <label>Sample photo <span class="req">*</span> (camera or gallery)</label>
-      <input id="samplePhoto" type="file" accept="image/*" capture="environment" required>
-      <div id="photoPreview" class="photo-preview"></div>
+      <div class="sepl-h h2" style="font-size:14px; margin-top:14px;">Sample photos <span class="req">*</span> <span style="font-size:11px; color:var(--tan); font-weight:400;">(one per grade — all 3 required)</span></div>
+      <div class="grade-photo-grid">
+        <div class="grade-photo-slot">
+          <label>8mm Bold</label>
+          <input id="samplePhoto_bold" type="file" accept="image/*" capture="environment">
+          <div id="photoPreview_bold" class="photo-preview"></div>
+        </div>
+        <div class="grade-photo-slot">
+          <label>7-8mm</label>
+          <input id="samplePhoto_mid" type="file" accept="image/*" capture="environment">
+          <div id="photoPreview_mid" class="photo-preview"></div>
+        </div>
+        <div class="grade-photo-slot">
+          <label>Rejection</label>
+          <input id="samplePhoto_rej" type="file" accept="image/*" capture="environment">
+          <div id="photoPreview_rej" class="photo-preview"></div>
+        </div>
+      </div>
 
       <div id="calcSection" class="hidden">
         <div class="sepl-h h2" style="margin-top:14px;">Advance Value Calculation</div>
@@ -400,42 +419,47 @@
     });
   })();
 
-  // ---------- photo — mandatory, reveals calc ----------
-  let samplePhotoFile = null;
-  $('samplePhoto').addEventListener('change', (e) => {
-    samplePhotoFile = e.target.files[0] || null;
-    const wrap = $('photoPreview'); wrap.innerHTML = '';
-    if (!samplePhotoFile) {
-      $('calcSection').classList.add('hidden');
-      return;
-    }
-    const url = URL.createObjectURL(samplePhotoFile);
-    const img = document.createElement('img'); img.src = url;
-    wrap.appendChild(img);
-    $('calcSection').classList.remove('hidden');
-    calc();
+  // ---------- photos — one per grade, all 3 mandatory, then reveal calc ----------
+  const samplePhotoFiles = { bold: null, mid: null, rej: null };
+  ['bold','mid','rej'].forEach(grade => {
+    $('samplePhoto_' + grade).addEventListener('change', e => {
+      samplePhotoFiles[grade] = e.target.files[0] || null;
+      const wrap = $('photoPreview_' + grade); wrap.innerHTML = '';
+      if (samplePhotoFiles[grade]) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(samplePhotoFiles[grade]);
+        wrap.appendChild(img);
+      }
+      const allDone = samplePhotoFiles.bold && samplePhotoFiles.mid && samplePhotoFiles.rej;
+      if (allDone) { $('calcSection').classList.remove('hidden'); calc(); }
+      else { $('calcSection').classList.add('hidden'); }
+    });
   });
 
   // ---------- submit intake ----------
   let lastTxn = null;
-  async function uploadSamplePhoto() {
-    if (!samplePhotoFile) return null;
-    const dataUrl = await resizeImage(samplePhotoFile, 1600, 0.85);
-    const base64 = dataUrl.split(',')[1];
-    // Pass consignorId + depot so server can name the file <client>-<date>.jpg in <depot>/ folder
-    const r = await fetch('/api/sepl/transactions?resource=upload-blob', {
-      method:'POST', headers: hdr,
-      body: JSON.stringify({
-        filename: samplePhotoFile.name,
-        contentType: 'image/jpeg',
-        base64,
-        consignorId: $('clientId').value,
-        depot: $('depot').value
-      })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'upload failed');
-    return d.url;
+  async function uploadAllPhotos() {
+    const grades = ['bold','mid','rej'];
+    const urls = await Promise.all(grades.map(async grade => {
+      const file = samplePhotoFiles[grade];
+      const dataUrl = await resizeImage(file, 1600, 0.85);
+      const base64 = dataUrl.split(',')[1];
+      const r = await fetch('/api/sepl/transactions?resource=upload-blob', {
+        method:'POST', headers: hdr,
+        body: JSON.stringify({
+          filename: grade + '-sample.jpg',
+          contentType: 'image/jpeg',
+          base64,
+          consignorId: $('clientId').value,
+          depot: $('depot').value,
+          tag: grade
+        })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'upload failed');
+      return d.url;
+    }));
+    return { bold: urls[0], mid: urls[1], rej: urls[2] };
   }
 
   async function resizeImage(file, maxEdge, quality) {
@@ -463,15 +487,15 @@
     if (!$('netWeightKg').value || Number($('netWeightKg').value) < 250) {
       $('subMsg').innerHTML = '<span class="err">Net weight ≥ 250 kg required</span>'; return;
     }
-    if (!samplePhotoFile) { $('subMsg').innerHTML = '<span class="err">Sample photo is required</span>'; return; }
+    if (!samplePhotoFiles.bold || !samplePhotoFiles.mid || !samplePhotoFiles.rej) { $('subMsg').innerHTML = '<span class="err">All 3 grade sample photos are required</span>'; return; }
     if (!$('clientId').value) { $('subMsg').innerHTML = '<span class="err">Pick a client (or save a new one)</span>'; return; }
     if (!cardamomRate) { $('subMsg').innerHTML = '<span class="err">Cardamom rate not set — save on Daily price tab</span>'; return; }
 
     $('submit').disabled = true;
     $('subMsg').textContent = 'Submitting…';
 
-    let photoUrl = null;
-    try { photoUrl = await uploadSamplePhoto(); }
+    let samplePhotos = null;
+    try { samplePhotos = await uploadAllPhotos(); }
     catch (e) { $('subMsg').innerHTML = '<span class="err">Photo upload failed: ' + e.message + '</span>'; $('submit').disabled = false; return; }
 
     const wb = weightedBenchmark(stats);
@@ -493,7 +517,8 @@
         rej:  cardamomRate ? rates.rej  / cardamomRate : 0.80
       },
       requestedAdvance: reqAmt > 0 ? reqAmt : undefined,
-      samplePhotoUrl: photoUrl
+      samplePhotos,
+      samplePhotoUrl: samplePhotos ? samplePhotos.bold : null
     };
     const r = await fetch('/api/sepl/transactions', { method:'POST', headers:hdr, body:JSON.stringify(body) });
     const d = await r.json();

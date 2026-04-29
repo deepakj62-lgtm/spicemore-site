@@ -493,14 +493,23 @@
         }).join('') || '<div class="meta">None.</div>'}
       </div>
       ${(() => {
-        const photos = txns.filter(t => t.samplePhotoUrl);
-        if (!photos.length) return '';
-        return `<h3>Sample photos (${photos.length})</h3>
+        const GRADE_LABELS = { bold: '8mm Bold', mid: '7-8mm', rej: 'Rejection' };
+        const items = txns.flatMap(t => {
+          if (t.samplePhotos && (t.samplePhotos.bold || t.samplePhotos.mid || t.samplePhotos.rej)) {
+            return ['bold','mid','rej']
+              .filter(g => t.samplePhotos[g])
+              .map(g => ({ url: t.samplePhotos[g], cap: `${t.txnId} · ${GRADE_LABELS[g]} · ${t.intakeDate}`, label: GRADE_LABELS[g] }));
+          }
+          if (t.samplePhotoUrl) return [{ url: t.samplePhotoUrl, cap: `${t.txnId} · ${t.intakeDate}`, label: 'Sample' }];
+          return [];
+        });
+        if (!items.length) return '';
+        return `<h3>Sample photos (${items.length})</h3>
         <div class="photo-grid-sm">
-          ${photos.map(t =>
-            `<div class="pt" data-src="${t.samplePhotoUrl}" data-cap="${t.txnId} · ${t.intakeDate}">
-              <img src="${t.samplePhotoUrl}" alt="Sample" loading="lazy">
-              <div class="pc">${t.txnId} · ${t.intakeDate}</div>
+          ${items.map(p =>
+            `<div class="pt" data-src="${p.url}" data-cap="${p.cap}">
+              <img src="${p.url}" alt="${p.label}" loading="lazy">
+              <div class="pc">${p.label}</div>
             </div>`
           ).join('')}
         </div>`;
