@@ -62,7 +62,8 @@ export async function onRequest(context) {
     }
 
     if (request.method === 'POST') {
-      if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+      const STAFF_ROLES_W = ['staff', 'admin', 'manager', 'ot_manager'];
+      if (!STAFF_ROLES_W.includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
       const b = await request.json().catch(() => ({}));
       const ALLOWED_TYPES = ['Planter', 'SBL Dealer', 'GST-only Trader'];
       let type = b.type;

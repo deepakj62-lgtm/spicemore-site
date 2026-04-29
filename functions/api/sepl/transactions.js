@@ -58,7 +58,7 @@ export async function onRequest(context) {
     let session;
     try { session = await verifyToken(request, env); }
     catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
-    if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+    if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
 
     const { filename, contentType } = await request.json().catch(() => ({}));
     if (!filename || !contentType) return json({ error: 'filename and contentType required' }, { status: 400 });
@@ -75,7 +75,7 @@ export async function onRequest(context) {
     let session;
     try { session = await verifyToken(request, env); }
     catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
-    if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+    if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
 
     const { filename, contentType, base64, consignorId, depot, tag } = await request.json().catch(() => ({}));
     if (!filename || !contentType || !base64) return json({ error: 'filename, contentType, base64 required' }, { status: 400 });
@@ -110,7 +110,7 @@ export async function onRequest(context) {
     let session;
     try { session = await verifyToken(request, env); }
     catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
-    if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+    if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
 
     const { txnId, status } = await request.json().catch(() => ({}));
     if (!txnId) return json({ error: 'txnId required' }, { status: 400 });
@@ -164,7 +164,7 @@ export async function onRequest(context) {
     }
 
     if (request.method === 'POST') {
-      if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+      if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
       const b = await request.json().catch(() => ({}));
       const required = ['consignorId', 'netWeightKg', 'benchmarkPricePerKg', 'depot'];
       for (const k of required) if (b[k] === undefined || b[k] === null || b[k] === '') {

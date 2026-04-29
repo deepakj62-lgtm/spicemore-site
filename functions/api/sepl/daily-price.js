@@ -44,7 +44,7 @@ async function handleSettings(request, env, bucket) {
   if (request.method === 'POST') {
     let session;
     try { session = await verifyToken(request, env); } catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
-    if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+    if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
     const body = await request.json().catch(() => ({}));
     const clean = {};
     for (const k of EDITABLE) if (body[k] !== undefined) clean[k] = body[k];
@@ -152,7 +152,7 @@ async function handleCardamomRate(request, env, bucket) {
   if (request.method === 'POST') {
     let session;
     try { session = await verifyToken(request, env); } catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
-    if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+    if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
     const { pricePerKg, note } = await request.json().catch(() => ({}));
     if (!pricePerKg || isNaN(Number(pricePerKg))) return json({ error: 'pricePerKg (number) required' }, { status: 400 });
     const override = {
@@ -168,7 +168,7 @@ async function handleCardamomRate(request, env, bucket) {
   if (request.method === 'DELETE') {
     let session;
     try { session = await verifyToken(request, env); } catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
-    if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+    if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
     try { await putJSON(bucket, OVERRIDE_PATH, { cleared: true, at: new Date().toISOString(), by: { name: session.name, phone: session.phone } }); } catch {}
     return json({ cleared: true });
   }
@@ -191,7 +191,7 @@ export async function onRequest(context) {
       let session;
       try { session = await verifyToken(request, env); }
       catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
-      if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
+      if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
 
       const { pricePerKg, grade, source } = await request.json().catch(() => ({}));
       if (!pricePerKg || !grade) return json({ error: 'pricePerKg and grade required' }, { status: 400 });
