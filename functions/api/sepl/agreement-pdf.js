@@ -249,6 +249,6 @@ export async function onRequest(context) {
     });
   } catch (e) {
     console.error('agreement-pdf error', e);
-    return json({ error: 'Internal error', details: e.message }, { status: 500 });
+    return json({ error: e.message || 'Internal error' }, { status: 500 });
   }
 }
