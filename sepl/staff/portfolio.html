@@ -155,7 +155,7 @@
 
 <script>
   const token = sessionStorage.sepl_token;
-  if (!token || sessionStorage.sepl_role !== 'staff') location.href = 'login.html';
+  if (!token || !['staff','admin','manager','ot_manager'].includes(sessionStorage.sepl_role)) location.href = 'login.html';
   const hdr = { 'Authorization': 'Bearer ' + token };
   const hdrJ = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
   const inr = n => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });

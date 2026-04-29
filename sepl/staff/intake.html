@@ -189,10 +189,6 @@
             <label>Phone <span class="req">*</span></label>
             <input id="n_phone" type="tel" placeholder="+91…" required>
           </div>
-          <div>
-            <label>Depot <span class="req">*</span></label>
-            <select id="n_depot" required><option>Kumily</option><option>Kollaparachal</option></select>
-          </div>
           <div class="row" style="grid-column:1 / -1;">
             <div>
               <label>Spices Board Reg / CR / SBL <span style="color:var(--tan); font-size:11px;">(optional)</span></label>
@@ -216,15 +212,16 @@
     <div id="confirm" class="sepl-card hidden">
       <div class="sepl-h h2">Intake created</div>
       <div id="confirmBody"></div>
-      <button id="sendAgreement" style="margin-top:10px;">Send agreement to client WhatsApp</button>
-      <a id="viewAgreement" style="margin-left:8px; font-size:13px;" href="#" target="_blank">View PDF</a>
-      <span id="agreeMsg" style="margin-left:10px; font-size:13px;"></span>
+      <div style="margin-top:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <button id="downloadAgreement">Download agreement ↓</button>
+        <span id="agreeMsg" style="font-size:13px;"></span>
+      </div>
     </div>
   </div>
 
 <script>
   const token = sessionStorage.sepl_token;
-  if (!token || sessionStorage.sepl_role !== 'staff') { location.href = 'login.html'; }
+  if (!token || !['staff','admin','manager','ot_manager'].includes(sessionStorage.sepl_role)) { location.href = 'login.html'; }
   const $ = id => document.getElementById(id);
   $('who').textContent = 'Signed in as ' + (sessionStorage.sepl_name||'') + ' (' + (sessionStorage.sepl_phone||'') + ')';
   $('logout').onclick = (e) => { e.preventDefault(); sessionStorage.clear(); location.href='login.html'; };
@@ -308,7 +305,7 @@
 
   $('saveNew').onclick = async () => {
     const t = $('n_type').value;
-    const required = ['n_name','n_bank','n_ifsc','n_phone','n_depot'];
+    const required = ['n_name','n_bank','n_ifsc','n_phone'];
     for (const id of required) {
       if (!$(id).value.trim()) { $('newMsg').innerHTML = '<span class="err">Fill all mandatory fields</span>'; return; }
     }
@@ -323,7 +320,7 @@
       pan: $('n_pan').value, gstReg: $('n_gst').value,
       spicesBoardReg: $('n_sb').value,
       bankAccount: $('n_bank').value, ifsc: $('n_ifsc').value,
-      phone: $('n_phone').value, depot: $('n_depot').value
+      phone: $('n_phone').value, depot: $('depot').value
     };
     const r = await fetch('/api/sepl/consignors', { method:'POST', headers: hdr, body: JSON.stringify(body) });
     const d = await r.json();
@@ -530,7 +527,6 @@
     $('confirmBody').innerHTML =
       '<div><b>'+t.txnId+'</b> · '+t.consignorName+' · '+t.depot+'</div>'+
       '<div>Weight: '+t.netWeightKg+' kg · Advance: '+inrInt(t.advanceAmount)+' · Daily charge: '+inr(t.dailyHoldingCharge)+'</div>';
-    $('viewAgreement').href = '/api/sepl/agreement-pdf?txnId='+encodeURIComponent(t.txnId)+'&inline=1&t='+encodeURIComponent(token);
     $('subMsg').innerHTML = '<span class="ok">Created '+t.txnId+'</span>';
     window.scrollTo({ top: $('confirm').offsetTop - 80, behavior: 'smooth' });
   };
@@ -541,25 +537,28 @@
     return new Blob([arr], { type });
   }
 
-  $('sendAgreement').onclick = async () => {
+  $('downloadAgreement').onclick = async () => {
     if (!lastTxn) return;
-    $('agreeMsg').textContent = 'Generating PDF…';
-    const r = await fetch('/api/sepl/agreement-pdf', { method:'POST', headers:hdr, body: JSON.stringify({ txnId: lastTxn.txnId }) });
-    const d = await r.json();
-    if (!r.ok) { $('agreeMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }
-    const wa = d.whatsapp;
-    if (wa && wa.ok && !wa.stubbed) {
-      $('agreeMsg').innerHTML = '<span class="ok">Sent on WhatsApp ✓</span>';
-    } else {
-      // WhatsApp bridge offline — surface PDF for manual share / download
-      let dlLink = '';
+    $('agreeMsg').textContent = 'Generating…';
+    $('downloadAgreement').disabled = true;
+    try {
+      const r = await fetch('/api/sepl/agreement-pdf', { method:'POST', headers:hdr, body: JSON.stringify({ txnId: lastTxn.txnId }) });
+      const d = await r.json();
+      if (!r.ok) { $('agreeMsg').innerHTML='<span class="err">'+(d.error||'Failed')+'</span>'; return; }
       if (d.base64) {
         const url = URL.createObjectURL(b64ToBlob(d.base64, 'application/pdf'));
-        const fname = 'SpiceMore-StockAdvance-' + lastTxn.txnId + '.pdf';
-        dlLink = ' <a href="'+url+'" target="_blank" style="color:var(--green-dark); font-weight:500;">Open ↗</a>'
-               + '  <a href="'+url+'" download="'+fname+'" style="color:var(--green-dark); font-weight:500;">Download ↓</a>';
+        const a = document.createElement('a');
+        a.href = url; a.download = 'SpiceMore-StockAdvance-' + lastTxn.txnId + '.pdf';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        $('agreeMsg').innerHTML = '<span class="ok">Downloaded ✓</span>';
+      } else {
+        $('agreeMsg').innerHTML = '<span class="err">No PDF returned</span>';
       }
-      $('agreeMsg').innerHTML = '<span class="err">WhatsApp unavailable.</span>'+dlLink;
+    } catch(e) {
+      $('agreeMsg').innerHTML = '<span class="err">'+e.message+'</span>';
+    } finally {
+      $('downloadAgreement').disabled = false;
     }
   };
 
