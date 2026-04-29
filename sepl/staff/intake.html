@@ -26,7 +26,7 @@
     .calc { background:var(--cream); padding:16px; border-radius:8px; }
     .calc-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--light-gray); font-size:14px; }
     .calc-row:last-child { border-bottom:0; }
-    .calc-row b { font-family:var(--font-heading); color:var(--green-dark); }
+    .calc-row b { font-family:var(--font-heading); font-weight:700; color:var(--green-dark); font-variant-numeric:tabular-nums; }
     .nav-sub { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; font-size:13px; }
     .nav-sub a { color:var(--green-dark); text-decoration:underline; }
     .nav-sub a.active { font-weight:600; text-decoration:none; }
@@ -401,10 +401,10 @@
     const dailyBase = reqAmt > 0 ? reqAmt : adv;
     const daily = dailyBase * 60 / 100000;
 
-    $('c_weighted').textContent = wb ? inr(wb) : '—';
+    $('c_weighted').textContent = wb ? inrInt(wb) : '—';
     $('c_gross').textContent = inrInt(gross);
     $('c_adv').textContent = inrInt(adv);
-    $('c_daily').textContent = inr(daily);
+    $('c_daily').textContent = inrInt(daily);
   }
   ['netWeightKg','s_total','s_bold','s_mid','s_rej','c_req'].forEach(id => {
     const el = $(id); if (el) el.addEventListener('input', calc);
