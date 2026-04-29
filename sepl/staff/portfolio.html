@@ -19,12 +19,13 @@
     .kpi { background:var(--cream); border-radius:10px; padding:14px; }
     .kpi .lbl { font-size:11px; text-transform:uppercase; color:var(--tan); letter-spacing:.5px; }
     .kpi .val { font-size:20px; font-weight:600; color:var(--green-dark); margin-top:4px; font-family:var(--font-heading); }
+    .kpi .val { font-size:20px; font-weight:600; color:var(--green-dark); margin-top:4px; font-variant-numeric:tabular-nums lining-nums; }
     .kpi .sub2 { font-size:11px; color:var(--tan); margin-top:2px; }
     table { width:100%; border-collapse:collapse; font-size:13px; }
-    th,td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--light-gray); }
-    th { color:var(--tan); font-weight:500; text-transform:uppercase; font-size:11px; cursor:pointer; user-select:none; }
+    th,td { text-align:left; padding:9px 10px; border:1px solid var(--light-gray); vertical-align:middle; }
+    th { color:var(--tan); font-weight:500; text-transform:uppercase; font-size:11px; cursor:pointer; user-select:none; background:var(--cream); white-space:nowrap; }
     th:hover { color:var(--green-dark); }
-    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .num { text-align:right; font-variant-numeric:tabular-nums lining-nums; }
     .ltv { display:inline-block; padding:3px 9px; border-radius:10px; font-size:11px; font-weight:600; }
     .ltv.green { background:#d7ecd9; color:#1b5e20; }
     .ltv.yellow { background:#fff3cd; color:#856404; }
@@ -128,15 +129,16 @@
         <th data-k="clientType">Type</th>
         <th data-k="depot">Depot</th>
         <th data-k="netWeightKg" class="num">Weight</th>
-        <th data-k="advanceAmount" class="num">Advance</th>
-        <th data-k="currentStockValue" class="num">Stock value</th>
+        <th data-k="advanceAmount" class="num">Advance Paid</th>
+        <th data-k="currentStockValue" class="num">Stock Value</th>
         <th data-k="ltv" class="num">LTV</th>
-        <th data-k="daysHeld" class="num">Days held</th>
-        <th data-k="accruedHolding" class="num">Accrued charge</th>
-        <th data-k="expectedExitDate">Exit by</th>
-        <th data-k="daysToExit" class="num">Days left</th>
+        <th data-k="daysHeld" class="num">Days Held</th>
+        <th data-k="accruedHolding" class="num">Accrued Holding Charge</th>
+        <th data-k="marginCallAmt" class="num">Margin Call Amt</th>
+        <th data-k="expectedExitDate">Exit By</th>
+        <th data-k="daysToExit" class="num">Days Left</th>
         <th data-k="status">Status</th>
-      </tr></thead><tbody id="posBody"><tr><td colspan="13" style="color:var(--tan)">Loading…</td></tr></tbody></table>
+      </tr></thead><tbody id="posBody"><tr><td colspan="14" style="color:var(--tan)">Loading…</td></tr></tbody></table>
       </div>
     </div>
   </div>
@@ -272,7 +274,8 @@
     const ltv = currentStockValue > 0 ? (t.advanceAmount + accruedHolding) / currentStockValue : 0;
     const daysToExit = daysBetween(today(), t.expectedExitDate);
     const clientType = state.consignorTypeMap[t.consignorId] || '';
-    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx: effectivePx, clientType };
+    const marginCallAmt = ltv >= LTV.yellow ? Math.max(0, (t.advanceAmount + accruedHolding) - 0.70 * currentStockValue) : null;
+    return { ...t, daysHeld: days, currentStockValue, accruedHolding, ltv, daysToExit, currentPx: effectivePx, clientType, marginCallAmt };
   }
 
   function render() {
@@ -295,8 +298,8 @@
     document.getElementById('kpis').innerHTML = `
       <div class="kpi"><div class="lbl">Active positions</div><div class="val">${active.length}</div></div>
       <div class="kpi"><div class="lbl">Total advance out</div><div class="val">${inr(totalAdvance)}</div></div>
-      <div class="kpi"><div class="lbl">Stock value today</div><div class="val">${inr(totalStockValue)}</div><div class="sub2">@ ${state.price ? inr2(state.price.pricePerKg)+'/kg' : 'benchmark'}</div></div>
-      <div class="kpi"><div class="lbl">Accrued holding</div><div class="val">${inr(totalAccrued)}</div><div class="sub2">+${inr2(dailyIncome)}/day</div></div>
+      <div class="kpi"><div class="lbl">Stock value today</div><div class="val">${inr(totalStockValue)}</div></div>
+      <div class="kpi"><div class="lbl">Accrued Holding Charge</div><div class="val">${inr(totalAccrued)}</div><div class="sub2">+${inr(dailyIncome)}/day</div></div>
       <div class="kpi"><div class="lbl">Book LTV</div><div class="val"><span class="ltv ${ltvBand(bookLtv)}">${pct(bookLtv)}</span></div><div class="sub2">${ltvLabel(ltvBand(bookLtv))}</div></div>
       <div class="kpi"><div class="lbl">Alerts (LTV ≥75%)</div><div class="val" style="color:${alerts>0?'#c00':''}">${alerts}</div></div>
     `;
@@ -346,11 +349,12 @@
         <td class="num"><span class="ltv ${band}" title="${ltvLabel(band)}">${pct(t.ltv)}</span></td>
         <td class="num">${t.daysHeld}</td>
         <td class="num">${inr(t.accruedHolding)}</td>
+        <td class="num" style="color:${t.marginCallAmt !== null ? '#b26a00' : ''}; font-weight:${t.marginCallAmt !== null ? '600' : '400'};">${t.marginCallAmt !== null ? inr(t.marginCallAmt) : '—'}</td>
         <td>${fmtDate(t.expectedExitDate)}</td>
         <td class="num" style="color:${t.daysToExit<0?'#c00':t.daysToExit<14?'#b26a00':''}">${t.daysToExit}</td>
         <td>${statusCell}</td>
       </tr>`;
-    }).join('') || `<tr><td colspan="13" style="color:var(--tan)">No positions.</td></tr>`;
+    }).join('') || `<tr><td colspan="14" style="color:var(--tan)">No positions.</td></tr>`;
 
     document.querySelectorAll('#posBody .client-link').forEach(btn => {
       btn.addEventListener('click', () => {
