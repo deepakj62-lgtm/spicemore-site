@@ -33,12 +33,17 @@
     .ok { color:var(--green-dark); font-weight:500; } .err { color:#b33; }
     .hidden { display:none; }
     .commit-warning { background:#fff3cd; border:1px solid #ffe69c; color:#7a5b00; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:10px; }
-    .photo-preview { display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
-    .photo-preview img { width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid var(--light-gray); }
-    .grade-photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:4px; }
-    @media (max-width:520px) { .grade-photo-grid { grid-template-columns:1fr; } }
-    .grade-photo-slot label { font-size:12px; color:var(--brown); font-weight:600; display:block; margin-bottom:4px; }
-    .grade-photo-slot input[type=file] { width:100%; font-size:12px; }
+    .grade-rows { border:1px solid var(--light-gray); border-radius:8px; overflow:hidden; margin-bottom:10px; }
+    .grade-row { display:grid; grid-template-columns:1fr 84px; gap:12px; padding:10px 12px; border-top:1px solid var(--light-gray); align-items:center; }
+    .grade-row:first-child { border-top:0; }
+    .grade-row .grade-grams label { font-size:13px; font-weight:600; color:var(--brown); margin-bottom:4px; display:block; }
+    .grade-row .grade-grams input { margin-bottom:0; }
+    .photo-tap { width:80px; height:80px; border:2px dashed var(--light-gray); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--cream); flex-shrink:0; transition:border-color .15s; }
+    .photo-tap:hover { border-color:var(--green-dark); }
+    .photo-tap.has-photo { border:2px solid var(--green-dark); }
+    .photo-tap img { width:100%; height:100%; object-fit:cover; }
+    .photo-tap .cam-icon { font-size:26px; line-height:1; }
+    .photo-tap input[type=file] { display:none; }
     .rate-banner { background:var(--green-dark); color:#fff; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:13px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
     .rate-banner b { font-size:16px; }
     .rate-banner button { background:#fff; color:var(--green-dark); padding:6px 12px; font-size:12px; }
@@ -47,7 +52,7 @@
     .sum-check { font-size:12px; padding:6px 10px; border-radius:6px; margin-bottom:12px; }
     .sum-check.ok { background:#d7ecd9; color:#1b5e20; }
     .sum-check.err { background:#f8d7da; color:#721c24; }
-    @media (max-width:540px) { .row, .row3, .sample-grid { grid-template-columns:1fr; } }
+    @media (max-width:540px) { .row, .row3 { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -89,43 +94,42 @@
         </div>
       </div>
 
-      <div class="sepl-h h2" style="font-size:14px; margin-top:14px;">Sample test (grams)</div>
-      <div class="sample-grid">
-        <div>
-          <label>Total sample tested (g) <span class="req">*</span></label>
-          <input id="s_total" type="number" step="1" min="1" required>
-        </div>
-        <div>
-          <label>8mm Bold (g) <span class="req">*</span></label>
-          <input id="s_bold" type="number" step="1" min="0" required>
-        </div>
-        <div>
-          <label>7-8mm (g) <span class="req">*</span></label>
-          <input id="s_mid" type="number" step="1" min="0" required>
-        </div>
-        <div>
-          <label>Rejection (g) <span class="req">*</span></label>
-          <input id="s_rej" type="number" step="1" min="0" required>
-        </div>
+      <div class="sepl-h h2" style="font-size:14px; margin-top:14px;">Sample test</div>
+      <div>
+        <label>Total sample tested (g) <span class="req">*</span></label>
+        <input id="s_total" type="number" step="1" min="1" required>
       </div>
       <div id="sumCheck" class="sum-check" style="display:none;"></div>
-
-      <div class="sepl-h h2" style="font-size:14px; margin-top:14px;">Sample photos <span class="req">*</span> <span style="font-size:11px; color:var(--tan); font-weight:400;">(one per grade — all 3 required)</span></div>
-      <div class="grade-photo-grid">
-        <div class="grade-photo-slot">
-          <label>8mm Bold</label>
-          <input id="samplePhoto_bold" type="file" accept="image/*" capture="environment">
-          <div id="photoPreview_bold" class="photo-preview"></div>
+      <div class="grade-rows">
+        <div class="grade-row">
+          <div class="grade-grams">
+            <label for="s_bold">8mm Bold (g) <span class="req">*</span></label>
+            <input id="s_bold" type="number" step="1" min="0" required>
+          </div>
+          <label class="photo-tap" id="photoTap_bold" for="samplePhoto_bold" title="Tap to add photo">
+            <span class="cam-icon">📷</span>
+            <input id="samplePhoto_bold" type="file" accept="image/*" capture="environment">
+          </label>
         </div>
-        <div class="grade-photo-slot">
-          <label>7-8mm</label>
-          <input id="samplePhoto_mid" type="file" accept="image/*" capture="environment">
-          <div id="photoPreview_mid" class="photo-preview"></div>
+        <div class="grade-row">
+          <div class="grade-grams">
+            <label for="s_mid">7-8mm (g) <span class="req">*</span></label>
+            <input id="s_mid" type="number" step="1" min="0" required>
+          </div>
+          <label class="photo-tap" id="photoTap_mid" for="samplePhoto_mid" title="Tap to add photo">
+            <span class="cam-icon">📷</span>
+            <input id="samplePhoto_mid" type="file" accept="image/*" capture="environment">
+          </label>
         </div>
-        <div class="grade-photo-slot">
-          <label>Rejection</label>
-          <input id="samplePhoto_rej" type="file" accept="image/*" capture="environment">
-          <div id="photoPreview_rej" class="photo-preview"></div>
+        <div class="grade-row">
+          <div class="grade-grams">
+            <label for="s_rej">Rejection (g) <span class="req">*</span></label>
+            <input id="s_rej" type="number" step="1" min="0" required>
+          </div>
+          <label class="photo-tap" id="photoTap_rej" for="samplePhoto_rej" title="Tap to add photo">
+            <span class="cam-icon">📷</span>
+            <input id="samplePhoto_rej" type="file" accept="image/*" capture="environment">
+          </label>
         </div>
       </div>
 
@@ -421,11 +425,19 @@
   ['bold','mid','rej'].forEach(grade => {
     $('samplePhoto_' + grade).addEventListener('change', e => {
       samplePhotoFiles[grade] = e.target.files[0] || null;
-      const wrap = $('photoPreview_' + grade); wrap.innerHTML = '';
+      const tap = $('photoTap_' + grade);
+      const icon = tap.querySelector('.cam-icon');
+      const prev = tap.querySelector('img');
+      if (prev) prev.remove();
       if (samplePhotoFiles[grade]) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(samplePhotoFiles[grade]);
-        wrap.appendChild(img);
+        tap.insertBefore(img, icon);
+        if (icon) icon.style.display = 'none';
+        tap.classList.add('has-photo');
+      } else {
+        if (icon) icon.style.display = '';
+        tap.classList.remove('has-photo');
       }
       const allDone = samplePhotoFiles.bold && samplePhotoFiles.mid && samplePhotoFiles.rej;
       if (allDone) { $('calcSection').classList.remove('hidden'); calc(); }
