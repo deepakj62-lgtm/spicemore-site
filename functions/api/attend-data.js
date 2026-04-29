@@ -1,4 +1,5 @@
 import { getJSON, putJSON, json, preflight } from './_blob.js';
+import { requireRole, getSession } from './auth/_session.js';
 
 const DATA_PATH = 'attendance/data.json';
 
@@ -88,9 +89,28 @@ export async function onRequest(context) {
 
   try {
     if (request.method === 'GET') {
-      return json(await loadData(bucket));
+      // GET requires any logged-in session. Non-admins see only their own row.
+      const { session, errorResponse } = await requireRole(request, env);
+      if (errorResponse) return errorResponse;
+      const data = await loadData(bucket);
+      const isAdmin = session.role === 'admin' || session.role === 'manager';
+      if (isAdmin) return json(data);
+      const me = (session.n || '').trim().toUpperCase();
+      const filtered = {
+        ...data,
+        employees: (data.employees || []).filter(e => String(e).toUpperCase() === me),
+        work_types: Object.fromEntries(Object.entries(data.work_types || {}).filter(([k]) => String(k).toUpperCase() === me)),
+        balances: Object.fromEntries(Object.entries(data.balances || {}).filter(([k]) => String(k).toUpperCase() === me)),
+        ot_credits: (data.ot_credits || []).filter(c => String(c.employee || '').toUpperCase() === me),
+        leave_applications: (data.leave_applications || []).filter(a => String(a.employee || '').toUpperCase() === me),
+      };
+      return json(filtered);
     }
     if (request.method === 'POST') {
+      // All POST mutations require admin or manager role.
+      const { errorResponse } = await requireRole(request, env, ['admin', 'manager']);
+      if (errorResponse) return errorResponse;
+
       const { action, payload } = await request.json();
       let data = await loadData(bucket);
 
@@ -145,7 +165,7 @@ export async function onRequest(context) {
           if (app.type === 'rl') bal.rl_used = (bal.rl_used || 0) + app.days;
           if (app.type === 'ot') {
             let rem = app.days;
-            const today = new Date().toISOString().slice(0, 10);
+            const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
             for (const c of (data.ot_credits || [])) {
               if (c.employee === app.employee && c.expires_on >= today) {
                 const avail = c.days_earned - (c.days_availed || 0);
@@ -168,6 +188,44 @@ export async function onRequest(context) {
       if (action === 'add_application') {
         data.leave_applications = data.leave_applications || [];
         data.leave_applications.push(payload);
+      }
+      // Helper used by delete_application + revert_to_pending: undo the balance/OT effects of a previously-approved leave.
+      function refundIfApproved(app) {
+        if (!app || app.status !== 'approved') return;
+        const bal = data.balances[app.employee];
+        if (bal) {
+          if (app.type === 'pl') bal.pl_used = Math.max(0, (bal.pl_used || 0) - app.days);
+          if (app.type === 'rl') bal.rl_used = Math.max(0, (bal.rl_used || 0) - app.days);
+        }
+        if (app.type === 'ot') {
+          let rem = app.days;
+          for (const c of (data.ot_credits || [])) {
+            if (c.employee === app.employee && (c.days_availed || 0) > 0) {
+              const give = Math.min(c.days_availed, rem);
+              c.days_availed -= give;
+              rem -= give;
+              if (rem <= 0) break;
+            }
+          }
+        }
+      }
+      if (action === 'delete_application') {
+        const apps = data.leave_applications || [];
+        const idx = apps.findIndex(a => a.id === payload.id);
+        if (idx >= 0) {
+          refundIfApproved(apps[idx]);
+          apps.splice(idx, 1);
+        }
+      }
+      if (action === 'revert_to_pending') {
+        const app = (data.leave_applications || []).find(a => a.id === payload.id);
+        if (app && app.status !== 'pending') {
+          refundIfApproved(app);
+          app.status = 'pending';
+          app.action_comment = '';
+          app.action_date = '';
+          app.action_by = '';
+        }
       }
       await saveData(bucket, data);
       return json({ ok: true, data });

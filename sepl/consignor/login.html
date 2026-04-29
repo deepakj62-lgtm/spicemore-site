@@ -15,7 +15,9 @@
     label { display:block; font-size:13px; margin-bottom:6px; }
     input { width:100%; padding:12px; border:1px solid var(--light-gray); border-radius:8px; font-size:15px; margin-bottom:14px; font-family:var(--font-body); }
     button { width:100%; padding:14px; background:var(--green-primary); color:var(--white); border:none; border-radius:8px; font-size:15px; cursor:pointer; font-family:var(--font-body); }
-    .err { color:#b33; font-size:13px; } .ok { color:var(--green-dark); font-size:13px; } .hidden { display:none; }
+    button[disabled] { opacity:.5; cursor:not-allowed; }
+    .err { color:#b33; font-size:13px; } .ok { color:var(--green-dark); font-size:13px; }
+    .hint { color:var(--tan); font-size:12px; margin-top:-8px; margin-bottom:14px; }
   </style>
 </head>
 <body>
@@ -25,41 +27,46 @@
   <div class="sepl-wrap">
     <div class="sepl-card">
       <div class="sepl-h1">Client login</div>
-      <div class="sepl-sub">Phone + WhatsApp OTP</div>
-      <div id="step1">
-        <label>Phone</label>
-        <input id="phone" type="tel" placeholder="+91…">
-        <button id="req">Send OTP</button>
-      </div>
-      <div id="step2" class="hidden">
-        <label>OTP</label>
-        <input id="otp" inputmode="numeric" maxlength="6">
-        <button id="ver">Verify</button>
-      </div>
+      <div class="sepl-sub">Mobile number + password</div>
+      <label>Mobile number</label>
+      <input id="mobile" type="tel" inputmode="numeric" autocomplete="username" placeholder="10-digit mobile">
+      <label>Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Password">
+      <div class="hint">Your initial password is your 10-digit mobile number registered with SEPL. You can change it once you're in.</div>
+      <button id="signin">Sign in</button>
       <div id="msg"></div>
     </div>
   </div>
   <script>
-    const $ = id => document.getElementById(id); let phone='';
-    $('req').onclick = async () => {
-      phone = $('phone').value.trim(); if (!phone) return;
-      const r = await fetch('/api/sepl/auth-request-otp', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,role:'consignor'})});
-      const d = await r.json();
-      if (!r.ok) { $('msg').innerHTML='<div class="err">'+d.error+'</div>'; return; }
-      $('step1').classList.add('hidden'); $('step2').classList.remove('hidden');
-      const otpNote = d.devOtp
-        ? ' WhatsApp unavailable — your OTP is <b style="font-size:18px; letter-spacing:2px;">'+d.devOtp+'</b>'
-        : ' Check WhatsApp.';
-      $('msg').innerHTML='<div class="ok">OTP sent.'+otpNote+'</div>';
-    };
-    $('ver').onclick = async () => {
-      const otp = $('otp').value.trim();
-      const r = await fetch('/api/sepl/auth-verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,otp,role:'consignor'})});
-      const d = await r.json();
-      if (!r.ok) { $('msg').innerHTML='<div class="err">'+d.error+'</div>'; return; }
-      sessionStorage.sepl_token=d.token; sessionStorage.sepl_role=d.role; sessionStorage.sepl_name=d.name; sessionStorage.sepl_phone=d.phone;
-      location.href='dashboard.html';
-    };
+    const $ = id => document.getElementById(id);
+    async function signIn() {
+      const username = $('mobile').value.trim();
+      const password = $('password').value;
+      if (!username || !password) { $('msg').innerHTML = '<div class="err">Mobile and password required.</div>'; return; }
+      $('signin').disabled = true; $('msg').innerHTML = '';
+      try {
+        const r = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+        const d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.error || 'Login failed');
+        if (d.user.role !== 'consignor') throw new Error('This account is not a client/consignor account.');
+        sessionStorage.sepl_token = '_cookie_';
+        sessionStorage.sepl_role  = 'consignor';
+        sessionStorage.sepl_name  = d.user.name || '';
+        sessionStorage.sepl_phone = d.user.mobile || '';
+        location.href = 'dashboard.html';
+      } catch (e) {
+        $('msg').innerHTML = '<div class="err">' + (e.message || 'Login failed') + '</div>';
+        $('signin').disabled = false;
+      }
+    }
+    $('signin').onclick = signIn;
+    $('password').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
+    $('mobile').addEventListener('keydown', e => { if (e.key === 'Enter') $('password').focus(); });
   </script>
 </body>
 </html>

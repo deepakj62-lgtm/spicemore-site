@@ -1,5 +1,13 @@
 // HMAC-SHA256 signed token using Web Crypto. Compatible with Cloudflare Workers.
 // SECRET comes from env.SEPL_SESSION_SECRET (set via wrangler pages secret put).
+//
+// UNIFIED AUTH (2026-04): SEPL API verification now prefers the unified
+// `sm_session` cookie (issued by /api/auth/login) and falls back to the
+// legacy SEPL Bearer token only if no cookie is present. The cookie payload
+// shape ({ u, n, role, ... }) is normalized here to the legacy SEPL shape
+// ({ phone, name, role }) so existing handler logic continues to work.
+
+import { getSession as getUnifiedSession } from '../auth/_session.js';
 
 function b64urlEncode(bytes) {
   let s = '';
@@ -46,18 +54,38 @@ export async function verifyTokenFromHeader(authHeader, secret) {
   return payload; // { phone, role, name, iat, exp }
 }
 
+// Normalize the unified cookie session payload ({u,n,e,role,...}) to the
+// legacy SEPL session shape ({phone,name,role}) consumed by existing handlers.
+function normalizeUnified(s) {
+  if (!s) return null;
+  return {
+    phone: s.u || '',
+    name: s.n || '',
+    role: s.role || 'staff',
+    email: s.e || '',
+    iat: s.iat,
+    exp: s.exp,
+  };
+}
+
 // Convenience for handlers that have a Request object.
+// Tries unified cookie session first, falls back to legacy Bearer token.
 export async function verifyToken(request, env) {
+  const unified = await getUnifiedSession(request, env);
+  if (unified) return normalizeUnified(unified);
   const auth = request.headers.get('authorization') || request.headers.get('Authorization');
   return verifyTokenFromHeader(auth, env.SEPL_SESSION_SECRET || 'dev-secret-change-me');
 }
 
-// Token from ?t= query param OR Authorization header.
+// Token from cookie OR ?t= query param OR Authorization header.
 export async function verifyAny(request, env) {
+  const unified = await getUnifiedSession(request, env);
+  if (unified) return normalizeUnified(unified);
   const url = new URL(request.url);
   const qt = url.searchParams.get('t');
   if (qt) return verifyTokenFromHeader('Bearer ' + qt, env.SEPL_SESSION_SECRET || 'dev-secret-change-me');
-  return verifyToken(request, env);
+  const auth = request.headers.get('authorization') || request.headers.get('Authorization');
+  return verifyTokenFromHeader(auth, env.SEPL_SESSION_SECRET || 'dev-secret-change-me');
 }
 
 export async function mintToken(env, { phone, role, name }) {

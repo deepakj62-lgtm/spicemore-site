@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="../assets/auth.js" defer></script>
 <title>Spicemore Bank Reconciliation Tool</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -88,35 +89,7 @@ tr.unmatched{background:var(--red-bg)}
 </style>
 </head>
 <body>
-<!-- PASSWORD GATE -->
-<div id="authGate" class="auth-gate">
-  <div class="auth-box">
-    <h2>Spicemore Bank Reconciliation</h2>
-    <p>Enter password to continue</p>
-    <input id="authPwd" type="password" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')authCheck()">
-    <button onclick="authCheck()">Unlock</button>
-    <p id="authErr">Incorrect password</p>
-  </div>
-</div>
-<script>
-(function(){
-  const KEY='smtc_recon_auth', HASH='a3c2f8b1';
-  function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return(h>>>0).toString(16).slice(0,8);}
-  if(sessionStorage.getItem(KEY)===HASH){document.getElementById('authGate').style.display='none';}
-  window.authCheck=function(){
-    const v=document.getElementById('authPwd').value;
-    if(simpleHash(v)==='87afac64'){
-      sessionStorage.setItem(KEY,HASH);
-      document.getElementById('authGate').style.display='none';
-    } else {
-      document.getElementById('authErr').style.display='block';
-      document.getElementById('authPwd').style.borderColor='#dc2626';
-      setTimeout(()=>{document.getElementById('authErr').style.display='none';
-        document.getElementById('authPwd').style.borderColor='#d1d5db';},2000);
-    }
-  };
-})();
-</script>
+<!-- Auth gate handled by /assets/auth.js -->
 <header>
 <img class="logo" src="https://static.wixstatic.com/media/71d97b_23c088d0bc674ca4a1e591210b43af92~mv2.png/v1/fill/w_120,h_86,al_c,q_85,enc_avif,quality_auto/Spice-More-smaller-1030x741.png" alt="SpiceMore" onerror="this.style.display='none'">
 <div>

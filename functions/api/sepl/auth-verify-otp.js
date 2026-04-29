@@ -4,6 +4,14 @@ import { mintToken } from './_session.js';
 export async function onRequest(context) {
   const { request, env } = context;
   if (request.method === 'OPTIONS') return preflight();
+
+  // 2026-04-28: SEPL OTP login deprecated. Use mobile+password via /api/auth/login.
+  return json(
+    { error: 'OTP login deprecated — please use the new mobile+password login at /sepl/staff/login.html or /sepl/consignor/login.html (POST /api/auth/login).' },
+    { status: 410 }
+  );
+
+  /* DEPRECATED — original OTP verify flow, kept for rollback reference.
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, { status: 405 });
   const bucket = env.BLOB_BUCKET;
 
@@ -13,18 +21,14 @@ export async function onRequest(context) {
       return json({ error: 'phone, otp, role required' }, { status: 400 });
     }
     const cleanPhone = String(phone).replace(/[^0-9+]/g, '');
-    const DEMO = { '+911111111111': 'staff', '+912222222222': 'consignor' };
-    const isDemo = DEMO[cleanPhone] === role && String(otp) === '123456';
-
-    if (!isDemo) {
-      const otpKey = `sepl-otp/${cleanPhone}.json`;
-      const data = await getJSON(bucket, otpKey);
-      if (!data) return json({ error: 'No OTP requested' }, { status: 401 });
-      if (Date.now() > data.expiresAt) return json({ error: 'OTP expired' }, { status: 401 });
-      if (data.otp !== String(otp)) return json({ error: 'Wrong OTP' }, { status: 401 });
-      if (data.role !== role) return json({ error: 'Role mismatch' }, { status: 401 });
-      try { await deleteObject(bucket, otpKey); } catch {}
-    }
+    // TODO: SEPL auth uses its own session — converge with /api/auth in next pass.
+    const otpKey = `sepl-otp/${cleanPhone}.json`;
+    const data = await getJSON(bucket, otpKey);
+    if (!data) return json({ error: 'No OTP requested' }, { status: 401 });
+    if (Date.now() > data.expiresAt) return json({ error: 'OTP expired' }, { status: 401 });
+    if (data.otp !== String(otp)) return json({ error: 'Wrong OTP' }, { status: 401 });
+    if (data.role !== role) return json({ error: 'Role mismatch' }, { status: 401 });
+    try { await deleteObject(bucket, otpKey); } catch {}
 
     let name = '';
     if (role === 'staff') {
@@ -53,4 +57,5 @@ export async function onRequest(context) {
     console.error('auth-verify-otp error', e);
     return json({ error: 'Internal error', details: e.message }, { status: 500 });
   }
+  */
 }

@@ -195,7 +195,7 @@ export async function onRequest(context) {
 
       const { pricePerKg, grade, source } = await request.json().catch(() => ({}));
       if (!pricePerKg || !grade) return json({ error: 'pricePerKg and grade required' }, { status: 400 });
-      const date = new Date().toISOString().slice(0, 10);
+      const date = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       const record = {
         date, grade, pricePerKg: Number(pricePerKg), source: source || 'Spices Board',
         enteredBy: { phone: session.phone, name: session.name },

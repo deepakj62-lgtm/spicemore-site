@@ -32,10 +32,27 @@ export async function onRequest(context) {
     catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
 
     if (request.method === 'GET') {
-      if (session.role !== 'staff') return json({ error: 'Staff only' }, { status: 403 });
       const url = new URL(request.url);
       const id = url.searchParams.get('id');
       const all = await loadAll(bucket);
+
+      // Consignor role: scoped to their own record only (matched by phone).
+      if (session.role === 'consignor') {
+        const mine = all.filter(c => {
+          const p = String(c.phone || '').replace(/[^0-9]/g, '').slice(-10);
+          return p && p === String(session.phone || '').replace(/[^0-9]/g, '').slice(-10);
+        });
+        if (id) {
+          const one = mine.find(c => c.consignorId === id);
+          if (!one) return json({ error: 'Forbidden' }, { status: 403 });
+          return json({ consignor: one });
+        }
+        return json({ consignors: mine });
+      }
+
+      // Staff/admin/manager: full access.
+      const STAFF_ROLES = ['staff', 'admin', 'manager', 'ot_manager'];
+      if (!STAFF_ROLES.includes(session.role)) return json({ error: 'Forbidden' }, { status: 403 });
       if (id) {
         const one = all.find(c => c.consignorId === id);
         if (!one) return json({ error: 'Not found' }, { status: 404 });

@@ -50,7 +50,7 @@ export async function onRequest(context) {
       if (app.type === 'rl') bal.rl_used = (bal.rl_used || 0) + app.days;
       if (app.type === 'ot') {
         let rem = app.days;
-        const today = new Date().toISOString().slice(0, 10);
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
         for (const c of (data.ot_credits || [])) {
           if (c.employee === app.employee && c.expires_on >= today) {
             const avail = c.days_earned - (c.days_availed || 0);

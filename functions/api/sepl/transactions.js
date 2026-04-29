@@ -152,16 +152,18 @@ export async function onRequest(context) {
       const consignorPhone = url.searchParams.get('consignorPhone');
       const all = await loadAll(bucket);
 
+      const norm = (p) => String(p || '').replace(/[^0-9]/g, '').slice(-10);
+      const sessPhone10 = norm(session.phone);
       if (id) {
         const one = all.find(t => t.txnId === id);
         if (!one) return json({ error: 'Not found' }, { status: 404 });
-        if (session.role === 'consignor' && one.consignorPhone !== session.phone) {
+        if (session.role === 'consignor' && norm(one.consignorPhone) !== sessPhone10) {
           return json({ error: 'Forbidden' }, { status: 403 });
         }
         return json({ transaction: one });
       }
       let list = all;
-      if (session.role === 'consignor') list = list.filter(t => t.consignorPhone === session.phone);
+      if (session.role === 'consignor') list = list.filter(t => norm(t.consignorPhone) === sessPhone10);
       else if (consignorPhone && consignorPhone !== 'me') list = list.filter(t => t.consignorPhone === consignorPhone);
       if (filter === 'active') list = list.filter(t => t.status === 'Active');
       return json({ transactions: list });
@@ -213,7 +215,7 @@ export async function onRequest(context) {
       const advanceAmount = Math.min(requestedAdvance, maxAdvance);
       const rate = consignor.rateAssigned || SETTINGS.annualHoldingRate;
       const dailyHoldingCharge = advanceAmount * rate / SETTINGS.daysBasis;
-      const intakeDate = new Date().toISOString().slice(0, 10);
+      const intakeDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
       const expectedExitDate = addDays(intakeDate, SETTINGS.standardTenureDays);
       const maxExitDate = addDays(intakeDate, SETTINGS.maxTenureDays);
 

@@ -18,7 +18,7 @@
     button[disabled] { opacity:.5; cursor:not-allowed; }
     .err { color:#b33; font-size:13px; margin:6px 0; }
     .ok { color:var(--green-dark); font-size:13px; margin:6px 0; }
-    .hidden { display:none; }
+    .hint { color:var(--tan); font-size:12px; margin-top:-8px; margin-bottom:14px; }
   </style>
 </head>
 <body>
@@ -28,53 +28,50 @@
   <div class="sepl-wrap">
     <div class="sepl-card">
       <div class="sepl-h1">Staff login</div>
-      <div class="sepl-sub">Phone + WhatsApp OTP</div>
-      <div id="step1">
-        <label>Phone number</label>
-        <input id="phone" type="tel" placeholder="+91…">
-        <button id="req">Send OTP</button>
-      </div>
-      <div id="step2" class="hidden">
-        <label>6-digit OTP</label>
-        <input id="otp" type="text" maxlength="6" inputmode="numeric">
-        <button id="ver">Verify & enter</button>
-      </div>
+      <div class="sepl-sub">Mobile number + password</div>
+      <label>Mobile number</label>
+      <input id="mobile" type="tel" inputmode="numeric" autocomplete="username" placeholder="10-digit mobile">
+      <label>Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Password">
+      <div class="hint">First time? Your initial password is your 10-digit mobile number. You can change it after login.</div>
+      <button id="signin">Sign in</button>
       <div id="msg"></div>
     </div>
   </div>
   <script>
     const $ = id => document.getElementById(id);
-    let phone = '';
-    $('req').onclick = async () => {
-      phone = $('phone').value.trim();
-      if (!phone) return;
-      $('msg').innerHTML = '';
-      $('req').disabled = true;
+    async function signIn() {
+      const username = $('mobile').value.trim();
+      const password = $('password').value;
+      if (!username || !password) { $('msg').innerHTML = '<div class="err">Mobile and password required.</div>'; return; }
+      $('signin').disabled = true; $('msg').innerHTML = '';
       try {
-        const r = await fetch('/api/sepl/auth-request-otp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone, role:'staff' }) });
+        const r = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
         const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'failed');
-        $('step1').classList.add('hidden');
-        $('step2').classList.remove('hidden');
-        let m = 'OTP sent via WhatsApp (stubbed).';
-        if (d.devOtp) m += ` <b>DEV OTP: ${d.devOtp}</b>`;
-        $('msg').innerHTML = '<div class="ok">'+m+'</div>';
-      } catch(e) { $('msg').innerHTML = '<div class="err">'+e.message+'</div>'; $('req').disabled = false; }
-    };
-    $('ver').onclick = async () => {
-      const otp = $('otp').value.trim();
-      $('ver').disabled = true;
-      try {
-        const r = await fetch('/api/sepl/auth-verify-otp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone, otp, role:'staff' }) });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'failed');
-        sessionStorage.sepl_token = d.token;
-        sessionStorage.sepl_role = d.role;
-        sessionStorage.sepl_name = d.name;
-        sessionStorage.sepl_phone = d.phone;
+        if (!r.ok || !d.ok) throw new Error(d.error || 'Login failed');
+        const STAFF_ROLES = ['staff','admin','manager','ot_manager'];
+        if (!STAFF_ROLES.includes(d.user.role)) throw new Error('This account is not a staff account.');
+        // Bridge unified cookie session into legacy sessionStorage so existing
+        // SEPL pages (intake/portfolio/etc.) keep working unchanged. The actual
+        // auth check happens server-side via the sm_session cookie.
+        sessionStorage.sepl_token = '_cookie_';
+        sessionStorage.sepl_role  = d.user.role === 'staff' || d.user.role === 'ot_manager' ? d.user.role : 'staff';
+        sessionStorage.sepl_name  = d.user.name || '';
+        sessionStorage.sepl_phone = d.user.mobile || '';
         location.href = 'intake.html';
-      } catch(e) { $('msg').innerHTML = '<div class="err">'+e.message+'</div>'; $('ver').disabled = false; }
-    };
+      } catch (e) {
+        $('msg').innerHTML = '<div class="err">' + (e.message || 'Login failed') + '</div>';
+        $('signin').disabled = false;
+      }
+    }
+    $('signin').onclick = signIn;
+    $('password').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
+    $('mobile').addEventListener('keydown', e => { if (e.key === 'Enter') $('password').focus(); });
   </script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/assets/auth.js" defer></script>
   <title>Staff Attendance | Spice More</title>
   <meta name="description" content="Spicemore Staff Attendance - Leave management, balances and manager dashboard.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -120,22 +121,8 @@
     </div>
   </nav>
 
-  <!-- ACCESS GATE -->
-  <div id="attendanceGate" class="portal-gate">
-    <div class="gate-card">
-      <div class="gate-icon">&#128203;</div>
-      <h2>Staff Attendance</h2>
-      <p>Enter the access code to continue</p>
-      <form id="attendanceGateForm" class="gate-form">
-        <input type="password" id="attendCode" placeholder="Access Code" autocomplete="off" required>
-        <button type="submit" class="btn-submit">Enter</button>
-        <div id="attendGateError" class="gate-error">Incorrect access code. Please try again.</div>
-      </form>
-    </div>
-  </div>
-
-  <!-- CONTENT -->
-  <div id="attendanceContent" style="display:none">
+  <!-- CONTENT (gated by /assets/auth.js overlay) -->
+  <div id="attendanceContent">
     <section class="page-hero">
       <h1>Staff Attendance</h1>
       <p class="hero-subtitle">Leave applications, balances and manager dashboard</p>
@@ -363,28 +350,12 @@
   <script src="js/main.js"></script>
   <script>
   (function () {
-    const ACCESS_CODE = '123456';
-    const AUTH_KEY = 'smtc_attend_auth';
     const TYPE_LABELS = { pl: 'Paid Leave', rl: 'Regional Leave', ot: 'OT / Comp-off', lop: 'Loss of Pay' };
-
-    const gate = document.getElementById('attendanceGate');
-    const content = document.getElementById('attendanceContent');
-    const gateForm = document.getElementById('attendanceGateForm');
-    const codeInput = document.getElementById('attendCode');
-    const gateError = document.getElementById('attendGateError');
 
     let DATA = null;
 
-    function unlock() { gate.style.display = 'none'; content.style.display = 'block'; init(); }
-    if (sessionStorage.getItem(AUTH_KEY) === 'true') unlock();
-    gateForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      if (codeInput.value === ACCESS_CODE) {
-        sessionStorage.setItem(AUTH_KEY, 'true');
-        gateError.style.display = 'none';
-        unlock();
-      } else { gateError.style.display = 'block'; codeInput.value = ''; codeInput.focus(); }
-    });
+    // Auth handled by /assets/auth.js overlay. Boot the page once auth is ready.
+    document.addEventListener('spicemore-auth-ready', function () { init(); });
 
     // ---- Helpers ----
     function escHtml(str) {
@@ -422,14 +393,14 @@
 
     // ---- API ----
     async function loadData() {
-      const resp = await fetch('/api/attend-data');
+      const resp = await fetch('/api/attend-data', { credentials: 'include' });
       if (!resp.ok) throw new Error('Failed to load data');
       DATA = await resp.json();
       return DATA;
     }
     async function postAction(action, payload) {
       const resp = await fetch('/api/attend-data', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, payload })
       });
       const json = await resp.json();
@@ -439,7 +410,7 @@
     }
     async function postApply(body) {
       const resp = await fetch('/api/attend-apply', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
       const json = await resp.json();
@@ -558,6 +529,10 @@
             <button class="btn btn-reject btn-sm" data-act="reject" data-id="${escHtml(app.id)}">Reject</button>
           </td>`
         : '';
+      const histActionsTd = includeActions ? '' : `<td>
+            <button class="btn btn-sm" style="background:#f3f4f6;color:#444" data-act="revert" data-id="${escHtml(app.id)}" title="Send back to pending (refunds balance)">Revert</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b" data-act="delete" data-id="${escHtml(app.id)}" title="Delete record (refunds balance if approved)">Delete</button>
+          </td>`;
       const histTd = includeActions ? '' : `<td>${app.action_by ? escHtml(app.action_by) : '<span class="muted">-</span>'}<br><span class="muted">${app.action_date ? fmtDate(app.action_date) : ''}</span>${app.action_comment ? '<br><span class="muted">' + escHtml(app.action_comment) + '</span>' : ''}</td>`;
       return `<tr class="${highlight ? 'highlight-row' : ''}" data-app-id="${escHtml(app.id)}">
         <td style="font-weight:500">${escHtml(app.employee)}</td>
@@ -569,6 +544,7 @@
         ${includeActions ? '' : '<td>' + statusBadge + '</td>'}
         ${actionTd}
         ${histTd}
+        ${histActionsTd}
       </tr>`;
     }
 
@@ -599,10 +575,13 @@
       if (!apps.length) { wrap.innerHTML = '<div class="empty">No applications match filters.</div>'; return; }
       wrap.innerHTML = `<table class="data-table">
         <thead><tr>
-          <th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Applied</th><th>Status</th><th>Action By / Comment</th>
+          <th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Applied</th><th>Status</th><th>Action By / Comment</th><th>Manage</th>
         </tr></thead>
         <tbody>${apps.map(a => appRow(a, false, false)).join('')}</tbody>
       </table>`;
+      wrap.querySelectorAll('button[data-act]').forEach(btn => {
+        btn.addEventListener('click', () => handleAction(btn.dataset.act, btn.dataset.id));
+      });
     }
 
     function renderEmployeeFilter() {
@@ -635,6 +614,28 @@
           showToast('Application rejected');
           renderAll();
         } catch (e) { showToast(e.message || 'Reject failed', true); }
+      } else if (act === 'revert') {
+        const wasApproved = app.status === 'approved';
+        const msg = wasApproved
+          ? `Revert ${app.employee}'s ${TYPE_LABELS[app.type]} (${fmtNum(app.days)} day(s)) back to pending? Their balance will be refunded.`
+          : `Revert ${app.employee}'s ${TYPE_LABELS[app.type]} (${fmtNum(app.days)} day(s)) back to pending?`;
+        if (!confirm(msg)) return;
+        try {
+          await postAction('revert_to_pending', { id });
+          showToast('Reverted to pending');
+          renderAll();
+        } catch (e) { showToast(e.message || 'Revert failed', true); }
+      } else if (act === 'delete') {
+        const wasApproved = app.status === 'approved';
+        const msg = wasApproved
+          ? `Permanently delete ${app.employee}'s approved ${TYPE_LABELS[app.type]} (${fmtNum(app.days)} day(s))? Their balance will be refunded. This cannot be undone.`
+          : `Permanently delete ${app.employee}'s ${app.status} ${TYPE_LABELS[app.type]} (${fmtNum(app.days)} day(s))? This cannot be undone.`;
+        if (!confirm(msg)) return;
+        try {
+          await postAction('delete_application', { id });
+          showToast('Application deleted');
+          renderAll();
+        } catch (e) { showToast(e.message || 'Delete failed', true); }
       }
     }
 
@@ -781,6 +782,60 @@
       catch (e) { console.error(e); showToast('Failed to load data', true); return; }
 
       renderAll();
+
+      // ---- Role gating ----
+      const user = (window.spicemoreAuth && window.spicemoreAuth.getUser()) || null;
+      const isAdmin = user && (user.role === 'admin' || user.role === 'manager');
+      const isOtMgr = user && user.role === 'ot_manager';
+      if (user && !isAdmin) {
+        const hide = (sel) => { const el = document.querySelector(sel); if (el) el.style.display = 'none'; };
+        hide('.tab-btn[data-tab="manager"]');
+        hide('.tab-btn[data-tab="settings"]');
+        const applySel = document.getElementById('applyEmployee');
+        const applyTypeSel = document.getElementById('applyType');
+        const target = (user.name || '').trim().toUpperCase();
+        // Helper: lock the employee selector to the current user.
+        function lockToSelf() {
+          let matched = false;
+          for (let i = 0; i < applySel.options.length; i++) {
+            if (applySel.options[i].value.toUpperCase() === target) {
+              applySel.value = applySel.options[i].value;
+              matched = true; break;
+            }
+          }
+          applySel.disabled = true;
+          if (matched) applySel.dispatchEvent(new Event('change'));
+          return matched;
+        }
+        function unlockSelector() {
+          applySel.disabled = false;
+        }
+        // OT manager: when type === 'ot', allow choosing any employee. Otherwise lock to self.
+        if (isOtMgr) {
+          const applyOtRule = () => {
+            if (applyTypeSel.value === 'ot') {
+              unlockSelector();
+            } else {
+              lockToSelf();
+            }
+          };
+          applyTypeSel.addEventListener('change', applyOtRule);
+          applyOtRule();
+          // Hint banner so Gowsik knows what's special about his account.
+          const hint = document.createElement('div');
+          hint.style.cssText = 'background:#e6f4ea;border:1px solid #34a853;padding:8px 12px;border-radius:6px;margin:8px 0 0;font-size:13px;color:#0b5d2a';
+          hint.textContent = 'OT manager: switch Leave Type to OT/Comp-off to submit on behalf of any employee. Other types are locked to you.';
+          applySel.parentNode.parentNode.appendChild(hint);
+        } else {
+          const matched = lockToSelf();
+          if (!matched) {
+            const note = document.createElement('div');
+            note.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;padding:8px 12px;border-radius:6px;margin:8px 0;font-size:13px;color:#664d03';
+            note.textContent = 'Your account (' + (user.name || '') + ') is not in the attendance roster yet. Ask an admin to add you.';
+            applySel.parentNode.appendChild(note);
+          }
+        }
+      }
 
       // Reject deep-link
       const params = new URLSearchParams(location.search);

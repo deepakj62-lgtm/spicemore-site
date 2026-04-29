@@ -14,7 +14,7 @@ export async function onRequest(context) {
     }
     const resend = new Resend(env.RESEND_API_KEY);
     const emailData = {
-      from: 'Spicemore Tools <onboarding@resend.dev>',
+      from: 'Spicemore Tools <noreply@send.spicemore.com>',
       to: Array.isArray(to) ? to : [to], subject
     };
     if (html) emailData.html = html;

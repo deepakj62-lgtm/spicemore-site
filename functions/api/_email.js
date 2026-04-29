@@ -1,8 +1,8 @@
 // Email helpers — uses Resend SDK. RESEND_API_KEY must be set as a Pages secret.
 import { Resend } from 'resend';
 
-const FROM_EMAIL = 'Spicemore Tools <onboarding@resend.dev>';
-const SITE_URL = 'https://spicemore-site.pages.dev';
+const FROM_EMAIL = 'Spicemore Tools <noreply@send.spicemore.com>';
+const SITE_URL = 'https://spicemore.com';
 
 function getResend(env) {
   if (!env.RESEND_API_KEY) return null;

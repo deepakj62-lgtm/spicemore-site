@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/assets/auth.js" defer></script>
   <title>Spicemore Corporate | Spice More</title>
   <meta name="description" content="Spice More Trading Company - Internal corporate tools portal.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,22 +40,8 @@
     </div>
   </nav>
 
-  <!-- PASSWORD GATE -->
-  <div id="passwordGate" class="portal-gate">
-    <div class="gate-card">
-      <div class="gate-icon">&#128274;</div>
-      <h2>Spicemore Corporate Portal</h2>
-      <p>Enter the access code to continue</p>
-      <form id="passwordForm" class="gate-form">
-        <input type="password" id="accessCode" placeholder="Access Code" autocomplete="off" required>
-        <button type="submit" class="btn-submit">Enter</button>
-        <div id="gateError" class="gate-error">Incorrect access code. Please try again.</div>
-      </form>
-    </div>
-  </div>
-
-  <!-- PORTAL CONTENT (hidden until authenticated) -->
-  <div id="portalContent" class="portal-content" style="display:none">
+  <!-- PORTAL CONTENT (gated by /assets/auth.js overlay) -->
+  <div id="portalContent" class="portal-content">
     <section class="page-hero">
       <h1>Spicemore Corporate Tools</h1>
       <p class="hero-subtitle">Internal tools for Spice More Trading Company</p>
@@ -163,35 +150,5 @@
   </footer>
 
   <script src="js/main.js"></script>
-  <script>
-    (function() {
-      const PASS = 'spice123';
-      const gate = document.getElementById('passwordGate');
-      const content = document.getElementById('portalContent');
-      const form = document.getElementById('passwordForm');
-      const input = document.getElementById('accessCode');
-      const error = document.getElementById('gateError');
-
-      // Check if already authenticated this session
-      if (sessionStorage.getItem('smtc_auth') === 'true') {
-        gate.style.display = 'none';
-        content.style.display = 'block';
-      }
-
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (input.value.toLowerCase() === PASS) {
-          sessionStorage.setItem('smtc_auth', 'true');
-          gate.style.display = 'none';
-          content.style.display = 'block';
-          error.style.display = 'none';
-        } else {
-          error.style.display = 'block';
-          input.value = '';
-          input.focus();
-        }
-      });
-    })();
-  </script>
 </body>
 </html>

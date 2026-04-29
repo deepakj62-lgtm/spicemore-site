@@ -4,6 +4,15 @@ import { sendWhatsAppText, testBridge } from './_whatsapp.js';
 export async function onRequest(context) {
   const { request, env } = context;
   if (request.method === 'OPTIONS') return preflight();
+
+  // 2026-04-28: SEPL OTP login deprecated. Use mobile+password via /api/auth/login.
+  // The original OTP flow below is preserved (commented out) for rollback.
+  return json(
+    { error: 'OTP login deprecated — please use the new mobile+password login at /sepl/staff/login.html or /sepl/consignor/login.html (POST /api/auth/login).' },
+    { status: 410 }
+  );
+
+  /* DEPRECATED — original OTP request flow, kept for rollback reference.
   const bucket = env.BLOB_BUCKET;
   const url = new URL(request.url);
 
@@ -36,10 +45,7 @@ export async function onRequest(context) {
       return json({ error: 'phone and role (staff|consignor) required' }, { status: 400 });
     }
     const cleanPhone = String(phone).replace(/[^0-9+]/g, '');
-    const DEMO = { '+911111111111': 'staff', '+912222222222': 'consignor' };
-    if (DEMO[cleanPhone] === role) {
-      return json({ ok: true, demo: true, hint: 'Use OTP 123456' });
-    }
+    // TODO: SEPL auth uses its own session — converge with /api/auth in next pass.
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const record = {
       phone: cleanPhone, role, otp,
@@ -55,4 +61,5 @@ export async function onRequest(context) {
     console.error('auth-request-otp error', e);
     return json({ error: 'Internal error', details: e.message }, { status: 500 });
   }
+  */
 }

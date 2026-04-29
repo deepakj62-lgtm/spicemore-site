@@ -96,3 +96,40 @@ No HTML/CSS/JS frontend files were touched in this migration. One subtle behavio
 4. **`bank-file.js` / `bank-payout.js`** were not on the explicit migration scope but were converted because they share the blob backend; smoke-test these adapters specifically.
 5. **WhatsApp bridge** is at `localhost:8080` on Deepak's Mac — it must be reachable via the cloudflared tunnel `WHATSAPP_BRIDGE_URL` for OTP delivery from Cloudflare's edge.
 6. **Crons are TODO** — see above. Until the scheduled Worker is deployed, the cardamom rate will refresh on first GET each day (cache TTL 6h) instead of at 12:30 UTC.
+
+## Username/password auth (added)
+
+Replaced every hardcoded gate (`123456`, `spice123`, tools' `simpleHash` check) with cookie-based real auth backed by R2.
+
+### One-time setup (must run before deploy is useful)
+
+1. Generate a session secret and set it as a Pages secret:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))" >> .env.prod
+   wrangler pages secret put AUTH_SECRET --project-name=spicemore-site
+   # paste the value from .env.prod when prompted
+   ```
+2. Seed the staff accounts:
+   ```bash
+   node scripts/seed-staff.mjs
+   wrangler r2 object put spicemore-attendance/auth/accounts.json --file=/tmp/accounts.json --remote
+   ```
+3. Deploy:
+   ```bash
+   wrangler pages deploy . --project-name=spicemore-site --commit-dirty=true --branch=main
+   ```
+
+### Endpoints
+- `POST /api/auth/login` — body `{username, password}`. Username = 10-digit mobile (auto-strips +91, leading 0, spaces). Sets HttpOnly cookie `sm_session` (Domain=spicemore.com, 7-day Max-Age) and returns `{ok, user}`.
+- `GET /api/auth/me` — returns the current user or 401.
+- `POST /api/auth/change-password` — `{currentPassword, newPassword}`. Min 6 chars, can't equal mobile.
+- `POST /api/auth/logout` — clears the cookie.
+
+### Frontend
+- `assets/auth.js` is included on every gated page (`<script src="/assets/auth.js" defer></script>`). It blocks the page until `/api/auth/me` returns 200, forces password change on first login, and adds a "Sign out" pill. It also writes `sessionStorage.smtc_auth='true'` and `sessionStorage.smtc_attend_auth='true'` so existing per-page redirect logic still works.
+
+### Watchpoints
+- `auth/accounts.json` lives in R2 — back it up before each manual edit.
+- Mary George (#011) and Rajamanickam (#012) share mobile `9544089380`. The seeder keeps Mary and skips Rajamanickam with a `console.warn`. Edwin to assign Rajamanickam a unique mobile, then re-seed (or hand-edit `auth/accounts.json`).
+- API endpoints (`/api/attend-data`, `/api/auction-clean`, etc.) are still open at the API layer; auth is enforced at page-load via the overlay. Layer in API-level enforcement in a follow-up.
+- SEPL OTP flow (`functions/api/sepl/auth-*-otp.js`) keeps its own session; the demo `123456` shortcut was removed. Converge with `/api/auth` in a follow-up.

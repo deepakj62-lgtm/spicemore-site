@@ -16,13 +16,14 @@ compatibility_flags = ["nodejs_compat"]
 # now lives under this single bucket.
 [[r2_buckets]]
 binding = "BLOB_BUCKET"
-bucket_name = "spicemore-blob"
+bucket_name = "spicemore-attendance-apac"
 
 # Convenience alias used by the attend-* handlers per the migration brief.
 # Points at the same physical bucket — no separate data store needed.
 [[r2_buckets]]
 binding = "ATTENDANCE_BUCKET"
-bucket_name = "spicemore-blob"
+bucket_name = "spicemore-attendance-apac"
+
 
 # ── Secrets — set after first deploy via:
 #   wrangler pages secret put RESEND_API_KEY            --project-name=spicemore-site
