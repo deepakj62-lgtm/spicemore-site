@@ -2,194 +2,194 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Credit Certificate — Draft</title>
+<title>Credit Certificate — Spice More Trading Company</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #e8e8e8; font-family: 'Inter', sans-serif; padding: 40px 20px; }
+  body { background: #d0d0d0; font-family: 'Inter', sans-serif; padding: 40px 20px; }
 
+  .controls { max-width: 794px; margin: 0 auto 20px; display: flex; gap: 12px; align-items: center; }
+  .btn { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; background: #2d6a0a; color: #fff; }
+  @media print { .controls { display: none; } body { background: #fff; padding: 0; } .page { box-shadow: none; } }
+
+  /* ── PAGE ── */
   .page {
     width: 794px; min-height: 1123px;
     background: #fff;
     margin: 0 auto;
     position: relative;
-    box-shadow: 0 4px 32px rgba(0,0,0,.18);
+    box-shadow: 0 4px 32px rgba(0,0,0,.22);
     display: flex; flex-direction: column;
+    font-size: 11px;
   }
 
-  /* ── Border decoration ── */
-  .border-outer {
-    position: absolute; inset: 16px;
-    border: 2px solid #2d5016;
-    pointer-events: none; z-index: 10;
-  }
-  .border-inner {
-    position: absolute; inset: 20px;
-    border: 0.5px solid #2d5016;
-    pointer-events: none; z-index: 10;
-  }
-
-  /* ── Header / letterhead ── */
-  .letterhead {
-    padding: 36px 50px 20px;
-    border-bottom: 2px solid #2d5016;
-    display: flex; align-items: center; gap: 20px;
-  }
-  .lh-logo {
-    width: 72px; height: 72px;
-    background: #2d5016;
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -1px;
+  /* ── TOP COLOUR STRIPE (matches letterhead) ── */
+  .top-stripe {
+    height: 10px;
+    background: linear-gradient(to right, #2d6a0a 60%, #6b1a0a 60%);
     flex-shrink: 0;
   }
-  .lh-text { flex: 1; }
-  .lh-company {
-    font-family: 'EB Garamond', serif;
-    font-size: 22px; font-weight: 700; color: #1a3009; letter-spacing: .5px;
-  }
-  .lh-tagline { font-size: 10px; color: #666; margin-top: 2px; letter-spacing: .5px; text-transform: uppercase; }
-  .lh-contact { text-align: right; font-size: 9px; color: #888; line-height: 1.7; }
 
-  /* ── Certificate title band ── */
-  .cert-title-band {
-    background: #2d5016;
-    padding: 14px 50px;
+  /* ── LETTERHEAD HEADER ── */
+  .letterhead {
+    padding: 18px 32px 14px;
     display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
   }
-  .cert-title {
-    font-family: 'EB Garamond', serif;
-    font-size: 20px; font-weight: 600; color: #fff; letter-spacing: 3px;
-    text-transform: uppercase;
+  .lh-logo img { height: 72px; display: block; }
+  .lh-info {
+    text-align: right; font-size: 10.5px; line-height: 1.8;
+    color: #222; font-family: 'Inter', sans-serif;
   }
-  .cert-no { font-size: 10px; color: rgba(255,255,255,.7); letter-spacing: 1px; text-align: right; }
+  .lh-info strong { font-size: 11.5px; letter-spacing: .3px; }
+  .lh-divider { height: 1.5px; background: #333; margin: 0 32px; flex-shrink: 0; }
 
-  /* ── Body ── */
-  .cert-body { padding: 32px 50px; flex: 1; }
+  /* ── CERTIFICATE TITLE BAND ── */
+  .cert-band {
+    background: #6b1a0a;
+    padding: 10px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; margin-top: 10px;
+  }
+  .cert-band-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 17px; font-weight: 600; color: #fff;
+    letter-spacing: 4px; text-transform: uppercase;
+  }
+  .cert-band-no { font-size: 9px; color: rgba(255,255,255,.75); text-align: right; line-height: 1.7; letter-spacing: .5px; }
+
+  /* ── BODY ── */
+  .cert-body { padding: 22px 32px; flex: 1; }
 
   .preamble {
-    font-size: 11.5px; color: #444; line-height: 1.8;
-    border-left: 3px solid #2d5016; padding-left: 14px;
-    margin-bottom: 28px;
+    font-size: 10.5px; color: #333; line-height: 1.85;
+    border-left: 3px solid #2d6a0a; padding-left: 12px;
+    margin-bottom: 20px;
   }
-  .preamble strong { color: #1a3009; }
 
-  /* ── Dealer block ── */
+  /* dealer block */
   .dealer-block {
-    background: #f4f8f0; border: 1px solid #c5d9b5;
-    border-radius: 6px; padding: 20px 24px; margin-bottom: 28px;
+    border: 1px solid #aad08a; border-radius: 5px;
+    padding: 14px 20px; margin-bottom: 18px;
+    background: #f4faf0;
+    display: flex; align-items: center; justify-content: space-between;
   }
-  .dealer-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 4px; }
-  .dealer-name { font-size: 18px; font-weight: 700; color: #1a3009; font-family: 'EB Garamond', serif; }
-  .dealer-meta { font-size: 10px; color: #666; margin-top: 4px; }
+  .db-left .db-label { font-size: 8.5px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 3px; }
+  .db-left .db-name  { font-size: 17px; font-weight: 700; color: #1a3a06; font-family: 'EB Garamond', serif; }
+  .db-left .db-meta  { font-size: 9px; color: #666; margin-top: 2px; }
+  .db-right { text-align: right; }
+  .db-right .db-date-label { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+  .db-right .db-date       { font-size: 11px; font-weight: 600; color: #333; }
 
-  /* ── Credit boxes ── */
-  .credit-boxes { display: flex; gap: 16px; margin-bottom: 28px; }
+  /* credit boxes */
+  .credit-boxes { display: flex; gap: 12px; margin-bottom: 18px; }
   .credit-box {
-    flex: 1; border: 1.5px solid #2d5016; border-radius: 6px;
-    padding: 16px 20px; text-align: center;
+    flex: 1; border: 1.5px solid #6b1a0a; border-radius: 5px;
+    padding: 12px 14px; text-align: center;
   }
-  .credit-box .cb-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 6px; }
-  .credit-box .cb-value { font-size: 28px; font-weight: 700; color: #2d5016; font-family: 'EB Garamond', serif; }
-  .credit-box .cb-unit  { font-size: 11px; color: #666; margin-top: 2px; }
+  .cb-label { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 4px; }
+  .cb-value { font-size: 26px; font-weight: 700; color: #6b1a0a; font-family: 'EB Garamond', serif; line-height: 1; }
+  .cb-unit  { font-size: 9px; color: #666; margin-top: 3px; }
 
-  /* ── Validity ── */
+  /* validity */
   .validity-bar {
-    background: #fffbea; border: 1px solid #f0d060;
-    border-radius: 6px; padding: 12px 20px;
-    font-size: 10.5px; color: #7a5c00; margin-bottom: 28px;
-    display: flex; align-items: center; gap: 10px;
+    background: #fffae8; border: 1px solid #e0c84a;
+    border-radius: 5px; padding: 9px 14px;
+    font-size: 10px; color: #7a5c00; margin-bottom: 18px;
+    line-height: 1.7;
   }
-  .validity-bar .vi { font-size: 16px; }
 
-  /* ── Terms ── */
-  .terms-title {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
-    color: #2d5016; font-weight: 700; margin-bottom: 12px;
+  /* section heading */
+  .section-heading {
+    font-size: 8.5px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: #6b1a0a; font-weight: 700; margin-bottom: 8px;
     display: flex; align-items: center; gap: 8px;
   }
-  .terms-title::after { content: ''; flex: 1; height: 1px; background: #c5d9b5; }
+  .section-heading::after { content: ''; flex: 1; height: 1px; background: #dda88a; }
 
-  .terms-table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 28px; }
-  .terms-table thead tr { background: #2d5016; color: #fff; }
-  .terms-table thead th { padding: 8px 14px; text-align: left; font-weight: 600; letter-spacing: .5px; }
-  .terms-table tbody tr:nth-child(odd) { background: #f9fdf6; }
-  .terms-table tbody td { padding: 9px 14px; color: #333; border-bottom: 1px solid #e8f0e0; vertical-align: top; }
+  /* terms table */
+  .terms-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 18px; }
+  .terms-table thead tr { background: #2d6a0a; color: #fff; }
+  .terms-table thead th { padding: 7px 12px; text-align: left; font-weight: 600; letter-spacing: .3px; }
+  .terms-table tbody tr:nth-child(odd)  { background: #f8fdf4; }
+  .terms-table tbody tr:nth-child(even) { background: #fff; }
+  .terms-table tbody td { padding: 8px 12px; color: #222; border-bottom: 1px solid #e4f0d8; vertical-align: top; line-height: 1.6; }
   .badge {
-    display: inline-block; padding: 2px 8px; border-radius: 10px;
-    font-size: 9px; font-weight: 700; letter-spacing: .5px;
+    display: inline-block; padding: 1px 7px; border-radius: 8px;
+    font-size: 8.5px; font-weight: 700; letter-spacing: .3px; white-space: nowrap;
   }
-  .badge-green  { background: #d4f0c0; color: #2d5016; }
-  .badge-amber  { background: #fff0c0; color: #7a5c00; }
-  .badge-red    { background: #ffe0e0; color: #b91c1c; }
+  .b-green { background: #d1f0b0; color: #2d6a0a; }
+  .b-amber { background: #fff0b0; color: #7a5c00; }
+  .b-red   { background: #ffe0d0; color: #8b1a0a; }
 
-  /* ── Footer note ── */
-  .footer-note {
-    font-size: 9.5px; color: #888; line-height: 1.7;
-    border-top: 1px solid #e8f0e0; padding-top: 12px; margin-bottom: 28px;
+  /* footnote */
+  .footnote {
+    font-size: 8.5px; color: #888; line-height: 1.7;
+    border-top: 1px solid #e4e4e4; padding-top: 10px; margin-bottom: 20px;
   }
 
-  /* ── Signature ── */
-  .sig-row { display: flex; gap: 40px; align-items: flex-end; }
+  /* signature row */
+  .sig-row { display: flex; align-items: flex-end; gap: 24px; }
   .sig-block { flex: 1; text-align: center; }
-  .sig-line { border-top: 1px solid #444; margin-bottom: 6px; }
-  .sig-name { font-size: 10.5px; font-weight: 600; color: #1a3009; }
-  .sig-title { font-size: 9px; color: #888; }
-  .sig-seal {
-    width: 80px; height: 80px; border: 2px solid #2d5016;
+  .sig-space { height: 36px; }
+  .sig-line  { border-top: 1px solid #555; margin-bottom: 5px; }
+  .sig-name  { font-size: 10px; font-weight: 700; color: #1a3a06; }
+  .sig-title { font-size: 8.5px; color: #888; }
+  .seal-circle {
+    width: 74px; height: 74px; border: 1.5px solid #2d6a0a;
     border-radius: 50%; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    font-size: 8px; color: #2d5016; text-align: center;
-    font-weight: 700; letter-spacing: .3px; line-height: 1.4;
-    margin: 0 auto 6px;
+    font-size: 7px; color: #2d6a0a; font-weight: 700;
+    letter-spacing: .3px; line-height: 1.5; text-align: center;
+    margin: 0 auto 5px;
   }
 
-  /* ── Footer strip ── */
+  /* ── FOOTER STRIP (matches letterhead) ── */
   .page-footer {
-    background: #2d5016; padding: 8px 50px;
+    background: #1a2a0a;
+    padding: 6px 32px;
     display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
   }
-  .page-footer span { font-size: 8.5px; color: rgba(255,255,255,.7); letter-spacing: .5px; }
-
-  /* ── Print / demo controls ── */
-  .controls { max-width: 794px; margin: 0 auto 20px; display: flex; gap: 12px; }
-  .btn { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
-  .btn-primary { background: #2d5016; color: #fff; }
-  @media print { .controls { display: none; } body { background: #fff; padding: 0; } .page { box-shadow: none; } }
+  .page-footer span { font-size: 8.5px; color: rgba(255,255,255,.65); letter-spacing: .3px; }
+  .page-footer .pf-web { font-size: 9.5px; color: #fff; font-weight: 600; letter-spacing: .5px; }
 </style>
 </head>
 <body>
 
 <div class="controls">
-  <button class="btn btn-primary" onclick="window.print()">🖨 Print / Save as PDF</button>
-  <span style="font-size:12px;color:#666;align-self:center">← Draft preview — logo &amp; letterhead to be updated before production</span>
+  <button class="btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+  <span style="font-size:11px;color:#555">Draft — logo is live from spicemore.com · finalise content then integrate into tool</span>
 </div>
 
 <div class="page">
-  <div class="border-outer"></div>
-  <div class="border-inner"></div>
+
+  <!-- TOP COLOUR STRIPE -->
+  <div class="top-stripe"></div>
 
   <!-- LETTERHEAD -->
   <div class="letterhead">
-    <div class="lh-logo">SM</div>
-    <div class="lh-text">
-      <div class="lh-company">Spice More Trading Company</div>
-      <div class="lh-tagline">Cardamom · Pepper · Spices — Established 1995 · Bodinayakanur, Tamil Nadu</div>
+    <div class="lh-logo">
+      <img src="https://static.wixstatic.com/media/71d97b_23c088d0bc674ca4a1e591210b43af92~mv2.png/v1/fill/w_240,h_172,al_c,q_85,enc_avif,quality_auto/Spice-More-smaller-1030x741.png"
+           alt="Spice More" onerror="this.style.display='none'">
     </div>
-    <div class="lh-contact">
-      spicemore.com<br>
-      GSTIN: 33XXXXX0000X1ZX<br>
-      FSSAI: XXXXXXXXXXXXXXX
+    <div class="lh-info">
+      <strong>SPICE MORE TRADING COMPANY</strong><br>
+      MUNNAR ROAD, KUMILY – 685 509<br>
+      IDUKKI DISTRICT, KERALA<br>
+      Email: sales@spicemore.com<br>
+      GST: 32ABYFS2267G1ZS
     </div>
   </div>
+  <div class="lh-divider"></div>
 
-  <!-- TITLE BAND -->
-  <div class="cert-title-band">
-    <div class="cert-title">Credit Certificate</div>
-    <div class="cert-no">
+  <!-- CERTIFICATE TITLE BAND -->
+  <div class="cert-band">
+    <div class="cert-band-title">Credit Certificate</div>
+    <div class="cert-band-no">
       CERT NO: SMTC/CC/2025-26/001<br>
-      ISSUED: 28 Apr 2026
+      DATE OF ISSUE: 28 Apr 2026
     </div>
   </div>
 
@@ -199,21 +199,27 @@
     <p class="preamble">
       This is to certify that <strong>Spice More Trading Company</strong> has assessed the payment history,
       trading volume, and settlement behaviour of the dealer named herein and hereby grants the following
-      credit facility subject to the terms and conditions stated below.
+      credit facility, effective immediately, subject to the terms and conditions stated below.
     </p>
 
     <!-- DEALER -->
     <div class="dealer-block">
-      <div class="dealer-label">Dealer / Trader</div>
-      <div class="dealer-name">UA Traders</div>
-      <div class="dealer-meta">SMTC Account · Assessment Period: FY 2025–26</div>
+      <div class="db-left">
+        <div class="db-label">Dealer / Trader Name</div>
+        <div class="db-name">UA Traders</div>
+        <div class="db-meta">SMTC Dealer Account &nbsp;·&nbsp; Assessment Period: FY 2025–26</div>
+      </div>
+      <div class="db-right">
+        <div class="db-date-label">Issue Date</div>
+        <div class="db-date">28 April 2026</div>
+      </div>
     </div>
 
     <!-- CREDIT BOXES -->
     <div class="credit-boxes">
       <div class="credit-box">
-        <div class="cb-label">Credit Limit</div>
-        <div class="cb-value">₹60 L</div>
+        <div class="cb-label">Approved Credit Limit</div>
+        <div class="cb-value">₹ 60 L</div>
         <div class="cb-unit">Sixty Lakhs Only</div>
       </div>
       <div class="credit-box">
@@ -222,73 +228,75 @@
         <div class="cb-unit">Days from invoice date</div>
       </div>
       <div class="credit-box">
-        <div class="cb-label">Risk Rating</div>
-        <div class="cb-value" style="font-size:20px;padding-top:4px">LOW ✓</div>
-        <div class="cb-unit">Based on payment history</div>
+        <div class="cb-label">Current Risk Rating</div>
+        <div class="cb-value" style="font-size:18px;padding-top:5px">LOW ✓</div>
+        <div class="cb-unit">Based on FY 2025–26 history</div>
       </div>
     </div>
 
     <!-- VALIDITY -->
     <div class="validity-bar">
-      <span class="vi">📋</span>
-      <span>
-        This certificate is valid from <strong>28 Apr 2026</strong> until reviewed and renewed by Spice More Trading Company.
-        SMTC reserves the right to revoke or revise this limit at any time based on updated payment behaviour.
-      </span>
+      📋 &nbsp;This credit facility is valid from <strong>28 Apr 2026</strong> and remains in effect until reviewed and renewed by
+      Spice More Trading Company. SMTC reserves the right to revoke, revise, or suspend this limit at any time based on updated
+      payment behaviour or business conditions.
     </div>
 
     <!-- TERMS -->
-    <div class="terms-title">Credit Score &amp; Penalty Policy</div>
+    <div class="section-heading">Credit Score &amp; Settlement Policy</div>
     <table class="terms-table">
       <thead>
         <tr>
-          <th>Settlement Behaviour</th>
-          <th>Impact</th>
-          <th>Consequence</th>
+          <th style="width:28%">Settlement Behaviour</th>
+          <th style="width:20%">Score Impact</th>
+          <th>Consequence at Next Review</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><span class="badge badge-green">≤ 21 days</span>&nbsp; Payment on or before credit period</td>
-          <td style="color:#2d5016;font-weight:600">↑ Score Improves</td>
-          <td>Eligible for limit enhancement at next review</td>
+          <td><span class="badge b-green">≤ 21 days</span>&nbsp; On or before credit period</td>
+          <td style="color:#2d6a0a;font-weight:700">↑ Improves</td>
+          <td>Eligible for credit limit enhancement. Preferred status in SMTC purchases and auctions.</td>
         </tr>
         <tr>
-          <td><span class="badge badge-amber">21 – 30 days</span>&nbsp; Payment within 30 days</td>
-          <td style="color:#7a5c00;font-weight:600">↓ Score Reduces</td>
-          <td>Credit limit may be reduced at next review</td>
+          <td><span class="badge b-amber">22 – 30 days</span>&nbsp; Within 30 days</td>
+          <td style="color:#7a5c00;font-weight:700">↓ Reduces</td>
+          <td>Credit limit may be reduced at next review. Continued delay may result in further downgrade.</td>
         </tr>
         <tr>
-          <td><span class="badge badge-red">&gt; 30 days</span>&nbsp; Payment beyond 30 days</td>
-          <td style="color:#b91c1c;font-weight:600">⚠ Restricted</td>
-          <td>Ineligible to participate in SMTC purchases &amp; auctions. Late payment penalty applies as per internal policy.</td>
+          <td><span class="badge b-red">&gt; 30 days</span>&nbsp; Beyond 30 days</td>
+          <td style="color:#8b1a0a;font-weight:700">⚠ Restricted</td>
+          <td>Ineligible to participate in SMTC purchases &amp; auctions until dues are cleared.
+              Late payment penalty applies as per SMTC internal policy.</td>
         </tr>
       </tbody>
     </table>
 
-    <!-- FOOTER NOTE -->
-    <div class="footer-note">
-      * This credit facility is extended based on historical trading relationship and is subject to SMTC's internal credit policy.
-      The dealer is advised to maintain timely settlements to retain and improve this credit rating.
-      Any dispute arising from this certificate shall be subject to jurisdiction of courts at Theni, Tamil Nadu.
+    <!-- FOOTNOTE -->
+    <div class="footnote">
+      * This certificate is issued based on historical trading relationship and is for informational purposes only.
+      The credit facility is subject to SMTC's internal credit policy and may be modified without prior notice.
+      The dealer is encouraged to maintain timely settlements to retain and improve their credit standing.
+      Any disputes shall be subject to the jurisdiction of courts at Idukki District, Kerala.
     </div>
 
-    <!-- SIGNATURE -->
+    <!-- SIGNATURES -->
     <div class="sig-row">
       <div class="sig-block">
-        <div style="height:40px"></div>
+        <div class="sig-space"></div>
         <div class="sig-line"></div>
         <div class="sig-name">Authorised Signatory</div>
         <div class="sig-title">Spice More Trading Company</div>
       </div>
       <div class="sig-block">
-        <div class="sig-seal">
-          SPICE MORE<br>TRADING CO.<br>──────<br>OFFICIAL<br>SEAL
+        <div class="seal-circle">
+          SPICE MORE<br>TRADING CO.<br>
+          <span style="font-size:8px">✦ OFFICIAL ✦</span><br>
+          KUMILY, KERALA
         </div>
-        <div class="sig-name" style="font-size:9px;color:#888">For office use only</div>
+        <div class="sig-name" style="font-size:8px;color:#aaa">Official Seal</div>
       </div>
       <div class="sig-block">
-        <div style="height:40px"></div>
+        <div class="sig-space"></div>
         <div class="sig-line"></div>
         <div class="sig-name">Dealer Acknowledgement</div>
         <div class="sig-title">Signature &amp; Date</div>
@@ -297,11 +305,11 @@
 
   </div><!-- /cert-body -->
 
-  <!-- PAGE FOOTER -->
+  <!-- FOOTER -->
   <div class="page-footer">
     <span>SPICE MORE TRADING COMPANY · CONFIDENTIAL</span>
-    <span>This is a system-generated credit certificate · spicemore.com</span>
-    <span>Page 1 of 1</span>
+    <span class="pf-web">www.spicemore.com</span>
+    <span>System-generated · Page 1 of 1</span>
   </div>
 
 </div>
