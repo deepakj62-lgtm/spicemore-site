@@ -5,17 +5,15 @@ import { sendWhatsAppDocument } from './_whatsapp.js';
 
 const PROGRAMME_TERMS = [
   ['Holding Charge',
-    'The daily holding charge accrues from the date of advance disbursement on every calendar day, including Sundays and public holidays. No charge is waived once accrued.'],
+    'The daily holding charge accrues without interruption from the date of advance disbursement and continues to accrue on each calendar day, including Sundays and public holidays. Accrued charges are not waivable under any circumstances, whether by passage of time, custom, or any representation by either party.'],
   ['Tenure',
-    'The advance is extended for a maximum of 90 days from the date of intake. Extensions beyond the Latest Release Date require prior written approval from the Company.'],
+    'The advance facility is granted for a maximum period of ninety (90) calendar days from the date of intake. Any extension beyond the Latest Release Date shall require express prior written approval from the Company and shall be subject to such revised terms as the Company may in its sole discretion determine.'],
   ['Margin Monitoring',
-    'The Company monitors the ratio of advance plus accrued charges against the prevailing market value of the stock on a daily basis. Should this ratio approach or exceed the Company\'s internal thresholds, the Company may issue a margin notice and require partial repayment or stock release. In cases of significant margin breach, the Company reserves the right to act to protect its interest with reasonable notice to the client.'],
+    'The Company shall monitor the ratio of advance disbursed plus accrued holding charges against the prevailing market value of the deposited stock on a continuous basis. Should this ratio approach or breach the Company\'s internal threshold, the Company may issue a margin notice requiring partial repayment of the advance or partial release of deposited stock. In cases of material margin breach, the Company reserves the right to exercise its lien over the deposited stock without further notice to the client.'],
   ['Stock Custody',
-    'Stock is held at the Company\'s designated depot. The Company is not liable for natural quality deterioration beyond normal storage conditions. Periodic physical verification of stock may be conducted at any time.'],
-  ['Settlement',
-    'All accrued charges and applicable costs are settled before any balance is remitted or stock is released to the client.'],
-  ['Governing Law',
-    'All disputes are subject to the jurisdiction of Peerumedu Courts.'],
+    'The deposited stock shall be held at the Company\'s designated depot under standard storage conditions. The Company shall not be liable for natural quality deterioration inherent to the commodity or arising from its characteristics. The Company reserves the right to conduct physical verification of the deposited stock at any time without prior notice to the client.'],
+  ['Settlement & Release',
+    'Release of the deposited stock or any balance proceeds is strictly conditional upon full and final settlement of all accrued holding charges, applicable commissions, taxes, and any other amounts due to the Company. The Company\'s computation of all amounts due shall be final and binding absent manifest error, and no stock or proceeds shall be released pending such settlement.'],
 ];
 
 function wrap(text, max) {
@@ -39,83 +37,110 @@ async function buildPdf(txn, consignor) {
   const bold   = await pdf.embedFont(StandardFonts.TimesRomanBold);
   const italic = await pdf.embedFont(StandardFonts.TimesRomanItalic);
   const inr = n => 'Rs.' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
-  const W = 595, H = 842, lm = 60, rm = 535;
+  const fmtDate = iso => {
+    if (!iso) return '—';
+    const [y, m, d] = iso.split('-');
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return `${parseInt(d, 10)} ${months[parseInt(m,10)-1]} ${y}`;
+  };
+  const W = 595, H = 842, lm = 55, rm = 545;
   const green = rgb(0.12, 0.30, 0.16);
   const gray  = rgb(0.42, 0.42, 0.42);
+  const labelCol = rgb(0.32, 0.32, 0.32);
 
-  const addPage = () => pdf.addPage([W, H]);
-  let page = addPage();
+  const page = pdf.addPage([W, H]);
   let y = 790;
 
-  const line = (txt, f = font, size = 10, color = rgb(0, 0, 0), x = lm) => {
-    if (y < 70) { page = addPage(); y = 790; }
-    page.drawText(String(txt), { x, y, size, font: f, color });
-    y -= size + 5;
+  const line = (txt, f = font, sz = 10, col = rgb(0,0,0), x = lm) => {
+    page.drawText(String(txt), { x, y, size: sz, font: f, color: col });
+    y -= sz + 5;
   };
-  const center = (txt, f, size, color) => {
-    const tw = f.widthOfTextAtSize(txt, size);
-    line(txt, f, size, color, Math.max(lm, (W - tw) / 2));
+  const center = (txt, f, sz, col) => {
+    const tw = f.widthOfTextAtSize(txt, sz);
+    line(txt, f, sz, col, Math.max(lm, (W - tw) / 2));
   };
   const rule = (thickness = 0.5, col = rgb(0.65, 0.65, 0.65)) => {
-    if (y < 70) { page = addPage(); y = 790; }
-    page.drawLine({ start: { x: lm, y: y + 4 }, end: { x: rm, y: y + 4 }, thickness, color: col });
+    page.drawLine({ start: { x: lm, y: y+4 }, end: { x: rm, y: y+4 }, thickness, color: col });
     y -= 9;
   };
   const gap = n => { y -= n; };
-  const section = (txt) => { gap(8); line(txt, bold, 10, green); rule(0.4, rgb(0.7, 0.7, 0.7)); };
+  const section = txt => { gap(5); line(txt, bold, 10, green); rule(0.4, rgb(0.7,0.7,0.7)); };
 
+  // Compute value column x from widest label so all values align perfectly
+  const kvLabels = [
+    'Name', 'Type', 'Phone', 'PAN', 'GST Reg', 'Spices Board Reg',
+    'Net Weight', 'Depot', 'Date of Intake', 'Price at Intake', 'Gross Stock Value',
+    'Advance Disbursed', 'Daily Holding Charge', 'Latest Release Date',
+    'Disbursement Account', 'Disbursement Mode',
+  ];
+  const vx = lm + Math.max(...kvLabels.map(l => font.widthOfTextAtSize(l + ':', 10))) + 10;
+
+  const kv = (label, value) => {
+    page.drawText(label + ':', { x: lm, y, size: 10, font, color: labelCol });
+    page.drawText(String(value ?? '—'), { x: vx, y, size: 10, font, color: rgb(0,0,0) });
+    y -= 15;
+  };
+
+  // ── Header ──
   center('SPICEMORE GROUP', bold, 15, green);
   gap(2);
   center('CARDAMOM STOCK ADVANCE', bold, 11, green);
-  center('Programme Acknowledgement', italic, 10, gray);
+  center('Acknowledgement Receipt', italic, 10, gray);
   gap(5);
-  rule(0.8, rgb(0.3, 0.3, 0.3));
+  rule(0.8, rgb(0.3,0.3,0.3));
   gap(2);
-  line(`Document Ref: ${txn.txnId}   |   Date of Issue: ${txn.intakeDate}`, font, 9, gray);
-  gap(6);
+  line(`Transaction Reference: ${txn.txnId}   |   Date of Issue: ${fmtDate(txn.intakeDate)}`, font, 9, gray);
+  gap(5);
 
-  section('PARTIES');
-  line('Company:   SpiceMore Group', font, 10);
-  line(`Client:    ${consignor.name} (${consignor.consignorId}) — ${consignor.type}`, font, 10);
-  line(`Phone:     ${consignor.phone}   PAN: ${consignor.pan || '—'}`, font, 10);
-  if (consignor.spicesBoardReg) line(`Spices Board Reg:   ${consignor.spicesBoardReg}`, font, 10);
+  // ── Client Details ──
+  section('CLIENT DETAILS');
+  kv('Name', consignor.name);
+  kv('Type', consignor.type);
+  kv('Phone', consignor.phone);
+  if (consignor.type === 'Planter') {
+    kv('PAN', consignor.pan || '—');
+  } else {
+    kv('GST Reg', consignor.gstReg || '—');
+  }
+  if (consignor.spicesBoardReg) kv('Spices Board Reg', consignor.spicesBoardReg);
 
+  // ── Stock Details ──
   section('STOCK DETAILS');
-  line(`Net Weight:               ${Number(txn.netWeightKg).toLocaleString('en-IN')} kg`, font, 10);
-  if (txn.gradeNotes) line(`Grade / Notes:            ${txn.gradeNotes}`, font, 10);
-  line(`Depot:                    ${txn.depot}`, font, 10);
-  line(`Date of Intake:           ${txn.intakeDate}`, font, 10);
-  line(`Benchmark Price at Intake:  ${inr(txn.benchmarkPricePerKg)} / kg`, font, 10);
-  line(`Gross Stock Value:          ${inr(txn.grossStockValue)}`, font, 10);
-  if (txn.samplePct) line(`Sample Collected:         ${txn.samplePct}%`, font, 10);
+  kv('Net Weight', Number(txn.netWeightKg).toLocaleString('en-IN') + ' kg');
+  kv('Depot', txn.depot);
+  kv('Date of Intake', fmtDate(txn.intakeDate));
+  kv('Price at Intake', inr(txn.benchmarkPricePerKg) + ' / kg');
+  kv('Gross Stock Value', inr(txn.grossStockValue));
 
+  // ── Financial Terms ──
   section('FINANCIAL TERMS');
-  line(`Advance Disbursed:        ${inr(txn.advanceAmount)}`, font, 10);
-  line(`Daily Holding Charge:     ${inr(txn.dailyHoldingCharge)}  (Rs.60 per day per Rs.1,00,000 of advance)`, font, 10);
-  line(`Latest Release Date:      ${txn.maxExitDate}  (90 days from date of intake)`, font, 10);
-  line(`Disbursement Account:     ${consignor.bankAccount || '—'}  (IFSC: ${consignor.ifsc || '—'})`, font, 10);
-  line('Disbursement Mode:        NEFT / RTGS within 24 hours of intake and documentation.', font, 10);
+  kv('Advance Disbursed', inr(txn.advanceAmount));
+  kv('Daily Holding Charge', inr(txn.dailyHoldingCharge) + '  (Rs.60 per day per Rs.1,00,000 of advance)');
+  kv('Latest Release Date', fmtDate(txn.maxExitDate) + '  (90 days from date of intake)');
+  kv('Disbursement Account', (consignor.bankAccount || '—') + '  (IFSC: ' + (consignor.ifsc || '—') + ')');
+  kv('Disbursement Mode', 'NEFT / RTGS within 24 hours of intake and documentation.');
 
+  // ── Programme Terms ──
   section('PROGRAMME TERMS');
   for (let i = 0; i < PROGRAMME_TERMS.length; i++) {
     const [title, body] = PROGRAMME_TERMS[i];
     line(`${i + 1}.  ${title}`, bold, 10);
-    for (const ln of wrap(body, 84)) line('    ' + ln, font, 10);
-    gap(3);
+    for (const ln of wrap(body, 85)) line('    ' + ln, font, 10);
+    gap(2);
   }
 
-  gap(6);
-  rule(0.8, rgb(0.3, 0.3, 0.3));
+  // ── Footer ──
+  gap(4);
+  rule(0.8, rgb(0.3,0.3,0.3));
   gap(2);
-  for (const ln of [
-    'This is a computer-generated programme acknowledgement issued by SpiceMore Group. It is not a',
-    'negotiable instrument and does not require a physical signature. The terms above govern the stock',
-    'advance extended to the client named in this document.',
-    '',
-    'For queries: Joshy Joseph  —  62824 89418  |  joshy.joseph@spicemore.com'
-  ]) line(ln, italic, 9, gray);
+  for (const fl of wrap(
+    'This is a computer-generated acknowledgement receipt issued by SpiceMore Group. It is not a negotiable instrument ' +
+    'and does not require a physical signature. The terms above govern the stock advance extended to the client named in ' +
+    'this document. All disputes are subject to the jurisdiction of Peerumedu Court. ' +
+    'For queries reach us at sales@spicemore.com', 105
+  )) line(fl, italic, 8.5, gray);
 
-  return await pdf.save(); // Uint8Array
+  return await pdf.save();
 }
 
 function bytesToBase64(bytes) {
