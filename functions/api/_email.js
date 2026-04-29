@@ -2,11 +2,83 @@
 import { Resend } from 'resend';
 
 const FROM_EMAIL = 'Spicemore Tools <noreply@send.spicemore.com>';
+const ATTENDANCE_FROM = 'Spicemore Attendance <attendance@send.spicemore.com>';
 const SITE_URL = 'https://spicemore.com';
+const TYPE_LABELS = {
+  pl: 'Paid Leave (PL)', ot: 'OT / Comp-off Leave',
+  rl: 'Regional Leave (RL)', lop: 'Loss of Pay (LOP)'
+};
 
 function getResend(env) {
   if (!env.RESEND_API_KEY) return null;
   return new Resend(env.RESEND_API_KEY);
+}
+
+// Look up a staff member's email from R2 auth/accounts.json by canonical name.
+// Returns null if not found.
+export async function lookupStaffEmail(env, employeeName) {
+  if (!employeeName) return null;
+  const bucket = env.ATTENDANCE_BUCKET || env.BLOB_BUCKET;
+  if (!bucket) return null;
+  try {
+    const obj = await bucket.get('auth/accounts.json');
+    if (!obj) return null;
+    const accounts = JSON.parse(await obj.text());
+    const target = String(employeeName).trim().toUpperCase();
+    for (const k of Object.keys(accounts)) {
+      const a = accounts[k];
+      if (String(a.name || '').trim().toUpperCase() === target && a.email) return a.email;
+    }
+  } catch (_) {}
+  return null;
+}
+
+// Notify the applying staff that their leave was approved or rejected.
+// Falls back to looking up the email from auth/accounts.json if the application
+// doesn't carry one (e.g. OT-manager-submitted leaves where employee_email is the manager's).
+export async function sendLeaveDecisionEmail(env, app, decision, replyToList) {
+  const resend = getResend(env);
+  if (!resend || !app) return;
+  let to = (app.employee_email && /@/.test(app.employee_email)) ? app.employee_email : null;
+  // If the stored email looks like the OT manager's, override by name lookup.
+  // We do the lookup unconditionally as a safety net, but only swap if found.
+  const looked = await lookupStaffEmail(env, app.employee);
+  if (looked) to = looked;
+  if (!to) return;
+  const typeLabel = TYPE_LABELS[app.type] || app.type;
+  const days = parseFloat(app.days);
+  const isApproved = decision === 'approved';
+  const accent = isApproved ? '#2D5016' : '#b33';
+  const headline = isApproved ? 'Leave approved' : 'Leave rejected';
+  const subject = `Spicemore Attendance — ${headline}: ${typeLabel} (${days} day${days !== 1 ? 's' : ''})`;
+  const reply = Array.isArray(replyToList) ? replyToList.filter(Boolean) : (replyToList ? [replyToList] : []);
+  try {
+    await resend.emails.send({
+      from: ATTENDANCE_FROM,
+      to,
+      ...(reply.length ? { reply_to: reply } : {}),
+      subject,
+      html: `
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f1ed;padding:24px">
+  <div style="background:${accent};padding:20px 24px;border-radius:10px 10px 0 0">
+    <h1 style="color:#fff;margin:0;font-size:20px">${headline}</h1>
+    <p style="color:#fff;opacity:.85;margin:6px 0 0;font-size:13px">Spice More Trading Company — Staff Attendance</p>
+  </div>
+  <div style="background:#fff;padding:28px;border-radius:0 0 10px 10px;border:1px solid #ddd;border-top:none">
+    <p style="margin-top:0">Hi ${app.employee},</p>
+    <p>Your leave application has been <strong style="color:${accent}">${decision}</strong>.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin:16px 0">
+      <tr style="background:#f9f7f4"><td style="padding:10px;color:#888;width:150px">Leave Type</td><td style="padding:10px;font-weight:600;color:${accent}">${typeLabel}</td></tr>
+      <tr><td style="padding:10px;color:#888">From</td><td style="padding:10px">${app.from_date}</td></tr>
+      <tr style="background:#f9f7f4"><td style="padding:10px;color:#888">To</td><td style="padding:10px">${app.to_date}</td></tr>
+      <tr><td style="padding:10px;color:#888">Days</td><td style="padding:10px;font-weight:600">${days} day${days !== 1 ? 's' : ''}</td></tr>
+      ${app.action_comment ? `<tr style="background:#f9f7f4"><td style="padding:10px;color:#888">Manager comment</td><td style="padding:10px;font-style:italic">${app.action_comment}</td></tr>` : ''}
+    </table>
+    <p style="color:#666;font-size:13px;margin-bottom:0">Reply to this email if you need to discuss with your manager. Or open <a href="${SITE_URL}/staff-attendance" style="color:${accent}">your dashboard</a>.</p>
+  </div>
+</div>`
+    });
+  } catch (err) { console.error('sendLeaveDecisionEmail failed:', err.message); }
 }
 
 export async function sendRequestConfirmation(env, request) {

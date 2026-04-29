@@ -1,5 +1,6 @@
 import { getJSON, putJSON, json, preflight } from './_blob.js';
 import { requireRole, getSession } from './auth/_session.js';
+import { sendLeaveDecisionEmail } from './_email.js';
 
 const DATA_PATH = 'attendance/data.json';
 
@@ -153,6 +154,7 @@ export async function onRequest(context) {
       if (action === 'delete_ot') {
         data.ot_credits = (data.ot_credits || []).filter(o => o.id !== payload.id);
       }
+      let _notifyDecision = null; // { app, decision } — fired after save so we don't block on email failures
       if (action === 'approve_leave') {
         const app = (data.leave_applications || []).find(a => a.id === payload.id);
         if (app && app.status === 'pending') {
@@ -160,6 +162,7 @@ export async function onRequest(context) {
           app.action_comment = payload.comment || '';
           app.action_date = new Date().toISOString();
           app.action_by = 'Manager';
+          _notifyDecision = { app, decision: 'approved' };
           const bal = data.balances[app.employee] = data.balances[app.employee] || {};
           if (app.type === 'pl') bal.pl_used = (bal.pl_used || 0) + app.days;
           if (app.type === 'rl') bal.rl_used = (bal.rl_used || 0) + app.days;
@@ -183,6 +186,7 @@ export async function onRequest(context) {
           app.action_comment = payload.comment || '';
           app.action_date = new Date().toISOString();
           app.action_by = 'Manager';
+          _notifyDecision = { app, decision: 'rejected' };
         }
       }
       if (action === 'add_application') {
@@ -228,6 +232,11 @@ export async function onRequest(context) {
         }
       }
       await saveData(bucket, data);
+      if (_notifyDecision) {
+        const replyTo = String(data.managerEmail || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+        // Don't await — fire and forget so the dashboard doesn't wait on email.
+        sendLeaveDecisionEmail(env, _notifyDecision.app, _notifyDecision.decision, replyTo);
+      }
       return json({ ok: true, data });
     }
     return json({ error: 'Method not allowed' }, { status: 405 });

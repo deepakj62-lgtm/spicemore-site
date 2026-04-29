@@ -1,4 +1,5 @@
 import { getJSON, putJSON, html, preflight } from './_blob.js';
+import { sendLeaveDecisionEmail } from './_email.js';
 
 const DATA_PATH = 'attendance/data.json';
 const SITE_URL = 'https://spicemore.com';
@@ -66,6 +67,9 @@ export async function onRequest(context) {
 
       data.updatedAt = new Date().toISOString();
       await putJSON(bucket, DATA_PATH, data);
+
+      const replyTo = String(data.managerEmail || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+      sendLeaveDecisionEmail(env, app, 'approved', replyTo);
 
       const typeLabel = { pl: 'Paid Leave', ot: 'OT / Comp-off Leave', rl: 'Regional Leave', lop: 'Loss of Pay' }[app.type] || app.type;
       return html(page('✓', 'Leave Approved',
