@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { getJSON, json, corsHeaders, preflight } from '../_blob.js';
 import { verifyAny } from './_session.js';
 import { sendWhatsAppDocument } from './_whatsapp.js';
@@ -41,6 +42,7 @@ async function loadFontBytes(origin, path) {
 
 async function buildPdf(txn, consignor, origin) {
   const pdf = await PDFDocument.create();
+  pdf.registerFontkit(fontkit);
 
   // Try to load EB Garamond; fall back to Times Roman if unavailable
   let font, bold, italic;
@@ -50,11 +52,19 @@ async function buildPdf(txn, consignor, origin) {
     loadFontBytes(origin, '/fonts/EBGaramond-Italic.ttf'),
   ]);
   if (regBytes && boldBytes && italBytes) {
-    [font, bold, italic] = await Promise.all([
-      pdf.embedFont(regBytes),
-      pdf.embedFont(boldBytes),
-      pdf.embedFont(italBytes),
-    ]);
+    try {
+      [font, bold, italic] = await Promise.all([
+        pdf.embedFont(regBytes),
+        pdf.embedFont(boldBytes),
+        pdf.embedFont(italBytes),
+      ]);
+    } catch (_) {
+      [font, bold, italic] = await Promise.all([
+        pdf.embedFont(StandardFonts.TimesRoman),
+        pdf.embedFont(StandardFonts.TimesRomanBold),
+        pdf.embedFont(StandardFonts.TimesRomanItalic),
+      ]);
+    }
   } else {
     [font, bold, italic] = await Promise.all([
       pdf.embedFont(StandardFonts.TimesRoman),
