@@ -63,6 +63,21 @@
     .close-btn:disabled { opacity:.5; cursor:not-allowed; }
     .status-closed { display:inline-block; background:#eee; color:#666; border-radius:10px; padding:3px 9px; font-size:11px; font-weight:600; }
     @media (max-width:480px) { .drawer { width:100vw; } }
+    .photo-grid-sm { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
+    .photo-grid-sm .pt { border-radius:8px; overflow:hidden; border:1px solid var(--light-gray); cursor:pointer; transition:border-color .15s; }
+    .photo-grid-sm .pt:hover { border-color:var(--green-dark); }
+    .photo-grid-sm .pt img { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+    .photo-grid-sm .pt .pc { font-size:10px; color:var(--tan); padding:4px 7px; line-height:1.4; }
+    .photo-lb { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px; }
+    .photo-lb.open { display:flex; }
+    .photo-lb img { max-width:100%; max-height:80vh; object-fit:contain; border-radius:6px; }
+    .photo-lb .plb-cap { color:rgba(255,255,255,0.8); font-size:12px; margin-top:10px; text-align:center; }
+    .photo-lb .plb-close { position:fixed; top:14px; right:18px; background:none; border:none; color:#fff; font-size:30px; cursor:pointer; line-height:1; opacity:.75; }
+    .photo-lb .plb-close:hover { opacity:1; }
+    .photo-lb .plb-nav { position:fixed; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); border:none; color:#fff; font-size:44px; cursor:pointer; padding:6px 14px; border-radius:8px; opacity:.75; line-height:1; }
+    .photo-lb .plb-nav:hover { opacity:1; background:rgba(0,0,0,0.7); }
+    .photo-lb .plb-prev { left:8px; }
+    .photo-lb .plb-next { right:8px; }
   </style>
 </head>
 <body>
@@ -136,6 +151,14 @@
     <button type="button" class="close" id="drawerClose" aria-label="Close">&times;</button>
     <div id="drawerBody"><div class="meta">Loading…</div></div>
   </aside>
+
+  <div class="photo-lb" id="photoLb">
+    <button class="plb-close" id="photoLbClose">✕</button>
+    <button class="plb-nav plb-prev" id="photoLbPrev">&#8249;</button>
+    <img id="photoLbImg" src="" alt="">
+    <div class="plb-cap" id="photoLbCap"></div>
+    <button class="plb-nav plb-next" id="photoLbNext">&#8250;</button>
+  </div>
 
 <script>
   const token = sessionStorage.sepl_token;
@@ -397,7 +420,7 @@
   }
   document.getElementById('drawerClose').addEventListener('click', closeDrawer);
   overlayEl.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !document.getElementById('photoLb').classList.contains('open')) closeDrawer(); });
 
   async function closePosition(txnId, btnEl, msgEl) {
     if (!confirm(`Mark ${txnId} as Closed? This cannot be undone.`)) return;
@@ -475,6 +498,32 @@
           </div>`;
         }).join('') || '<div class="meta">None.</div>'}
       </div>
+      ${(() => {
+        const GRADE_LABELS = { bold: '8mm Bold', mid: '7-8mm', rej: 'Rejection' };
+        const items = txns.flatMap(t => {
+          const dated = fmtDate(t.intakeDate);
+          if (t.samplePhotos && (t.samplePhotos.bold || t.samplePhotos.mid || t.samplePhotos.rej)) {
+            return ['bold','mid','rej']
+              .filter(g => t.samplePhotos[g])
+              .map(g => ({
+                url: t.samplePhotos[g],
+                cap: `${t.txnId} · ${GRADE_LABELS[g]} · ${dated}`,
+              }));
+          }
+          if (t.samplePhotoUrl) return [{ url: t.samplePhotoUrl, cap: `${t.txnId} · Sample · ${dated}` }];
+          return [];
+        });
+        if (!items.length) return '';
+        return `<h3>Sample photos (${items.length})</h3>
+        <div class="photo-grid-sm">
+          ${items.map((p, i) =>
+            `<div class="pt" data-idx="${i}" data-src="${p.url}" data-cap="${p.cap}">
+              <img src="${p.url}" alt="${p.cap}" loading="lazy">
+              <div class="pc">${p.cap}</div>
+            </div>`
+          ).join('')}
+        </div>`;
+      })()}
     `;
 
     // Attach close button handlers
@@ -483,7 +532,47 @@
       const msgEl = drawerBody.querySelector(`.close-msg[data-txnid="${txnId}"]`);
       btn.addEventListener('click', () => closePosition(txnId, btn, msgEl));
     });
+
+    // Collect photos for lightbox navigation
+    lbPhotos = [...drawerBody.querySelectorAll('.pt')].map(el => ({ url: el.dataset.src, cap: el.dataset.cap }));
+    drawerBody.querySelectorAll('.pt').forEach(el => {
+      el.addEventListener('click', () => openLb(parseInt(el.dataset.idx, 10)));
+    });
   }
+
+  // Lightbox state
+  let lbPhotos = [], lbIdx = 0;
+  const lb = document.getElementById('photoLb');
+
+  function openLb(idx) {
+    lbIdx = Math.max(0, Math.min(idx, lbPhotos.length - 1));
+    document.getElementById('photoLbImg').src = lbPhotos[lbIdx].url;
+    document.getElementById('photoLbCap').textContent = lbPhotos[lbIdx].cap;
+    document.getElementById('photoLbPrev').style.display = lbIdx > 0 ? '' : 'none';
+    document.getElementById('photoLbNext').style.display = lbIdx < lbPhotos.length - 1 ? '' : 'none';
+    lb.classList.add('open');
+  }
+
+  document.getElementById('photoLbClose').addEventListener('click', () => lb.classList.remove('open'));
+  document.getElementById('photoLbPrev').addEventListener('click', e => { e.stopPropagation(); openLb(lbIdx - 1); });
+  document.getElementById('photoLbNext').addEventListener('click', e => { e.stopPropagation(); openLb(lbIdx + 1); });
+  lb.addEventListener('click', e => { if (e.target === lb) lb.classList.remove('open'); });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'ArrowLeft') openLb(lbIdx - 1);
+    else if (e.key === 'ArrowRight') openLb(lbIdx + 1);
+    else if (e.key === 'Escape') lb.classList.remove('open');
+  });
+
+  // Touch swipe navigation
+  let swipeStartX = 0;
+  lb.addEventListener('touchstart', e => { swipeStartX = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    if (Math.abs(dx) > 40) dx < 0 ? openLb(lbIdx + 1) : openLb(lbIdx - 1);
+  });
 
   load();
 </script>
