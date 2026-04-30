@@ -18,8 +18,7 @@
     .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
     .kpi { background:var(--cream); border-radius:10px; padding:14px; }
     .kpi .lbl { font-size:11px; text-transform:uppercase; color:var(--tan); letter-spacing:.5px; }
-    .kpi .val { font-size:20px; font-weight:600; color:var(--green-dark); margin-top:4px; font-family:var(--font-heading); }
-    .kpi .val { font-size:20px; font-weight:600; color:var(--green-dark); margin-top:4px; font-variant-numeric:tabular-nums lining-nums; }
+    .kpi .val { font-size:20px; font-weight:600; color:var(--green-dark); margin-top:4px; font-family:var(--font-heading); font-variant-numeric:tabular-nums lining-nums; }
     .kpi .sub2 { font-size:11px; color:var(--tan); margin-top:2px; }
     table { width:100%; border-collapse:collapse; font-size:13px; }
     th,td { text-align:left; padding:9px 10px; border:1px solid var(--light-gray); vertical-align:middle; }
@@ -57,8 +56,9 @@
     .drawer dd { margin:0; color:#222; word-break:break-word; }
     .drawer h3 { font-size:13px; font-weight:600; color:var(--green-dark); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.5px; }
     .drawer .txn-list { font-size:12px; }
-    .drawer .txn-list .row { padding:6px 0; border-bottom:1px solid var(--light-gray); display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .drawer .txn-list .row { padding:6px 0; border-bottom:1px solid var(--light-gray); display:grid; grid-template-columns:1fr minmax(100px,max-content) auto; gap:8px; align-items:center; }
     .drawer .txn-list .row:last-child { border-bottom:none; }
+    .drawer .txn-list .amt { text-align:right; font-variant-numeric:tabular-nums lining-nums; white-space:nowrap; }
     .close-btn { background:#c0392b; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; font-family:var(--font-body); }
     .close-btn:hover { background:#a93226; }
     .close-btn:disabled { opacity:.5; cursor:not-allowed; }
@@ -491,7 +491,7 @@
           const isClosed = t.status === 'Closed';
           return `<div class="row" id="txnrow-${t.txnId}">
             <span><b>${t.txnId}</b> · ${t.depot}</span>
-            <span>${inr(t.advanceAmount)}</span>
+            <span class="amt">${inr(t.advanceAmount)}</span>
             <span>
               ${isClosed
                 ? `<span class="status-closed">Closed</span>`
