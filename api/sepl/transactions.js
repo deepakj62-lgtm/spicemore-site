@@ -32,7 +32,7 @@ async function effectiveSettings() {
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
@@ -101,14 +101,22 @@ module.exports = async function handler(req, res) {
     catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
     if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
 
-    const { filename, contentType, base64 } = req.body || {};
+    const { filename, contentType, base64, txnId, consignorId, depot, tag } = req.body || {};
     if (!filename || !contentType || !base64) return res.status(400).json({ error: 'filename, contentType, base64 required' });
     try {
       const buf = Buffer.from(base64, 'base64');
       if (buf.length === 0) return res.status(400).json({ error: 'Empty payload' });
       if (buf.length > 6_000_000) return res.status(413).json({ error: 'Photo too large (max 6 MB)' });
-      const safeName = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80);
-      const key = `sepl-sample-photos/${Date.now()}-${safeName}`;
+      const safe = s => String(s || '').trim().replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'unknown';
+      const tagSuffix = tag ? '-' + safe(tag) : '';
+      let key;
+      if (txnId && consignorId && depot) {
+        const c = await loadConsignor(consignorId);
+        const clientName = safe(c?.name) || safe(consignorId);
+        key = `sepl-sample-photos/${safe(depot)}/${txnId}-${clientName}${tagSuffix}.jpg`;
+      } else {
+        key = `sepl-sample-photos/${Date.now()}${tagSuffix}-${String(filename).replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80)}`;
+      }
       const blob = await put(key, buf, {
         access: 'public', contentType, addRandomSuffix: false, cacheControlMaxAge: 31536000
       });
@@ -117,6 +125,45 @@ module.exports = async function handler(req, res) {
       console.error('upload-blob error', e);
       return res.status(500).json({ error: 'Upload failed', details: e.message });
     }
+  }
+
+  if (req.method === 'PATCH') {
+    let session;
+    try { session = verifyToken(req); }
+    catch (e) { return res.status(401).json({ error: 'Unauthorized', details: e.message }); }
+    if (session.role !== 'staff') return res.status(403).json({ error: 'Staff only' });
+
+    const { txnId, status, samplePhotoUrl } = req.body || {};
+    if (!txnId) return res.status(400).json({ error: 'txnId required' });
+
+    const all = await loadAll();
+    const existing = all.find(t => t.txnId === txnId);
+    if (!existing) return res.status(404).json({ error: 'Transaction not found' });
+
+    const newLog = [...(existing.auditLog || [])];
+    const patch = { updatedAt: new Date().toISOString() };
+
+    if (status !== undefined) {
+      const ALLOWED = ['Active', 'Closed'];
+      if (!ALLOWED.includes(status)) return res.status(400).json({ error: `status must be one of ${ALLOWED.join(', ')}` });
+      if (existing.status !== status) {
+        patch.status = status;
+        newLog.push({ action: 'status-change', from: existing.status, to: status, byStaff: session.name, byPhone: session.phone, at: new Date().toISOString() });
+        if (status === 'Closed' && !existing.closedAt) patch.closedAt = new Date().toISOString();
+      }
+    }
+
+    if (samplePhotoUrl !== undefined) {
+      patch.samplePhotoUrl = samplePhotoUrl;
+      newLog.push({ action: 'photo-attached', byStaff: session.name, byPhone: session.phone, at: new Date().toISOString() });
+    }
+
+    patch.auditLog = newLog;
+    const updated = { ...existing, ...patch };
+    await put(`sepl-transactions/${txnId}.json`, JSON.stringify(updated), {
+      access: 'public', contentType: 'application/json', addRandomSuffix: false, cacheControlMaxAge: 0
+    });
+    return res.status(200).json({ transaction: updated });
   }
 
   try {

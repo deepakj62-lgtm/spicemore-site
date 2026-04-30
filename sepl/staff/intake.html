@@ -405,13 +405,13 @@
 
   // ---------- submit intake ----------
   let lastTxn = null;
-  async function uploadSamplePhoto() {
+  async function uploadSamplePhoto(txnId, consignorId, depot) {
     if (!samplePhotoFile) return null;
     const dataUrl = await resizeImage(samplePhotoFile, 1600, 0.85);
     const base64 = dataUrl.split(',')[1];
     const r = await fetch('/api/sepl/transactions?resource=upload-blob', {
       method:'POST', headers: hdr,
-      body: JSON.stringify({ filename: samplePhotoFile.name, contentType: 'image/jpeg', base64 })
+      body: JSON.stringify({ filename: samplePhotoFile.name, contentType: 'image/jpeg', base64, txnId, consignorId, depot })
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'upload failed');
@@ -448,21 +448,19 @@
     if (!cardamomRate) { $('subMsg').innerHTML = '<span class="err">Cardamom rate not set — save on Daily price tab</span>'; return; }
 
     $('submit').disabled = true;
-    $('subMsg').textContent = 'Submitting…';
+    $('subMsg').textContent = 'Creating intake…';
 
-    let photoUrl = null;
-    try { photoUrl = await uploadSamplePhoto(); }
-    catch (e) { $('subMsg').innerHTML = '<span class="err">Photo upload failed: ' + e.message + '</span>'; $('submit').disabled = false; return; }
-
+    const consignorId = $('clientId').value;
+    const depotVal = $('depot').value;
     const wb = weightedBenchmark(stats);
     const rates = getEffectiveRates();
     const reqAmt = Number($('c_req') ? $('c_req').value : 0)||0;
     const body = {
-      consignorId: $('clientId').value,
+      consignorId,
       netWeightKg: Number($('netWeightKg').value),
       benchmarkPricePerKg: wb,
       cardamomRate: cardamomRate,
-      depot: $('depot').value,
+      depot: depotVal,
       sample: {
         totalG: stats.total, bold8mmG: stats.bold, mid7to8G: stats.mid, rejectionG: stats.rej,
         pctBold: stats.pBold, pctMid: stats.pMid, pctRej: stats.pRej
@@ -473,13 +471,27 @@
         rej:  cardamomRate ? rates.rej  / cardamomRate : 0.80
       },
       requestedAdvance: reqAmt > 0 ? reqAmt : undefined,
-      samplePhotoUrl: photoUrl
     };
     const r = await fetch('/api/sepl/transactions', { method:'POST', headers:hdr, body:JSON.stringify(body) });
     const d = await r.json();
-    $('submit').disabled = false;
-    if (!r.ok) { $('subMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }
+    if (!r.ok) { $('submit').disabled = false; $('subMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }
     lastTxn = d.transaction;
+
+    // Upload photo after transaction is created so txnId appears in filename
+    $('subMsg').textContent = 'Uploading photo…';
+    try {
+      const photoUrl = await uploadSamplePhoto(lastTxn.txnId, consignorId, depotVal);
+      if (photoUrl) {
+        await fetch('/api/sepl/transactions', {
+          method: 'PATCH', headers: hdr,
+          body: JSON.stringify({ txnId: lastTxn.txnId, samplePhotoUrl: photoUrl })
+        });
+        lastTxn.samplePhotoUrl = photoUrl;
+      }
+    } catch (e) {
+      console.warn('Photo upload failed after intake created:', e.message);
+    }
+    $('submit').disabled = false;
     const t = d.transaction;
     $('confirm').classList.remove('hidden');
     $('confirmBody').innerHTML =
