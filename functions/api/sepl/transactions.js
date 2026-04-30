@@ -77,7 +77,7 @@ export async function onRequest(context) {
     catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
     if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
 
-    const { filename, contentType, base64, consignorId, depot, tag } = await request.json().catch(() => ({}));
+    const { filename, contentType, base64, txnId, consignorId, depot, tag } = await request.json().catch(() => ({}));
     if (!filename || !contentType || !base64) return json({ error: 'filename, contentType, base64 required' }, { status: 400 });
     try {
       const buf = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
@@ -86,15 +86,18 @@ export async function onRequest(context) {
 
       const ext = 'jpg';
       const safe = (s) => String(s || '').trim().replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'unknown';
-      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-'); // seconds precision
       const tagSuffix = tag ? '-' + safe(tag) : '';
 
       let key;
-      if (consignorId && depot) {
+      if (txnId && consignorId && depot) {
         const consignor = await loadConsignor(bucket, consignorId);
         const clientName = safe(consignor?.name) || safe(consignorId);
-        const depotSafe = safe(depot);
-        key = `sepl-sample-photos/${depotSafe}/${clientName}-${stamp}${tagSuffix}.${ext}`;
+        key = `sepl-sample-photos/${safe(depot)}/${txnId}-${clientName}${tagSuffix}.${ext}`;
+      } else if (consignorId && depot) {
+        const consignor = await loadConsignor(bucket, consignorId);
+        const clientName = safe(consignor?.name) || safe(consignorId);
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        key = `sepl-sample-photos/${safe(depot)}/${clientName}-${stamp}${tagSuffix}.${ext}`;
       } else {
         key = `sepl-sample-photos/${stamp}${tagSuffix}-${safe(filename)}`;
       }
@@ -112,25 +115,39 @@ export async function onRequest(context) {
     catch (e) { return json({ error: 'Unauthorized', details: e.message }, { status: 401 }); }
     if (!['staff','admin','manager','ot_manager'].includes(session.role)) return json({ error: 'Staff only' }, { status: 403 });
 
-    const { txnId, status } = await request.json().catch(() => ({}));
+    const body = await request.json().catch(() => ({}));
+    const { txnId, status, samplePhotos, samplePhotoUrl } = body;
     if (!txnId) return json({ error: 'txnId required' }, { status: 400 });
-    const ALLOWED_STATUSES = ['Active', 'Closed'];
-    if (!ALLOWED_STATUSES.includes(status)) {
-      return json({ error: `status must be one of ${ALLOWED_STATUSES.join(', ')}` }, { status: 400 });
-    }
+
     const all = await loadAll(bucket);
     const existing = all.find(t => t.txnId === txnId);
     if (!existing) return json({ error: 'Transaction not found' }, { status: 404 });
-    if (existing.status === status) return json({ transaction: existing, noop: true });
-    const updated = {
-      ...existing, status,
-      auditLog: [
-        ...(existing.auditLog || []),
-        { action: 'status-change', from: existing.status, to: status, byStaff: session.name, byPhone: session.phone, at: new Date().toISOString() }
-      ],
-      updatedAt: new Date().toISOString()
-    };
-    if (status === 'Closed' && !existing.closedAt) updated.closedAt = new Date().toISOString();
+
+    const newLog = [...(existing.auditLog || [])];
+    const patch = { updatedAt: new Date().toISOString() };
+
+    if (status !== undefined) {
+      const ALLOWED_STATUSES = ['Active', 'Closed'];
+      if (!ALLOWED_STATUSES.includes(status)) {
+        return json({ error: `status must be one of ${ALLOWED_STATUSES.join(', ')}` }, { status: 400 });
+      }
+      if (existing.status !== status) {
+        patch.status = status;
+        newLog.push({ action: 'status-change', from: existing.status, to: status, byStaff: session.name, byPhone: session.phone, at: new Date().toISOString() });
+        if (status === 'Closed' && !existing.closedAt) patch.closedAt = new Date().toISOString();
+      }
+    }
+    if (samplePhotos !== undefined) {
+      patch.samplePhotos = samplePhotos;
+      patch.samplePhotoUrl = (samplePhotos && samplePhotos.bold) || existing.samplePhotoUrl || null;
+      newLog.push({ action: 'photos-attached', byStaff: session.name, byPhone: session.phone, at: new Date().toISOString() });
+    } else if (samplePhotoUrl !== undefined) {
+      patch.samplePhotoUrl = samplePhotoUrl;
+      newLog.push({ action: 'photo-attached', byStaff: session.name, byPhone: session.phone, at: new Date().toISOString() });
+    }
+
+    patch.auditLog = newLog;
+    const updated = { ...existing, ...patch };
     await putJSON(bucket, `sepl-transactions/${txnId}.json`, updated);
     return json({ transaction: updated });
   }

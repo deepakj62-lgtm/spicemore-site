@@ -447,7 +447,7 @@
 
   // ---------- submit intake ----------
   let lastTxn = null;
-  async function uploadAllPhotos() {
+  async function uploadAllPhotos(txnId, consignorId, depot) {
     const grades = ['bold','mid','rej'];
     const urls = await Promise.all(grades.map(async grade => {
       const file = samplePhotoFiles[grade];
@@ -458,9 +458,7 @@
         body: JSON.stringify({
           filename: grade + '-sample.jpg',
           contentType: 'image/jpeg',
-          base64,
-          consignorId: $('clientId').value,
-          depot: $('depot').value,
+          base64, txnId, consignorId, depot,
           tag: grade
         })
       });
@@ -501,21 +499,19 @@
     if (!cardamomRate) { $('subMsg').innerHTML = '<span class="err">Cardamom rate not set — save on Daily price tab</span>'; return; }
 
     $('submit').disabled = true;
-    $('subMsg').textContent = 'Submitting…';
+    $('subMsg').textContent = 'Creating intake…';
 
-    let samplePhotos = null;
-    try { samplePhotos = await uploadAllPhotos(); }
-    catch (e) { $('subMsg').innerHTML = '<span class="err">Photo upload failed: ' + e.message + '</span>'; $('submit').disabled = false; return; }
-
+    const consignorId = $('clientId').value;
+    const depotVal = $('depot').value;
     const wb = weightedBenchmark(stats);
     const rates = getEffectiveRates();
     const reqAmt = Number($('c_req') ? $('c_req').value.replace(/,/g,'') : 0)||0;
     const body = {
-      consignorId: $('clientId').value,
+      consignorId,
       netWeightKg: Number($('netWeightKg').value),
       benchmarkPricePerKg: wb,
       cardamomRate: cardamomRate,
-      depot: $('depot').value,
+      depot: depotVal,
       sample: {
         totalG: stats.total, bold8mmG: stats.bold, mid7to8G: stats.mid, rejectionG: stats.rej,
         pctBold: stats.pBold, pctMid: stats.pMid, pctRej: stats.pRej
@@ -526,14 +522,25 @@
         rej:  cardamomRate ? rates.rej  / cardamomRate : 0.80
       },
       requestedAdvance: reqAmt > 0 ? reqAmt : undefined,
-      samplePhotos,
-      samplePhotoUrl: samplePhotos ? samplePhotos.bold : null
     };
     const r = await fetch('/api/sepl/transactions', { method:'POST', headers:hdr, body:JSON.stringify(body) });
     const d = await r.json();
-    $('submit').disabled = false;
-    if (!r.ok) { $('subMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }
+    if (!r.ok) { $('submit').disabled = false; $('subMsg').innerHTML='<span class="err">'+d.error+'</span>'; return; }
     lastTxn = d.transaction;
+
+    // Upload photos after transaction so txnId appears in filenames (T001-ClientName-bold.jpg etc)
+    $('subMsg').textContent = 'Uploading photos…';
+    try {
+      const samplePhotos = await uploadAllPhotos(lastTxn.txnId, consignorId, depotVal);
+      await fetch('/api/sepl/transactions', {
+        method: 'PATCH', headers: hdr,
+        body: JSON.stringify({ txnId: lastTxn.txnId, samplePhotos })
+      });
+      lastTxn.samplePhotos = samplePhotos;
+    } catch (e) {
+      console.warn('Photo upload failed after intake created:', e.message);
+    }
+    $('submit').disabled = false;
     const t = d.transaction;
     $('confirm').classList.remove('hidden');
     $('confirmBody').innerHTML =
